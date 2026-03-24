@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { Search, X } from 'lucide-vue-next'
 import Selector from '../atoms/Selector.vue'
 
@@ -37,6 +37,10 @@ const clearFilters = () => {
   circuitoVal.value  = props.circuitoOptions[0]
   emitFilters()
 }
+
+const onKeydown = (e) => { if (e.key === 'Escape') clearFilters() }
+onMounted(()   => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>

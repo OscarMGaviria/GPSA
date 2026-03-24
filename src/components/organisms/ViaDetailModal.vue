@@ -155,8 +155,8 @@ function startRouteMap() {
     _routeMap.jumpTo({ center: firstPt, zoom: 14 })
     routePlaying.value = true
 
-    // ~20 segundos de animación sin importar cuántos puntos tenga la vía
-    const INTERVAL = 40
+    // ~40 segundos de animación progresiva punto a punto
+    const INTERVAL = 80
     const BATCH    = Math.max(1, Math.ceil(totalPts / 500))
 
     let segIdx = 0
@@ -187,7 +187,15 @@ function startRouteMap() {
       }
 
       _routeMap.getSource('trace').setData(geojson)
-      if (lastPt) _routeMap.easeTo({ center: lastPt, duration: INTERVAL + 10, easing: t => t })
+      if (lastPt) {
+        const px     = _routeMap.project(lastPt)
+        const canvas = _routeMap.getCanvas()
+        const padX   = canvas.width  * 0.3
+        const padY   = canvas.height * 0.3
+        const nearEdge = px.x < padX || px.x > canvas.width  - padX
+                      || px.y < padY || px.y > canvas.height - padY
+        if (nearEdge) _routeMap.easeTo({ center: lastPt, duration: 600 })
+      }
 
       if (segIdx >= segments.length) {
         clearInterval(_animTimer)
