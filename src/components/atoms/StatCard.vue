@@ -26,22 +26,28 @@ defineProps({
   align-items: center;
   justify-content: center;
   gap: 5px;
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  border-radius: 14px;
-  padding: 12px 10px 10px;
-  box-shadow: 0 2px 12px rgba(45, 134, 83, 0.1), 0 1px 3px rgba(0,0,0,.06);
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  padding: 14px 10px 12px;
+  box-shadow:
+    0 4px 16px rgba(45, 134, 83, 0.12),
+    0 1px 4px rgba(0,0,0,.06),
+    inset 0 1px 0 rgba(255,255,255,0.65);
   text-align: center;
   min-width: 0;
   cursor: pointer;
-  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+  transition: transform .22s ease, box-shadow .22s ease, background .22s ease;
 }
 .stat-card:hover {
-  transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 6px 20px rgba(45, 134, 83, 0.18), 0 2px 6px rgba(0,0,0,.08);
+  transform: translateY(-4px) scale(1.02);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 10px 32px rgba(45, 134, 83, 0.2),
+    0 3px 8px rgba(0,0,0,.08),
+    inset 0 1px 0 rgba(255,255,255,0.8);
 }
 .icon-wrap {
   width: 38px;
@@ -75,8 +81,7 @@ defineProps({
   font-size: 10px;
   font-weight: 700;
   color: #7a8f99;
-  text-transform: uppercase;
-  letter-spacing: .7px;
+  letter-spacing: .3px;
   line-height: 1.2;
 }
 </style>

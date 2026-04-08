@@ -1,0 +1,37 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm install
+      - run: npm run build
+        env:
+          VITE_API_LOCALIZACIONES: https://a2c20de4-18de-4c7e-b253-88c2fd0c0b3f.mock.pstmn.io/maps/geojson/SIMEVA/localizaciones
+          VITE_API_MUNICIPIOS: https://78577c12-0232-4b96-8123-281e22b01558.mock.pstmn.io/maps/geojson/SIMEVA/municipios
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

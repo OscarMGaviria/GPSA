@@ -1,40 +1,17 @@
 <script setup>
-import { ref } from 'vue'
-import { Search, X, PanelRightClose, PanelRightOpen } from 'lucide-vue-next'
-import Selector from '../atoms/Selector.vue'
+import { PanelRightClose, PanelRightOpen } from 'lucide-vue-next'
+import FilterBar from '../molecules/FilterBar.vue'
 
 const props = defineProps({
-  title: { type: String, default: 'Dashboard de Pavimentación Vial' },
-  subtitle: { type: String, default: 'Antioquia — Red vial departamental' },
-  filter1Options: { type: Array, default: () => ['Todas las subregiones', 'Urabá', 'Norte', 'Oriente', 'Occidente', 'Suroeste', 'Magdalena Medio', 'Nordeste', 'Bajo Cauca'] },
-  filter2Options: { type: Array, default: () => ['Todos los estados', 'Pavimentada', 'Sin pavimentar', 'En construcción'] },
-  filter3Options: { type: Array, default: () => ['Todos los años', '2020', '2021', '2022', '2023', '2024'] },
-  panelOpen: { type: Boolean, default: true },
+  title:            { type: String,  default: 'Pavimentación Vial' },
+  subtitle:         { type: String,  default: 'SIMEVA — Sistema de Información y Monitoreo de vias' },
+  subregionOptions: { type: Array,   default: () => ['Todas las subregiones'] },
+  municipioOptions: { type: Array,   default: () => ['Todos los municipios'] },
+  circuitoOptions:  { type: Array,   default: () => ['Todos los circuitos'] },
+  panelOpen:        { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['filter-change', 'toggle-panel'])
-
-const searchText  = ref('')
-const filter1Val  = ref(props.filter1Options[0])
-const filter2Val  = ref(props.filter2Options[0])
-const filter3Val  = ref(props.filter3Options[0])
-
-const emitFilters = () => {
-  emit('filter-change', {
-    search: searchText.value,
-    filter1: filter1Val.value,
-    filter2: filter2Val.value,
-    filter3: filter3Val.value,
-  })
-}
-
-const clearFilters = () => {
-  searchText.value = ''
-  filter1Val.value = props.filter1Options[0]
-  filter2Val.value = props.filter2Options[0]
-  filter3Val.value = props.filter3Options[0]
-  emitFilters()
-}
 </script>
 
 <template>
@@ -43,12 +20,7 @@ const clearFilters = () => {
     <!-- LEFT: logo + branding -->
     <div class="header-brand">
       <div class="header-logo">
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="40" height="40" rx="10" fill="rgba(255,255,255,0.15)"/>
-          <path d="M8 28 L20 12 L32 28" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M14 28 L26 28" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="20" cy="12" r="2.5" fill="#ffffff"/>
-        </svg>
+        <img src="/Escudo de armas.png" alt="Gobernación de Antioquia" class="header-logo-img" />
       </div>
       <div class="header-titles">
         <h1 class="header-title">{{ title }}</h1>
@@ -58,67 +30,34 @@ const clearFilters = () => {
 
     <div class="header-divider"></div>
 
-    <!-- RIGHT: filters -->
+    <!-- RIGHT: filters + panel toggle -->
     <div class="header-filters">
-
-      <!-- Search -->
-      <div class="search-wrapper">
-        <Search :size="14" class="search-icon" />
-        <input
-          v-model="searchText"
-          type="text"
-          placeholder="Buscar vía..."
-          class="search-input"
-          @input="emitFilters"
-        />
-      </div>
-
-      <!-- Filter 1 -->
-      <Selector
-        v-model="filter1Val"
-        :options="filter1Options"
-        @update:modelValue="emitFilters"
+      <FilterBar
+        :subregion-options="subregionOptions"
+        :municipio-options="municipioOptions"
+        :circuito-options="circuitoOptions"
+        @filter-change="emit('filter-change', $event)"
       />
-
-      <!-- Filter 2 -->
-      <Selector
-        v-model="filter2Val"
-        :options="filter2Options"
-        @update:modelValue="emitFilters"
-      />
-
-      <!-- Filter 3 -->
-      <Selector
-        v-model="filter3Val"
-        :options="filter3Options"
-        @update:modelValue="emitFilters"
-      />
-
-      <!-- Clear -->
-      <div class="btn-clear-wrapper">
-        <button class="btn-clear" @click="clearFilters" aria-label="Borrar filtros">
-          <X :size="14" />
-        </button>
-        <span class="btn-tooltip">Borrar filtros</span>
-      </div>
 
       <div class="header-sep"></div>
 
-      <!-- Panel toggle -->
-      <div class="btn-clear-wrapper">
-        <button class="btn-panel" @click="emit('toggle-panel')" :aria-label="panelOpen ? 'Colapsar panel' : 'Expandir panel'">
+      <div class="btn-panel-wrapper">
+        <button
+          class="btn-panel"
+          @click="emit('toggle-panel')"
+          :aria-label="panelOpen ? 'Colapsar panel' : 'Expandir panel'"
+        >
           <PanelRightClose v-if="panelOpen" :size="15" />
           <PanelRightOpen  v-else            :size="15" />
         </button>
         <span class="btn-tooltip">{{ panelOpen ? 'Colapsar panel' : 'Expandir panel' }}</span>
       </div>
-
     </div>
+
   </header>
 </template>
 
 <style scoped>
-/* ── Header ── */
 .app-header {
   display: flex;
   align-items: center;
@@ -132,7 +71,6 @@ const clearFilters = () => {
   position: relative;
 }
 
-/* Shine sutil sobre el header */
 .app-header::before {
   content: '';
   position: absolute;
@@ -141,7 +79,6 @@ const clearFilters = () => {
   pointer-events: none;
 }
 
-/* ── Brand ── */
 .header-brand {
   display: flex;
   align-items: center;
@@ -150,16 +87,10 @@ const clearFilters = () => {
   position: relative;
 }
 
-.header-logo {
-  flex-shrink: 0;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.25));
-}
+.header-logo { flex-shrink: 0; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.25)); }
+.header-logo-img { height: 60px; width: auto; display: block; object-fit: contain; }
 
-.header-titles {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
+.header-titles { display: flex; flex-direction: column; gap: 3px; }
 
 .header-title {
   margin: 0;
@@ -181,7 +112,6 @@ const clearFilters = () => {
   letter-spacing: 0.03em;
 }
 
-/* ── Divider ── */
 .header-divider {
   width: 1px;
   height: 34px;
@@ -189,7 +119,6 @@ const clearFilters = () => {
   flex-shrink: 0;
 }
 
-/* ── Filters ── */
 .header-filters {
   display: flex;
   align-items: center;
@@ -198,116 +127,16 @@ const clearFilters = () => {
   position: relative;
 }
 
-/* ── Glass base (compartido) ── */
-.search-input {
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-}
-
-/* ── Search ── */
-.search-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.search-wrapper:hover {
-  transform: translateY(-1px);
-}
-
-.search-icon {
-  position: absolute;
-  left: 10px;
-  color: rgba(255, 255, 255, 0.45);
-  pointer-events: none;
-  transition: color 0.2s;
-  z-index: 1;
-}
-
-.search-wrapper:hover .search-icon,
-.search-wrapper:focus-within .search-icon {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.search-input {
-  padding: 7.5px 12px 7.5px 32px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 10px;
-  font-size: 13px;
-  font-family: 'Prompt', sans-serif;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
-  width: 162px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 4px 16px rgba(0, 0, 0, 0.12);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
-}
-
-.search-input:hover {
-  background: rgba(255, 255, 255, 0.13);
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-.search-input:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 0 0 3px rgba(255, 255, 255, 0.1),
-    0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-/* los estilos del trigger los maneja Selector.vue */
-
-/* ── Clear button ── */
-.btn-clear-wrapper {
-  position: relative;
-  display: inline-flex;
-}
-
-.btn-clear {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.65);
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-  outline: none;
-}
-
-.btn-clear:hover {
-  background: rgba(239, 68, 68, 0.18);
-  border-color: rgba(248, 113, 113, 0.5);
-  color: #fca5a5;
-}
-
-.btn-clear:active {
-  background: rgba(239, 68, 68, 0.28);
-  border-color: rgba(248, 113, 113, 0.7);
-}
-
-/* ── Panel toggle ── */
 .header-sep {
   width: 1px;
   height: 22px;
   background: rgba(255,255,255,0.18);
   flex-shrink: 0;
+}
+
+.btn-panel-wrapper {
+  position: relative;
+  display: inline-flex;
 }
 
 .btn-panel {
@@ -325,18 +154,13 @@ const clearFilters = () => {
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   outline: none;
 }
-
 .btn-panel:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.4);
   color: #ffffff;
 }
+.btn-panel:active { background: rgba(255, 255, 255, 0.2); }
 
-.btn-panel:active {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* Tooltip */
 .btn-tooltip {
   position: absolute;
   top: calc(100% + 7px);
@@ -354,7 +178,6 @@ const clearFilters = () => {
   transition: opacity 0.15s ease;
   z-index: 300;
 }
-
 .btn-tooltip::after {
   content: '';
   position: absolute;
@@ -364,8 +187,5 @@ const clearFilters = () => {
   border: 4px solid transparent;
   border-bottom-color: #1f2937;
 }
-
-.btn-clear-wrapper:hover .btn-tooltip {
-  opacity: 1;
-}
+.btn-panel-wrapper:hover .btn-tooltip { opacity: 1; }
 </style>
