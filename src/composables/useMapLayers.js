@@ -168,6 +168,12 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       return idx !== -1 ? SUBREGIONES_FIJAS[idx] : null
     }
 
+    function municipioFromPoint(pt) {
+      if (!geoMunicipios || !pt) return ''
+      const feat = geoMunicipios.features.find(m => pointInGeometry(pt, m.geometry))
+      return feat ? sentenceCase(feat.properties.MPIO_NOMBR ?? '') : ''
+    }
+
     function resolveSubregion(desc, geometry) {
       // 1. Campo subregión en la descripción
       const subKey = Object.keys(desc).find(k => /subregi/i.test(k))
@@ -211,10 +217,13 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         }
         const avanceRaw = parseFloat(get(/avance/i).replace('%', '').replace(',', '.')) || 0
 
+        const mpioFromDesc = sentenceCase(get(/municipio/i))
+        const municipio   = mpioFromDesc || municipioFromPoint(geoCentroid(f.geometry))
+
         viasDetalle.push({
           nombre:      f.properties.name ?? 'Sin nombre',
           codigo:      get(/c[oó]digo/i),
-          municipio:   sentenceCase(get(/municipio/i)),
+          municipio,
           subregion:   sub,
           km:          Math.round(km * 100) / 100,
           avance:      Math.round(avanceRaw * 10) / 10,
