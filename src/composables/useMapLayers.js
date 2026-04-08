@@ -74,12 +74,10 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
     // ── Emitir opciones para filtros ──────────────────────────────────────────
     const subregiones = geoMunicipios
-      ? [...new Set(geoMunicipios.features.map(f => sentenceCase(f.properties.subregion)).filter(Boolean))].sort()
+      ? [...new Set(geoMunicipios.features.map(f => sentenceCase(f.properties.SUBREGION)).filter(Boolean))].sort()
       : []
     const municipioOpts = geoMunicipios
-      ? [...new Set(geoMunicipios.features.map(f => sentenceCase(f.properties.mpio_nombr)).filter(Boolean))]
-          .filter(m => mpioNormSet.has(norm(m)))
-          .sort()
+      ? [...new Set(geoMunicipios.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))].sort()
       : []
     const circuitos = geoVias
       ? geoVias.features.map(f => f.properties.name).filter(Boolean).sort()
@@ -88,9 +86,9 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const municipiosPorSubregion = {}
     if (geoMunicipios) {
       for (const f of geoMunicipios.features) {
-        const sub  = sentenceCase(f.properties.subregion)
-        const mpio = sentenceCase(f.properties.mpio_nombr)
-        if (sub && mpio && mpioNormSet.has(norm(mpio))) {
+        const sub  = sentenceCase(f.properties.SUBREGION)
+        const mpio = sentenceCase(f.properties.MPIO_NOMBR)
+        if (sub && mpio) {
           if (!municipiosPorSubregion[sub]) municipiosPorSubregion[sub] = []
           if (!municipiosPorSubregion[sub].includes(mpio)) municipiosPorSubregion[sub].push(mpio)
         }
@@ -108,7 +106,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     // ── Emitir estadísticas ───────────────────────────────────────────────────
     const totalCircuitos   = geoVias?.features.length ?? 0
     const uniqueMunicipios = geoMunicipios
-      ? new Set(geoMunicipios.features.map(f => f.properties.mpio_nombr)).size : 0
+      ? new Set(geoMunicipios.features.map(f => f.properties.MPIO_NOMBR)).size : 0
 
     const SUBREGIONES_FIJAS = [
       'Valle de aburrá', 'Oriente', 'Occidente', 'Norte',
@@ -119,8 +117,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const municipioToSub = {}
     if (geoMunicipios) {
       for (const f of geoMunicipios.features) {
-        const mpio = f.properties.mpio_nombr
-        const sub  = f.properties.subregion
+        const mpio = f.properties.MPIO_NOMBR
+        const sub  = f.properties.SUBREGION
         if (mpio && sub) municipioToSub[norm(mpio)] = sentenceCase(sub)
       }
     }
@@ -163,7 +161,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       if (!geoMunicipios || !pt) return null
       const feat = geoMunicipios.features.find(m => pointInGeometry(pt, m.geometry))
       if (!feat) return null
-      const sub = sentenceCase(feat.properties.subregion ?? '')
+      const sub = sentenceCase(feat.properties.SUBREGION ?? '')
       const idx = subNorm.indexOf(norm(sub))
       return idx !== -1 ? SUBREGIONES_FIJAS[idx] : null
     }
@@ -270,7 +268,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           type: 'symbol',
           source: 'municipios',
           layout: {
-            'text-field': ['get', 'mpio_nombr'],
+            'text-field': ['get', 'MPIO_NOMBR'],
             'text-size': ['interpolate', ['linear'], ['zoom'], 7, 9, 10, 13],
             'text-anchor': 'center',
             'text-max-width': 8,
@@ -291,7 +289,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             map.setFeatureState({ source: 'municipios', id: hoveredMpio }, { hover: false })
           hoveredMpio = e.features[0].id
           map.setFeatureState({ source: 'municipios', id: hoveredMpio }, { hover: true })
-          const name  = e.features[0].properties.mpio_nombr ?? ''
+          const name  = e.features[0].properties.MPIO_NOMBR ?? ''
           const point = e.point
           hoverLabel.value = { name: capitalize(name), x: point.x, y: point.y, visible: true }
         })
