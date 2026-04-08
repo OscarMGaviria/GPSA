@@ -35,22 +35,28 @@ export const useMapStore = defineStore('map', () => {
     return ['Todos los municipios', ...lista]
   })
 
+  // Normaliza texto para comparar sin acentos ni mayúsculas
+  const norm = s => s?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() ?? ''
+
   const filteredStats = computed(() => {
     const { subregion, municipio, circuito, search } = activeFilters.value
     const hasSub  = subregion && subregion !== 'Todas las subregiones'
     const hasMpio = municipio && municipio !== 'Todos los municipios'
     const hasCir  = circuito  && circuito  !== 'Todos los circuitos'
-    const q       = search?.trim().toLowerCase()
+    const q       = search ? norm(search) : ''
 
     if (!hasSub && !hasMpio && !hasCir && !q) return mapStats.value
 
+    const normSub  = norm(subregion)
+    const normMpio = norm(municipio)
+
     const vias = mapStats.value.viasDetalle.filter(v => {
-      if (hasSub  && v.subregion?.toLowerCase() !== subregion.toLowerCase()) return false
-      if (hasMpio && v.municipio?.toLowerCase() !== municipio.toLowerCase()) return false
+      if (hasSub  && norm(v.subregion) !== normSub)  return false
+      if (hasMpio && norm(v.municipio) !== normMpio)  return false
       if (hasCir  && v.nombre !== circuito) return false
-      if (q && !v.nombre?.toLowerCase().includes(q)
-            && !v.municipio?.toLowerCase().includes(q)
-            && !v.subregion?.toLowerCase().includes(q)) return false
+      if (q && !norm(v.nombre).includes(q)
+            && !norm(v.municipio).includes(q)
+            && !norm(v.subregion).includes(q)) return false
       return true
     })
 
