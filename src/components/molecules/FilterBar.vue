@@ -4,9 +4,10 @@ import { Search, X } from 'lucide-vue-next'
 import Selector from '../atoms/Selector.vue'
 
 const props = defineProps({
-  subregionOptions: { type: Array, default: () => ['Todas las subregiones'] },
-  municipioOptions: { type: Array, default: () => ['Todos los municipios'] },
-  circuitoOptions:  { type: Array, default: () => ['Todos los circuitos'] },
+  subregionOptions: { type: Array,  default: () => ['Todas las subregiones'] },
+  municipioOptions: { type: Array,  default: () => ['Todos los municipios'] },
+  circuitoOptions:  { type: Array,  default: () => ['Todos los circuitos'] },
+  activeFilters:    { type: Object, default: null },
 })
 
 const emit = defineEmits(['filter-change'])
@@ -15,6 +16,15 @@ const searchText   = ref('')
 const subregionVal = ref(props.subregionOptions[0])
 const municipioVal = ref(props.municipioOptions[0])
 const circuitoVal  = ref(props.circuitoOptions[0])
+
+// Sincronizar estado local cuando los filtros cambian externamente (ej: click en gráfica)
+watch(() => props.activeFilters, (f) => {
+  if (!f) return
+  searchText.value   = f.search    ?? ''
+  subregionVal.value = f.subregion ?? props.subregionOptions[0]
+  municipioVal.value = f.municipio ?? props.municipioOptions[0]
+  circuitoVal.value  = f.circuito  ?? props.circuitoOptions[0]
+}, { deep: true })
 
 watch(subregionVal, () => {
   municipioVal.value = props.municipioOptions[0]

@@ -9,6 +9,7 @@ const props = defineProps({
   municipioOptions: { type: Array,   default: () => ['Todos los municipios'] },
   circuitoOptions:  { type: Array,   default: () => ['Todos los circuitos'] },
   panelOpen:        { type: Boolean, default: true },
+  activeFilters:    { type: Object,  default: null },
 })
 
 const emit = defineEmits(['filter-change', 'toggle-panel'])
@@ -36,6 +37,7 @@ const emit = defineEmits(['filter-change', 'toggle-panel'])
         :subregion-options="subregionOptions"
         :municipio-options="municipioOptions"
         :circuito-options="circuitoOptions"
+        :active-filters="activeFilters"
         @filter-change="emit('filter-change', $event)"
       />
 

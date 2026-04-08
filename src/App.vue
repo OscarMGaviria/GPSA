@@ -45,6 +45,7 @@ watch(activeFilters, (f) => {
       :subregion-options="filterOptions.subregiones"
       :municipio-options="filteredMunicipioOptions"
       :circuito-options="filterOptions.circuitos"
+      :active-filters="activeFilters"
     />
     <div class="content-area">
       <MapView />
@@ -58,7 +59,7 @@ watch(activeFilters, (f) => {
         :subregiones="mapStats.subregiones"
         :vias-detalle="filteredStats.viasDetalle"
         :active-subregion="activeChartSubregion"
-        @filter-subregion="sub => store.setFilter({ ...activeFilters, subregion: sub, municipio: 'Todos los municipios' })"
+        @filter-subregion="sub => store.setFilter({ search: '', subregion: sub, municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })"
       />
     </div>
   </div>
