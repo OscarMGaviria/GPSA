@@ -67,12 +67,7 @@ export const useMapStore = defineStore('map', () => {
       municipios:       new Set(vias.map(v => v.municipio).filter(Boolean)).size,
       circuitos:        new Set(vias.map(v => v.nombre).filter(Boolean)).size,
       viasDetalle:      vias,
-      subregiones:      mapStats.value.subregiones
-        .map(s => {
-          const km = Math.round((kmPorSub[s.name] ?? 0) * 100) / 100
-          return { name: s.name, km, pct: Math.round((km / totalKm) * 100) }
-        })
-        .filter(s => s.km > 0),
+      subregiones:      mapStats.value.subregiones,
     }
   })
 

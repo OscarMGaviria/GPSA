@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppHeader  from './components/organisms/AppHeader.vue'
 import MapView    from './components/organisms/MapView.vue'
@@ -9,6 +9,20 @@ import { useMapStore } from './stores/useMapStore.js'
 const store = useMapStore()
 const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions } = storeToRefs(store)
 const isPanelOpen = ref(true)
+
+// Subregión activa en la gráfica: la seleccionada explícitamente,
+// o la que corresponde al municipio seleccionado (inferida del mapa municipiosPorSubregion)
+const activeChartSubregion = computed(() => {
+  const sub = activeFilters.value.subregion
+  if (sub && sub !== 'Todas las subregiones') return sub
+  const mpio = activeFilters.value.municipio
+  if (!mpio || mpio === 'Todos los municipios') return ''
+  const mpioMap = filterOptions.value.municipiosPorSubregion
+  for (const [subName, mpios] of Object.entries(mpioMap)) {
+    if (mpios.some(m => m.toLowerCase() === mpio.toLowerCase())) return subName
+  }
+  return ''
+})
 
 // Sincronizar URL al cambiar filtros
 watch(activeFilters, (f) => {
@@ -41,9 +55,9 @@ watch(activeFilters, (f) => {
         :longitud-total="filteredStats.longitudTotal"
         :municipios="filteredStats.municipios"
         :circuitos="filteredStats.circuitos"
-        :subregiones="filteredStats.subregiones"
+        :subregiones="mapStats.subregiones"
         :vias-detalle="filteredStats.viasDetalle"
-        :active-subregion="activeFilters.subregion"
+        :active-subregion="activeChartSubregion"
         @filter-subregion="sub => store.setFilter({ ...activeFilters, subregion: sub, municipio: 'Todos los municipios' })"
       />
     </div>
