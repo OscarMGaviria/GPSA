@@ -56,9 +56,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
       />
     </div>
 
-    <Selector v-model="subregionVal" :options="subregionOptions" @update:modelValue="emitFilters" />
-    <Selector v-model="municipioVal" :options="municipioOptions" @update:modelValue="emitFilters" />
-    <Selector v-model="circuitoVal"  :options="circuitoOptions"  @update:modelValue="emitFilters" />
+    <Selector v-model="subregionVal" :options="subregionOptions" @update:modelValue="emitFilters" align="right" />
+    <Selector v-model="municipioVal" :options="municipioOptions" @update:modelValue="emitFilters" align="right" />
+    <Selector v-model="circuitoVal"  :options="circuitoOptions"  @update:modelValue="emitFilters" align="right" />
 
     <div class="btn-clear-wrapper">
       <button class="btn-clear" @click="clearFilters" aria-label="Borrar filtros">

@@ -5,7 +5,6 @@ import { BASEMAPS } from '../../composables/useMapInit.js'
 import { useMapOrchestrator } from '../../composables/useMapOrchestrator.js'
 import { useMapStore } from '../../stores/useMapStore.js'
 import ViaDetailModal from './ViaDetailModal.vue'
-import MapSearch from '../molecules/MapSearch.vue'
 
 const store = useMapStore()
 const mapContainer = ref(null)
@@ -125,10 +124,7 @@ const {
       </div>
     </Transition>
 
-    <!-- Buscador flotante de vías -->
-    <MapSearch @open-via="openVia" />
-
-    <!-- Toast: sin resultados -->
+<!-- Toast: sin resultados -->
     <Transition name="loader-fade">
       <div v-if="noResults" class="no-results-toast">
         <svg viewBox="0 0 20 20" fill="currentColor" class="nr-icon">

@@ -69,6 +69,8 @@ const emit = defineEmits(['filter-change', 'toggle-panel'])
   background: linear-gradient(135deg, #0b5640 0%, #0d6b4e 60%, #0a4d38 100%);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
   position: relative;
+  z-index: 100;
+  overflow: visible;
 }
 
 .app-header::before {

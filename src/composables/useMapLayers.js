@@ -59,16 +59,18 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     // Normaliza texto para comparar sin acentos ni mayúsculas
     const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 
+    // Pre-parsear descripciones una sola vez para evitar doble trabajo
+    const parsedDescs = geoVias
+      ? geoVias.features.map(f => parseDescription(f.properties.description ?? ''))
+      : []
+
     // Municipios que tienen al menos una vía registrada
     const mpioNormSet = new Set()
-    if (geoVias) {
-      for (const f of geoVias.features) {
-        const desc    = parseDescription(f.properties.description ?? '')
-        const mpioKey = Object.keys(desc).find(k => /municipio/i.test(k))
-        if (mpioKey) {
-          const mpio = String(desc[mpioKey]).trim()
-          if (mpio) mpioNormSet.add(norm(mpio))
-        }
+    for (const desc of parsedDescs) {
+      const mpioKey = Object.keys(desc).find(k => /municipio/i.test(k))
+      if (mpioKey) {
+        const mpio = String(desc[mpioKey]).trim()
+        if (mpio) mpioNormSet.add(norm(mpio))
       }
     }
 
@@ -191,9 +193,10 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const viasDetalle    = []
 
     if (geoVias) {
-      for (const f of geoVias.features) {
-        const desc = parseDescription(f.properties.description ?? '')
-        const km   = calcGeomKm(f.geometry) || extractKm(desc) || 0
+      for (let fi = 0; fi < geoVias.features.length; fi++) {
+        const f    = geoVias.features[fi]
+        const desc = parsedDescs[fi]   // reusar descripción ya parseada
+        const km   = extractKm(desc) || calcGeomKm(f.geometry) || 0  // texto primero (barato), Haversine como fallback
         const sub  = resolveSubregion(desc, f.geometry) ?? 'Sin subregión'
 
         if (km) {

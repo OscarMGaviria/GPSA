@@ -7,7 +7,7 @@ import StatsPanel from './components/organisms/StatsPanel.vue'
 import { useMapStore } from './stores/useMapStore.js'
 
 const store = useMapStore()
-const { activeFilters, filterOptions, mapStats, mapLoading, filteredMunicipioOptions } = storeToRefs(store)
+const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions } = storeToRefs(store)
 const isPanelOpen = ref(true)
 
 // Sincronizar URL al cambiar filtros
@@ -37,12 +37,12 @@ watch(activeFilters, (f) => {
       <StatsPanel
         :is-open="isPanelOpen"
         :loading="mapLoading"
-        :vias-intervenidas="mapStats.viasIntervenidas"
-        :longitud-total="mapStats.longitudTotal"
-        :municipios="mapStats.municipios"
-        :circuitos="mapStats.circuitos"
-        :subregiones="mapStats.subregiones"
-        :vias-detalle="mapStats.viasDetalle"
+        :vias-intervenidas="filteredStats.viasIntervenidas"
+        :longitud-total="filteredStats.longitudTotal"
+        :municipios="filteredStats.municipios"
+        :circuitos="filteredStats.circuitos"
+        :subregiones="filteredStats.subregiones"
+        :vias-detalle="filteredStats.viasDetalle"
         :active-subregion="activeFilters.subregion"
         @filter-subregion="sub => store.setFilter({ ...activeFilters, subregion: sub, municipio: 'Todos los municipios' })"
       />

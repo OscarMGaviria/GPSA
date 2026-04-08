@@ -134,7 +134,11 @@ function shortLabel(name) {
   return ABREVIATURAS[key] ?? name
 }
 
-const maxKm = computed(() => Math.max(...props.subregiones.map(s => s.km), 1))
+const subregionesFiltradas = computed(() =>
+  props.subregiones.filter(s => s.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') !== 'valle de aburra')
+)
+
+const maxKm = computed(() => Math.max(...subregionesFiltradas.value.map(s => s.km), 1))
 
 function toggleSubregion(name) {
   const next = props.activeSubregion === name ? 'Todas las subregiones' : name
@@ -261,7 +265,7 @@ const yTicks = computed(() => {
             </div>
 
             <div
-              v-for="(s, i) in subregiones"
+              v-for="(s, i) in subregionesFiltradas"
               :key="s.name"
               class="bar-col"
               :class="{ 'bar-col--active': activeSubregion === s.name, 'bar-col--dimmed': activeSubregion && activeSubregion !== s.name }"

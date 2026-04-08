@@ -3,23 +3,12 @@ const ENDPOINTS = {
   municipios:     import.meta.env.VITE_API_MUNICIPIOS,
 }
 
-const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 horas
+// Caché en memoria: evita re-descargar y re-parsear en la misma sesión
+// (no tiene límite de tamaño como localStorage y es instantáneo)
+const _memCache = {}
 
-function cacheKey(url) { return `simeva_cache_${url}` }
-
-function readCache(url) {
-  try {
-    const raw = localStorage.getItem(cacheKey(url))
-    if (!raw) return null
-    const { data, ts } = JSON.parse(raw)
-    if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem(cacheKey(url)); return null }
-    return data
-  } catch { return null }
-}
-
-function writeCache(url, data) {
-  try { localStorage.setItem(cacheKey(url), JSON.stringify({ data, ts: Date.now() })) } catch { /* storage lleno */ }
-}
+function readCache(url)        { return _memCache[url] ?? null }
+function writeCache(url, data) { _memCache[url] = data }
 
 async function fetchGeoJSON(url) {
   let text
