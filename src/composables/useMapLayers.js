@@ -76,7 +76,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
     // ── Emitir opciones para filtros ──────────────────────────────────────────
     const subregiones = geoMunicipios
-      ? [...new Set(geoMunicipios.features.map(f => sentenceCase(f.properties.SUBREGION)).filter(Boolean))].sort()
+      ? [...new Set(geoMunicipios.features.map(f => canonicalSub(f.properties.SUBREGION)).filter(Boolean))].sort()
       : []
     const municipioOpts = geoMunicipios
       ? [...new Set(geoMunicipios.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))].sort()
@@ -88,7 +88,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const municipiosPorSubregion = {}
     if (geoMunicipios) {
       for (const f of geoMunicipios.features) {
-        const sub  = sentenceCase(f.properties.SUBREGION)
+        const sub  = canonicalSub(f.properties.SUBREGION)
         const mpio = sentenceCase(f.properties.MPIO_NOMBR)
         if (sub && mpio) {
           if (!municipiosPorSubregion[sub]) municipiosPorSubregion[sub] = []
@@ -115,18 +115,24 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       'Nordeste', 'Urabá', 'Bajo cauca', 'Magdalena medio', 'Suroeste',
     ]
 
-    // Lookup municipio → subregión desde geoMunicipios
+    // Mapa normalizado de subregiones fijas para match robusto
+    const subNorm = SUBREGIONES_FIJAS.map(norm)
+
+    // Función para obtener el nombre canónico (con tilde) desde cualquier variante
+    function canonicalSub(raw) {
+      const idx = subNorm.indexOf(norm(sentenceCase(raw ?? '')))
+      return idx !== -1 ? SUBREGIONES_FIJAS[idx] : sentenceCase(raw ?? '')
+    }
+
+    // Lookup municipio → subregión desde geoMunicipios (usando nombres canónicos)
     const municipioToSub = {}
     if (geoMunicipios) {
       for (const f of geoMunicipios.features) {
         const mpio = f.properties.MPIO_NOMBR
         const sub  = f.properties.SUBREGION
-        if (mpio && sub) municipioToSub[norm(mpio)] = sentenceCase(sub)
+        if (mpio && sub) municipioToSub[norm(mpio)] = canonicalSub(sub)
       }
     }
-
-    // Mapa normalizado de subregiones fijas para match robusto
-    const subNorm = SUBREGIONES_FIJAS.map(norm)
 
     // ── Helpers espaciales ────────────────────────────────────────────────────
     function pointInRing(pt, ring) {

@@ -2,6 +2,8 @@ import { ref, watch } from 'vue'
 import maplibregl from 'maplibre-gl'
 import { useMapStore } from '../stores/useMapStore.js'
 
+const normUp = s => (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+
 export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias, center, zoom, refreshVisibleCallouts } = {}) {
   const store = useMapStore()
   const selectedSubregion = ref('')
@@ -71,7 +73,7 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     if (map.getLayer('municipios-fill')) {
       const mpioFilter = ['all']
       if (sub  && sub  !== 'Todas las subregiones')
-        mpioFilter.push(['==', ['upcase', ['get', 'SUBREGION']], sub.toUpperCase()])
+        mpioFilter.push(['==', ['upcase', ['get', 'SUBREGION']], normUp(sub)])
       if (mpio && mpio !== 'Todos los municipios')
         mpioFilter.push(['==', ['upcase', ['get', 'MPIO_NOMBR']], mpio.toUpperCase()])
       // Búsqueda de texto también filtra municipios por nombre
@@ -115,7 +117,7 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
       if (hasMpio) {
         feats = feats.filter(f => f.properties.MPIO_NOMBR?.toUpperCase() === mpio.toUpperCase())
       } else if (hasSub) {
-        feats = feats.filter(f => f.properties.SUBREGION?.toUpperCase() === sub.toUpperCase())
+        feats = feats.filter(f => normUp(f.properties.SUBREGION) === normUp(sub))
       } else if (hasCir && cachedVias.value) {
         const via = cachedVias.value.features.find(f => f.properties.name === circuito)
         if (via) flyToGeometries([via.geometry], { padding: 100 })
