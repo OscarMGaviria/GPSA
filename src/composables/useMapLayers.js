@@ -75,6 +75,20 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       }
     }
 
+    const SUBREGIONES_FIJAS = [
+      'Valle de aburrá', 'Oriente', 'Occidente', 'Norte',
+      'Nordeste', 'Urabá', 'Bajo cauca', 'Magdalena medio', 'Suroeste',
+    ]
+
+    // Mapa normalizado de subregiones fijas para match robusto
+    const subNorm = SUBREGIONES_FIJAS.map(norm)
+
+    // Función para obtener el nombre canónico (con tilde) desde cualquier variante
+    function canonicalSub(raw) {
+      const idx = subNorm.indexOf(norm(sentenceCase(raw ?? '')))
+      return idx !== -1 ? SUBREGIONES_FIJAS[idx] : sentenceCase(raw ?? '')
+    }
+
     // ── Emitir opciones para filtros ──────────────────────────────────────────
     const subregiones = geoMunicipios
       ? [...new Set(geoMunicipios.features.map(f => canonicalSub(f.properties.SUBREGION)).filter(Boolean))].sort()
@@ -110,20 +124,6 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const totalCircuitos   = geoVias?.features.length ?? 0
     const uniqueMunicipios = geoMunicipios
       ? new Set(geoMunicipios.features.map(f => f.properties.MPIO_NOMBR)).size : 0
-
-    const SUBREGIONES_FIJAS = [
-      'Valle de aburrá', 'Oriente', 'Occidente', 'Norte',
-      'Nordeste', 'Urabá', 'Bajo cauca', 'Magdalena medio', 'Suroeste',
-    ]
-
-    // Mapa normalizado de subregiones fijas para match robusto
-    const subNorm = SUBREGIONES_FIJAS.map(norm)
-
-    // Función para obtener el nombre canónico (con tilde) desde cualquier variante
-    function canonicalSub(raw) {
-      const idx = subNorm.indexOf(norm(sentenceCase(raw ?? '')))
-      return idx !== -1 ? SUBREGIONES_FIJAS[idx] : sentenceCase(raw ?? '')
-    }
 
     // Lookup municipio → subregión desde geoMunicipios (usando nombres canónicos)
     const municipioToSub = {}
