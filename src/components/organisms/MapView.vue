@@ -79,17 +79,8 @@ const {
       <img src="/A toda maquina.png" alt="A Toda Máquina" />
     </div>
 
-    <!-- Tooltip hover municipio -->
-    <Transition name="tooltip">
-      <div
-        v-if="hoverLabel.visible"
-        class="mpio-tooltip"
-        :style="{ left: hoverLabel.x + 'px', top: hoverLabel.y + 'px' }"
-      >{{ hoverLabel.name }}</div>
-    </Transition>
-
     <!-- Tooltip hover vía -->
-    <Transition name="tooltip">
+    <Transition name="via-tip">
       <div
         v-if="viaHoverLabel.visible"
         class="via-tooltip"
@@ -470,70 +461,57 @@ const {
   background: #f9fafb;
 }
 
-/* ── Tooltip hover municipio ── */
-.mpio-tooltip {
-  position: absolute;
-  z-index: 30;
-  pointer-events: none;
-  transform: translate(-50%, calc(-100% - 10px));
-  background: #0b5640;
-  color: #fff;
-  font-family: 'Prompt', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
-  white-space: nowrap;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-}
-.mpio-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: #0b5640;
-}
-.tooltip-enter-active, .tooltip-leave-active {
-  transition: opacity .12s ease, transform .12s ease;
-}
-.tooltip-enter-from, .tooltip-leave-to {
-  opacity: 0;
-  transform: translate(-50%, calc(-100% - 6px));
-}
-
 /* ── Tooltip hover vía ── */
 .via-tooltip {
   position: absolute;
   z-index: 30;
   pointer-events: none;
-  transform: translate(-50%, calc(-100% - 14px));
-  background: #ffffff;
-  border: 1px solid #d1e9d8;
-  border-left: 3px solid #0b5640;
+  transform: translate(-50%, calc(-100% - 12px));
+  background: #0b5640;
+  color: #fff;
+  font-family: 'Prompt', sans-serif;
   border-radius: 8px;
-  padding: 6px 12px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  padding: 6px 12px 7px;
   white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+.via-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #0b5640;
+}
 .vt-name {
-  font-family: 'Prompt', sans-serif;
   font-size: 12px;
   font-weight: 700;
-  color: #0b5640;
   line-height: 1.3;
-  max-width: 220px;
+  max-width: 240px;
   white-space: normal;
 }
 .vt-km {
-  font-family: 'Prompt', sans-serif;
   font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+}
+.via-tip-enter-active {
+  transition: opacity .15s ease, transform .15s cubic-bezier(.34,1.56,.64,1);
+}
+.via-tip-leave-active {
+  transition: opacity .1s ease, transform .1s ease;
+}
+.via-tip-enter-from {
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 6px)) scale(0.88);
+}
+.via-tip-leave-to {
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 8px));
 }
 
 /* ── Letreros verticales ── */
