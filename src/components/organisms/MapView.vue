@@ -11,10 +11,9 @@ const mapContainer = ref(null)
 
 const {
   activeBasemap, switcherOpen, terrainActive, switchBasemap, toggleTerrain,
-  loading, loadError, fromCache, hoverLabel, loadSimeva,
+  loading, loadError, fromCache, hoverLabel, viaHoverLabel, loadSimeva,
   selectedVia,
   selectedSubregion, selectedMunicipio,
-  visibleCallouts,
   noResults,
   openVia,
 } = useMapOrchestrator(mapContainer, () => store.activeFilters)
@@ -61,34 +60,6 @@ const {
       </div>
     </Transition>
 
-    <!-- ── Callout overlay: líneas + labels por circuito (solo con filtro activo) ── -->
-    <svg v-if="visibleCallouts.length" class="callout-svg" aria-hidden="true">
-      <g v-for="c in visibleCallouts" :key="c.name + '-line'">
-        <line
-          :x1="c.lineEndX" :y1="c.lineEndY"
-          :x2="c.screenX"  :y2="c.screenY"
-          class="co-line"
-        />
-        <circle :cx="c.screenX" :cy="c.screenY" r="5" class="co-dot" />
-        <circle :cx="c.screenX" :cy="c.screenY" r="3" class="co-dot-inner" />
-      </g>
-    </svg>
-
-    <template v-if="visibleCallouts.length">
-      <div
-        v-for="c in visibleCallouts"
-        :key="c.name + '-label'"
-        class="callout-label"
-        :style="{ left: c.labelX + 'px', top: c.labelY + 'px' }"
-      >
-        <div class="co-name">{{ c.name }}</div>
-        <div class="co-km">
-          <span class="co-km-val">{{ c.km != null ? c.km.toLocaleString('es-CO') : '—' }}</span>
-          <span class="co-km-unit"> Km</span>
-        </div>
-      </div>
-    </template>
-
     <!-- Letreros verticales (izquierda): subregión + municipio juntos -->
     <div v-if="selectedSubregion || selectedMunicipio" class="subreg-group">
       <Transition name="subreg">
@@ -115,6 +86,20 @@ const {
         class="mpio-tooltip"
         :style="{ left: hoverLabel.x + 'px', top: hoverLabel.y + 'px' }"
       >{{ hoverLabel.name }}</div>
+    </Transition>
+
+    <!-- Tooltip hover vía -->
+    <Transition name="tooltip">
+      <div
+        v-if="viaHoverLabel.visible"
+        class="via-tooltip"
+        :style="{ left: viaHoverLabel.x + 'px', top: viaHoverLabel.y + 'px' }"
+      >
+        <div class="vt-name">{{ viaHoverLabel.name }}</div>
+        <div v-if="viaHoverLabel.km != null" class="vt-km">
+          {{ viaHoverLabel.km.toLocaleString('es-CO') }} km
+        </div>
+      </div>
     </Transition>
 
     <!-- Banner de datos desde caché (offline) -->
@@ -485,70 +470,6 @@ const {
   background: #f9fafb;
 }
 
-/* ── Callout overlay ── */
-.callout-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 15;
-  overflow: visible;
-}
-.co-line {
-  stroke: #0b5640;
-  stroke-width: 1.5;
-  stroke-dasharray: 5 4;
-  opacity: 0.75;
-}
-.co-dot {
-  fill: #ffffff;
-  stroke: #0b5640;
-  stroke-width: 2;
-}
-.co-dot-inner { fill: #0b5640; }
-
-.callout-label {
-  position: absolute;
-  z-index: 16;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-width: 120px;
-  max-width: 175px;
-}
-.co-name {
-  font-family: 'Prompt', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  color: #1a3c2d;
-  line-height: 1.25;
-}
-.co-km {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 1px;
-  background: #0b5640;
-  border-radius: 6px;
-  padding: 2px 10px 2px 8px;
-}
-.co-km-val {
-  font-family: 'Prompt', sans-serif;
-  font-size: 18px;
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1;
-}
-.co-km-unit {
-  font-family: 'Prompt', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.85);
-}
-
 /* ── Tooltip hover municipio ── */
 .mpio-tooltip {
   position: absolute;
@@ -580,6 +501,39 @@ const {
 .tooltip-enter-from, .tooltip-leave-to {
   opacity: 0;
   transform: translate(-50%, calc(-100% - 6px));
+}
+
+/* ── Tooltip hover vía ── */
+.via-tooltip {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 14px));
+  background: #ffffff;
+  border: 1px solid #d1e9d8;
+  border-left: 3px solid #0b5640;
+  border-radius: 8px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.vt-name {
+  font-family: 'Prompt', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0b5640;
+  line-height: 1.3;
+  max-width: 220px;
+  white-space: normal;
+}
+.vt-km {
+  font-family: 'Prompt', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
 }
 
 /* ── Letreros verticales ── */

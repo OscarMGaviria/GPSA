@@ -17,6 +17,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
   const loadError        = ref(false)
   const fromCache        = ref(false)
   const hoverLabel       = ref({ name: '', x: 0, y: 0, visible: false })
+  const viaHoverLabel    = ref({ name: '', km: null, x: 0, y: 0, visible: false })
   const selectedVia      = ref(null)
   const cachedMunicipios = ref(null)
   const cachedVias       = ref(null)
@@ -360,8 +361,25 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             geometry:    feat?.geometry ?? null,
           }
         })
-        map.on('mouseenter', 'vias-line', () => { map.getCanvas().style.cursor = 'pointer' })
-        map.on('mouseleave', 'vias-line', () => { map.getCanvas().style.cursor = '' })
+        // Mapa nombre → km para el tooltip
+        const viaKmMap = {}
+        for (const v of viasDetalle) viaKmMap[v.nombre] = v.km
+
+        map.on('mousemove', 'vias-line', (e) => {
+          map.getCanvas().style.cursor = 'pointer'
+          const name = e.features[0].properties.name ?? ''
+          viaHoverLabel.value = {
+            name,
+            km: viaKmMap[name] ?? null,
+            x: e.point.x,
+            y: e.point.y,
+            visible: true,
+          }
+        })
+        map.on('mouseleave', 'vias-line', () => {
+          map.getCanvas().style.cursor = ''
+          viaHoverLabel.value = { ...viaHoverLabel.value, visible: false }
+        })
 
         buildCallouts?.(geoVias.features)
         map.on('move',   updateCalloutPositions)
@@ -374,5 +392,5 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     loading.value = false
   }
 
-  return { loading, loadError, fromCache, hoverLabel, selectedVia, cachedMunicipios, cachedVias, loadSimeva }
+  return { loading, loadError, fromCache, hoverLabel, viaHoverLabel, selectedVia, cachedMunicipios, cachedVias, loadSimeva }
 }
