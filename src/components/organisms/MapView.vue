@@ -47,19 +47,6 @@ const {
       </div>
     </Transition>
 
-    <!-- Loading overlay -->
-    <Transition name="loader-fade">
-      <div v-if="loading" class="map-loader">
-        <div class="loader-ring">
-          <svg viewBox="0 0 50 50" class="loader-svg">
-            <circle class="loader-track" cx="25" cy="25" r="20" />
-            <circle class="loader-arc"   cx="25" cy="25" r="20" />
-          </svg>
-        </div>
-        <span class="loader-text">Cargando datos…</span>
-      </div>
-    </Transition>
-
     <!-- Letreros verticales (izquierda): subregión + municipio juntos -->
     <div v-if="selectedSubregion || selectedMunicipio" class="subreg-group">
       <Transition name="subreg">
@@ -629,72 +616,4 @@ const {
 .error-retry:hover  { background: #2d8653; transform: translateY(-1px); }
 .error-retry:active { transform: translateY(0); }
 
-/* ── Loading overlay ──────────────────────────────────────────────────────── */
-.map-loader {
-  position: absolute;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: rgba(234, 244, 237, 0.82);
-  backdrop-filter: blur(6px);
-}
-
-.loader-ring {
-  width: 56px;
-  height: 56px;
-  filter: drop-shadow(0 4px 10px rgba(26, 92, 58, 0.3));
-}
-
-.loader-svg {
-  width: 100%;
-  height: 100%;
-  animation: spin 1.4s linear infinite;
-}
-
-.loader-track {
-  fill: none;
-  stroke: #c8e6d4;
-  stroke-width: 4;
-}
-
-.loader-arc {
-  fill: none;
-  stroke: #1a5c3a;
-  stroke-width: 4;
-  stroke-linecap: round;
-  stroke-dasharray: 80 45;
-  animation: dash 1.4s ease-in-out infinite;
-}
-
-.loader-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a5c3a;
-  letter-spacing: 0.3px;
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes dash {
-  0%   { stroke-dashoffset: 0; }
-  50%  { stroke-dashoffset: -50; }
-  100% { stroke-dashoffset: -125; }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
-}
-
-.loader-fade-enter-active { transition: opacity .3s ease; }
-.loader-fade-leave-active { transition: opacity .5s ease; }
-.loader-fade-enter-from,
-.loader-fade-leave-to     { opacity: 0; }
 </style>

@@ -275,7 +275,6 @@ const yTicks = computed(() => {
               :title="activeSubregion === s.name ? `Quitar filtro: ${s.name}` : `Filtrar por ${s.name}`"
             >
               <div class="bar-outer">
-                <span v-if="s.km > 0" class="bar-badge">{{ s.km }} km</span>
                 <div
                   class="bar-fill"
                   :class="{ 'bar-fill--empty': s.km === 0 }"

@@ -106,9 +106,9 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
     if (geoVias) {
       for (const f of geoVias.features) {
-        const p   = f.properties
-        const km  = parseFloat(p.long_km) || 0
-        const sub = canonicalSub(p.SUBREGION) ?? 'Sin subregión'
+        const p    = f.properties
+        const km   = parseFloat(p.long_km) || 0
+        const sub  = canonicalSub(p.SUBREGION) ?? 'Sin subregión'
         const mpio = sentenceCase(p.MPIO_NOMBR ?? '')
 
         longitudTotal += km
@@ -226,30 +226,51 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             'line-opacity': 1,
           },
         })
-        // Capa de glow al hacer hover — se dibuja encima
+        // Capa de dash animado al hacer hover
         map.addLayer({
-          id: 'vias-hover-glow',
+          id: 'vias-hover-dash',
           type: 'line',
           source: 'vias',
-          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          layout: { 'line-cap': 'butt', 'line-join': 'round' },
+          filter: ['==', 'NOMBRE_VIA', ''],   // oculta hasta que haya hover
           paint: {
-            'line-color': '#ffffff',
-            'line-width': 14,
-            'line-blur':  8,
-            'line-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.55, 0],
+            'line-color':     '#ffff00',
+            'line-width':     6,
+            'line-opacity':   0.9,
+            'line-dasharray': [0, 4, 3],
           },
         })
-        map.addLayer({
-          id: 'vias-hover-line',
-          type: 'line',
-          source: 'vias',
-          layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: {
-            'line-color': '#ffffff',
-            'line-width': 7,
-            'line-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.9, 0],
-          },
-        })
+
+        // Secuencia de dasharray para simular movimiento (marching ants)
+        const DASH_SEQ = [
+          [0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5],
+          [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
+          [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5],
+          [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1],
+          [0, 3.5, 3, 0.5], [0, 4, 3, 0],
+        ]
+        let dashStep = 0
+        let dashRaf  = null
+        let lastDashTime = 0
+
+        function animateDash(ts) {
+          if (ts - lastDashTime > 60) {   // ~16 fps
+            dashStep = (dashStep + 1) % DASH_SEQ.length
+            map.setPaintProperty('vias-hover-dash', 'line-dasharray', DASH_SEQ[dashStep])
+            lastDashTime = ts
+          }
+          dashRaf = requestAnimationFrame(animateDash)
+        }
+
+        function startDash(nombreVia) {
+          map.setFilter('vias-hover-dash', ['==', ['get', 'NOMBRE_VIA'], nombreVia])
+          if (!dashRaf) dashRaf = requestAnimationFrame(animateDash)
+        }
+
+        function stopDash() {
+          map.setFilter('vias-hover-dash', ['==', 'NOMBRE_VIA', ''])
+          if (dashRaf) { cancelAnimationFrame(dashRaf); dashRaf = null }
+        }
 
         // Mapa NOMBRE_VIA → km para el tooltip
         const viaKmMap = {}
@@ -279,18 +300,16 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
         map.on('mousemove', 'vias-line', (e) => {
           map.getCanvas().style.cursor = 'pointer'
-          const feat = e.features[0]
-          const name = feat.properties.NOMBRE_VIA ?? ''
-          if (hoveredVia !== null && hoveredVia !== feat.id)
-            map.setFeatureState({ source: 'vias', id: hoveredVia }, { hover: false })
-          hoveredVia = feat.id
-          map.setFeatureState({ source: 'vias', id: hoveredVia }, { hover: true })
+          const name = e.features[0].properties.NOMBRE_VIA ?? ''
+          if (name !== hoveredVia) {
+            startDash(name)
+            hoveredVia = name
+          }
           viaHoverLabel.value = { name, km: viaKmMap[name] ?? null, x: e.point.x, y: e.point.y, visible: true }
         })
         map.on('mouseleave', 'vias-line', () => {
           map.getCanvas().style.cursor = ''
-          if (hoveredVia !== null)
-            map.setFeatureState({ source: 'vias', id: hoveredVia }, { hover: false })
+          stopDash()
           hoveredVia = null
           viaHoverLabel.value = { ...viaHoverLabel.value, visible: false }
         })

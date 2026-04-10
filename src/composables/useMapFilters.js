@@ -99,7 +99,7 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
       if (hasAny) {
         const names = store.filteredStats.viasDetalle.map(v => v.nombre)
         viasFilter = names.length
-          ? ['in', ['get', 'name'], ['literal', names]]
+          ? ['in', ['get', 'NOMBRE_VIA'], ['literal', names]]
           : ['==', ['literal', false], ['literal', true]]
       }
       map.setFilter('vias-line',   viasFilter)
@@ -119,12 +119,12 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
       } else if (hasSub) {
         feats = feats.filter(f => normUp(f.properties.SUBREGION) === normUp(sub))
       } else if (hasCir && cachedVias.value) {
-        const via = cachedVias.value.features.find(f => f.properties.name === circuito)
+        const via = cachedVias.value.features.find(f => f.properties.CIRCUITO === circuito)
         if (via) flyToGeometries([via.geometry], { padding: 100 })
         feats = []
       } else if (search && cachedVias.value) {
         const searchNames = new Set(store.filteredStats.viasDetalle.map(v => v.nombre))
-        const vias = cachedVias.value.features.filter(f => searchNames.has(f.properties.name))
+        const vias = cachedVias.value.features.filter(f => searchNames.has(f.properties.NOMBRE_VIA))
         if (vias.length) flyToGeometries(vias.map(f => f.geometry), { padding: 100 })
         feats = []
       }
@@ -147,10 +147,10 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
       if (hasTextFilter) {
         let count
         if (circuito && circuito !== 'Todos los circuitos') {
-          count = cachedVias.value.features.filter(f => f.properties.name === circuito).length
+          count = cachedVias.value.features.filter(f => f.properties.CIRCUITO === circuito).length
         } else {
           count = cachedVias.value.features.filter(
-            f => f.properties.name?.toLowerCase().includes(search)
+            f => f.properties.NOMBRE_VIA?.toLowerCase().includes(search)
           ).length
         }
         noResults.value = count === 0

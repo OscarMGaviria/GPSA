@@ -53,7 +53,7 @@ export const useMapStore = defineStore('map', () => {
     const vias = mapStats.value.viasDetalle.filter(v => {
       if (hasSub  && norm(v.subregion) !== normSub)  return false
       if (hasMpio && norm(v.municipio) !== normMpio)  return false
-      if (hasCir  && v.nombre !== circuito) return false
+      if (hasCir  && v.circuito !== circuito) return false
       if (q && !norm(v.nombre).includes(q)
             && !norm(v.municipio).includes(q)
             && !norm(v.subregion).includes(q)) return false
@@ -71,7 +71,7 @@ export const useMapStore = defineStore('map', () => {
       viasIntervenidas: new Set(vias.map(v => v.nombre).filter(Boolean)).size,
       longitudTotal:    Math.round(longitudTotal * 100) / 100,
       municipios:       new Set(vias.map(v => v.municipio).filter(Boolean)).size,
-      circuitos:        new Set(vias.map(v => v.nombre).filter(Boolean)).size,
+      circuitos:        new Set(vias.map(v => v.circuito).filter(Boolean)).size,
       viasDetalle:      vias,
       subregiones:      mapStats.value.subregiones,
     }
