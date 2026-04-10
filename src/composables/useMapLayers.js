@@ -207,7 +207,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     // ── Capa vías ─────────────────────────────────────────────────────────────
     if (geoVias) {
       try {
-        map.addSource('vias', { type: 'geojson', data: geoVias })
+        map.addSource('vias', { type: 'geojson', data: geoVias, generateId: true })
         map.addLayer({
           id: 'vias-casing',
           type: 'line',
@@ -226,10 +226,36 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             'line-opacity': 1,
           },
         })
+        // Capa de glow al hacer hover — se dibuja encima
+        map.addLayer({
+          id: 'vias-hover-glow',
+          type: 'line',
+          source: 'vias',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': '#ffffff',
+            'line-width': 14,
+            'line-blur':  8,
+            'line-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.55, 0],
+          },
+        })
+        map.addLayer({
+          id: 'vias-hover-line',
+          type: 'line',
+          source: 'vias',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: {
+            'line-color': '#ffffff',
+            'line-width': 7,
+            'line-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.9, 0],
+          },
+        })
 
         // Mapa NOMBRE_VIA → km para el tooltip
         const viaKmMap = {}
         for (const v of viasDetalle) viaKmMap[v.nombre] = v.km
+
+        let hoveredVia = null
 
         map.on('click', 'vias-line', (e) => {
           const p    = e.features[0].properties
@@ -253,11 +279,19 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
         map.on('mousemove', 'vias-line', (e) => {
           map.getCanvas().style.cursor = 'pointer'
-          const name = e.features[0].properties.NOMBRE_VIA ?? ''
+          const feat = e.features[0]
+          const name = feat.properties.NOMBRE_VIA ?? ''
+          if (hoveredVia !== null && hoveredVia !== feat.id)
+            map.setFeatureState({ source: 'vias', id: hoveredVia }, { hover: false })
+          hoveredVia = feat.id
+          map.setFeatureState({ source: 'vias', id: hoveredVia }, { hover: true })
           viaHoverLabel.value = { name, km: viaKmMap[name] ?? null, x: e.point.x, y: e.point.y, visible: true }
         })
         map.on('mouseleave', 'vias-line', () => {
           map.getCanvas().style.cursor = ''
+          if (hoveredVia !== null)
+            map.setFeatureState({ source: 'vias', id: hoveredVia }, { hover: false })
+          hoveredVia = null
           viaHoverLabel.value = { ...viaHoverLabel.value, visible: false }
         })
 
