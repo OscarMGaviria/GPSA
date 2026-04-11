@@ -420,24 +420,25 @@ const yTicks = computed(() => {
 }
 
 .avance-card {
-  background: rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.42);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.75);
+  border: 1px solid rgba(255,255,255,0.8);
   border-radius: 16px;
   padding: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 20px rgba(11,86,64,.08), 0 1px 4px rgba(0,0,0,.05),
-              inset 0 1px 0 rgba(255,255,255,0.6);
-  transition: box-shadow .2s ease, background .2s ease;
+  box-shadow: 0 4px 16px rgba(45,134,83,.12), 0 1px 4px rgba(0,0,0,.06),
+              inset 0 1px 0 rgba(255,255,255,0.65);
+  transition: transform .22s ease, box-shadow .22s ease, background .22s ease;
 }
 .avance-card:hover {
-  background: rgba(255,255,255,0.72);
-  box-shadow: 0 8px 32px rgba(11,86,64,.13), 0 2px 8px rgba(0,0,0,.06),
-              inset 0 1px 0 rgba(255,255,255,0.7);
+  transform: translateY(-3px) scale(1.01);
+  background: rgba(255,255,255,0.75);
+  box-shadow: 0 10px 32px rgba(45,134,83,.2), 0 3px 8px rgba(0,0,0,.08),
+              inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
 .section-label {
@@ -602,16 +603,16 @@ const yTicks = computed(() => {
   color: #fff;
 }
 .bar-col--dimmed {
-  opacity: 0.38;
+  opacity: 0.55;
   transition: opacity .2s;
 }
 .bar-col--dimmed:hover {
-  opacity: 0.75;
+  opacity: 0.85;
 }
 .bar-col:hover .bar-fill {
-  background: linear-gradient(180deg, #3fad72 0%, #236b46 100%);
+  background: linear-gradient(180deg, rgba(45,134,83,0.75) 0%, rgba(26,92,58,0.65) 100%);
   width: 90%;
-  box-shadow: 0 -4px 12px rgba(45, 134, 83, 0.5);
+  box-shadow: 0 -4px 12px rgba(45, 134, 83, 0.3);
   transform: scaleY(1) translateY(-3px);
 }
 .bar-col:hover .bar-label {
@@ -657,7 +658,7 @@ const yTicks = computed(() => {
   width: 78%;
   border-radius: 4px 4px 0 0;
   min-height: 4px;
-  background: linear-gradient(180deg, #2d8653 0%, #1a5c3a 100%);
+  background: linear-gradient(180deg, rgba(45,134,83,0.45) 0%, rgba(26,92,58,0.35) 100%);
   animation: barGrow .7s cubic-bezier(.34,1.10,.64,1) both;
   transform-origin: bottom;
   transition: width .25s ease, background .25s ease, box-shadow .25s ease, transform .25s ease;
