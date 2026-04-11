@@ -2,8 +2,8 @@
 import { ref, watch, computed, onUnmounted } from 'vue'
 import { Route, Ruler, MapPin, GitBranch } from 'lucide-vue-next'
 import StatCard       from '../atoms/StatCard.vue'
-import ProgressRing   from '../atoms/ProgressRing.vue'
 import ProgressBar    from '../atoms/ProgressBar.vue'
+import RadarChart     from '../atoms/RadarChart.vue'
 import StatsDetailModal from './StatsDetailModal.vue'
 
 const emit = defineEmits(['filter-subregion'])
@@ -29,8 +29,10 @@ const props = defineProps({
   // Subregiones
   subregiones: { type: Array, default: () => [] },
 
-  // Detalle de vías para modales
-  viasDetalle: { type: Array, default: () => [] },
+  // Detalle de vías para modales y radar
+  viasDetalle:    { type: Array,  default: () => [] },
+  totalViasGlobal: { type: Number, default: 1 },
+  totalKmGlobal:   { type: Number, default: 1 },
 })
 
 // ── Modal de detalle ──────────────────────────────────────────────────────
@@ -116,6 +118,28 @@ onUnmounted(() => {
   cancelAllRafs()
 })
 
+// ── Radar chart ─────────────────────────────────────────────────────────────
+const radarAxes = computed(() => {
+  const vias = props.viasDetalle
+  if (!vias.length) return []
+
+  const totalVias   = vias.length
+  const totalKm     = vias.reduce((s, v) => s + (v.km || 0), 0)
+  const iniciadas   = vias.filter(v => (v.avance || 0) > 0).length
+  const avanceFis   = Math.round(vias.reduce((s, v) => s + (v.avance || 0), 0) / totalVias)
+  const avanceFin   = Math.round(vias.reduce((s, v) => s + (v.avanceFin || v.avance || 0), 0) / totalVias)
+  const coberturaKm = Math.min(100, Math.round((totalKm / (props.totalKmGlobal || 1)) * 100))
+  const viasIni     = Math.round((iniciadas / totalVias) * 100)
+
+  return [
+    { label: 'Av. Físico',    value: avanceFis },
+    { label: 'Av. Financiero', value: avanceFin },
+    { label: 'Km cobertura',  value: coberturaKm },
+    { label: 'Vías iniciadas', value: viasIni },
+    { label: 'Contratadas',   value: Math.min(100, Math.round((totalVias / (props.totalViasGlobal || 1)) * 100)) },
+  ]
+})
+
 // ── Bar chart helpers ───────────────────────────────────────────────────────
 const ABREVIATURAS = {
   'valle de aburra': 'Valle',
@@ -191,20 +215,14 @@ const yTicks = computed(() => {
       <!-- ── Avance físico + Avance en km ──────────────────────────────── -->
       <div class="avance-row" :class="{ animate: showContent }">
 
-        <!-- Avance físico -->
-        <div class="avance-card">
+        <!-- Radar de avance -->
+        <div class="avance-card radar-card">
           <div class="section-label">
-            <span class="sl-dot">✓</span> Avance físico
+            <span class="sl-dot">◈</span> Indicadores de avance
           </div>
-          <div class="ring-wrap">
-            <ProgressRing
-              :pct="avanceFisicoPct"
-              :size="110"
-              :stroke="10"
-              sublabel="Ponderado por longitud intervenida"
-            />
+          <div class="radar-wrap">
+            <RadarChart :axes="radarAxes" :size="160" />
           </div>
-          <span class="phase-badge">Inicio</span>
         </div>
 
         <!-- Avance en km -->
@@ -435,6 +453,9 @@ const yTicks = computed(() => {
 .sl-dot { color: #2d8653; }
 
 .ring-wrap { align-self: center; }
+
+.radar-card { align-items: center; }
+.radar-wrap { align-self: center; display: flex; align-items: center; justify-content: center; flex: 1; }
 
 .phase-badge {
   background: #fce7f3;

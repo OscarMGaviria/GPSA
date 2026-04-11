@@ -72,6 +72,8 @@ watch(activeFilters, (f) => {
         :circuitos="filteredStats.circuitos"
         :subregiones="mapStats.subregiones"
         :vias-detalle="filteredStats.viasDetalle"
+        :total-vias-global="mapStats.viasIntervenidas"
+        :total-km-global="mapStats.longitudTotal"
         :active-subregion="activeChartSubregion"
         @filter-subregion="sub => store.setFilter({ search: '', subregion: sub, municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })"
       />
