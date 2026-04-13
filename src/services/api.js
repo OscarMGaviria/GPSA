@@ -25,7 +25,9 @@ async function fetchGeoJSON(url) {
 
   // Intento 1: JSON válido
   try {
-    const data = JSON.parse(text)
+    const parsed = JSON.parse(text)
+    // Desempaquetar wrapper { success, data: FeatureCollection }
+    const data = parsed?.data?.type === 'FeatureCollection' ? parsed.data : parsed
     writeCache(url, data)
     return { data, fromCache: false }
   } catch { /* continúa */ }
