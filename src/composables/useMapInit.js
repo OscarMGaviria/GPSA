@@ -2,7 +2,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-export const CENTER  = [-75.5636, 6.2442]
+export const CENTER  = [-75.5636, 7.150]
 export const ZOOM    = 7
 export const BASEMAPS = [
   {

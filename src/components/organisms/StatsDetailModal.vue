@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { X, Search, ChevronUp, ChevronDown, Route, Ruler, MapPin, GitBranch } from 'lucide-vue-next'
+import { Search, ChevronUp, ChevronDown, Route, Ruler, MapPin, GitBranch } from 'lucide-vue-next'
 
 const props = defineProps({
   tipo:        { type: String, required: true }, // 'vias' | 'longitud' | 'municipios' | 'circuitos'
@@ -22,51 +22,62 @@ function toggleSort(key) {
 
 // ── Datos derivados por tipo ───────────────────────────────────────────────
 
-// Vista: Vías intervenidas
+// Vista: Vías intervenidas — agrupar duplicados por nombre y sumar km
 const viasFiltered = computed(() => {
+  const grouped = {}
+  for (const v of props.viasDetalle) {
+    const key = v.nombre
+    if (!grouped[key]) grouped[key] = { ...v, km: 0 }
+    grouped[key].km += v.km
+  }
+  const lista = Object.values(grouped).map(v => ({ ...v, km: Math.round(v.km * 100) / 100 }))
+
   const q = busqueda.value.toLowerCase()
-  const lista = q
-    ? props.viasDetalle.filter(v =>
+  const filtered = q
+    ? lista.filter(v =>
         v.nombre.toLowerCase().includes(q) ||
         v.municipio.toLowerCase().includes(q) ||
         v.subregion.toLowerCase().includes(q) ||
         v.contratista.toLowerCase().includes(q)
       )
-    : [...props.viasDetalle]
+    : lista
 
-  return lista.sort((a, b) => {
+  return filtered.sort((a, b) => {
     const va = a[sortKey.value] ?? ''
     const vb = b[sortKey.value] ?? ''
-    const cmp = typeof va === 'number'
-      ? va - vb
-      : String(va).localeCompare(String(vb), 'es')
+    const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es')
     return sortAsc.value ? cmp : -cmp
   })
 })
 
-// Vista: Longitud por subregión
+// Vista: Longitud por municipio (de mayor a menor)
 const longitudRows = computed(() => {
-  const total = props.subregiones.reduce((s, r) => s + r.km, 0) || 1
-  return [...props.subregiones]
+  const map = {}
+  for (const v of props.viasDetalle) {
+    const key = v.municipio || 'Sin municipio'
+    if (!map[key]) map[key] = { name: key, subregion: v.subregion, km: 0 }
+    map[key].km += v.km
+  }
+  const rows = Object.values(map)
+    .map(r => ({ ...r, km: Math.round(r.km * 100) / 100 }))
     .filter(r => r.km > 0)
     .sort((a, b) => b.km - a.km)
-    .map(r => ({ ...r, pctReal: Math.round((r.km / total) * 100) }))
+  const total = rows.reduce((s, r) => s + r.km, 0) || 1
+  return rows.map(r => ({ ...r, pctReal: Math.round((r.km / total) * 100) }))
 })
 
-// Vista: Municipios — agrupar vías por municipio
+// Vista: Municipios — agrupar vías por municipio, ordenar por km desc por defecto
 const municipiosRows = computed(() => {
   const map = {}
   for (const v of props.viasDetalle) {
     const key = v.municipio || 'Sin municipio'
-    if (!map[key]) map[key] = { nombre: key, subregion: v.subregion, vias: 0, km: 0, avanceSum: 0 }
+    if (!map[key]) map[key] = { nombre: key, subregion: v.subregion, vias: 0, km: 0 }
     map[key].vias++
-    map[key].km       += v.km
-    map[key].avanceSum += v.avance
+    map[key].km += v.km
   }
   const rows = Object.values(map).map(r => ({
     ...r,
-    km:     Math.round(r.km * 100) / 100,
-    avance: r.vias ? Math.round((r.avanceSum / r.vias) * 10) / 10 : 0,
+    km: Math.round(r.km * 100) / 100,
   }))
 
   const q = busqueda.value.toLowerCase()
@@ -74,11 +85,14 @@ const municipiosRows = computed(() => {
     r.nombre.toLowerCase().includes(q) || r.subregion.toLowerCase().includes(q)
   ) : rows
 
+  // Por defecto: km descendente; si el usuario hace clic en otra columna usa sortKey
+  const key = sortKey.value === 'nombre' ? 'km' : sortKey.value
+  const asc = sortKey.value === 'nombre' ? false : sortAsc.value
   return filtered.sort((a, b) => {
-    const va = a[sortKey.value] ?? ''
-    const vb = b[sortKey.value] ?? ''
+    const va = a[key] ?? ''
+    const vb = b[key] ?? ''
     const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es')
-    return sortAsc.value ? cmp : -cmp
+    return asc ? cmp : -cmp
   })
 })
 
@@ -158,9 +172,7 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
               <p class="modal-desc">{{ cfg.desc }}</p>
             </div>
           </div>
-          <button class="btn-close" @click="emit('close')" aria-label="Cerrar">
-            <X :size="18" />
-          </button>
+          <button class="btn-close" @click="emit('close')" aria-label="Cerrar">✕</button>
         </div>
 
         <!-- Buscador (no aplica a longitud) -->
@@ -185,42 +197,28 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
             <table class="data-table">
               <thead>
                 <tr>
+                  <th class="th-num th-idx">#</th>
                   <th @click="toggleSort('nombre')" class="sortable">Nombre <span class="sort-ic">{{ sortIcon('nombre') }}</span></th>
                   <th @click="toggleSort('municipio')" class="sortable">Municipio <span class="sort-ic">{{ sortIcon('municipio') }}</span></th>
                   <th @click="toggleSort('subregion')" class="sortable">Subregión <span class="sort-ic">{{ sortIcon('subregion') }}</span></th>
                   <th @click="toggleSort('km')" class="sortable th-num">Km <span class="sort-ic">{{ sortIcon('km') }}</span></th>
-                  <th @click="toggleSort('avance')" class="sortable th-num">Avance <span class="sort-ic">{{ sortIcon('avance') }}</span></th>
                   <th>Contratista</th>
-                  <th>Inicio</th>
-                  <th>Plazo</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="v in viasFiltered" :key="v.codigo || v.nombre" class="data-row">
+                <tr v-for="(v, i) in viasFiltered" :key="v.codigo || v.nombre" class="data-row">
+                  <td class="td-num td-idx">{{ i + 1 }}</td>
                   <td class="td-nombre">
                     <span class="nombre-text">{{ v.nombre }}</span>
                     <span v-if="v.codigo" class="codigo-badge">{{ v.codigo }}</span>
                   </td>
                   <td>{{ v.municipio || '—' }}</td>
-                  <td>
-                    <span class="sub-chip">{{ v.subregion }}</span>
-                  </td>
+                  <td><span class="sub-chip">{{ v.subregion }}</span></td>
                   <td class="td-num">{{ v.km > 0 ? v.km + ' km' : '—' }}</td>
-                  <td class="td-num">
-                    <div class="avance-cell">
-                      <span class="avance-badge" :class="avanceBadge(v.avance)">{{ avanceLabel(v.avance) }}</span>
-                      <div class="mini-bar-wrap">
-                        <div class="mini-bar" :style="{ width: v.avance + '%' }" />
-                      </div>
-                      <span class="avance-pct">{{ v.avance }}%</span>
-                    </div>
-                  </td>
                   <td class="td-contratista">{{ v.contratista || '—' }}</td>
-                  <td class="td-fecha">{{ v.fechaInicio || '—' }}</td>
-                  <td>{{ v.plazo || '—' }}</td>
                 </tr>
                 <tr v-if="!viasFiltered.length">
-                  <td colspan="8" class="empty-row">Sin resultados para "{{ busqueda }}"</td>
+                  <td colspan="6" class="empty-row">Sin resultados para "{{ busqueda }}"</td>
                 </tr>
               </tbody>
             </table>
@@ -231,7 +229,10 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
             <div class="longitud-grid">
               <div v-for="row in longitudRows" :key="row.name" class="longitud-row">
                 <div class="long-header">
-                  <span class="long-name">{{ row.name }}</span>
+                  <div class="long-name-wrap">
+                    <span class="long-name">{{ row.name }}</span>
+                    <span class="long-sub">{{ row.subregion }}</span>
+                  </div>
                   <span class="long-km">{{ row.km }} km</span>
                   <span class="long-pct">{{ row.pctReal }}%</span>
                 </div>
@@ -239,7 +240,7 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
                   <div class="long-bar-fill" :style="{ width: row.pctReal + '%' }" />
                 </div>
               </div>
-              <div v-if="!longitudRows.length" class="empty-row">Sin datos de subregión disponibles.</div>
+              <div v-if="!longitudRows.length" class="empty-row">Sin datos disponibles.</div>
             </div>
           </template>
 
@@ -248,27 +249,20 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
             <table class="data-table">
               <thead>
                 <tr>
+                  <th class="th-num th-idx">#</th>
                   <th @click="toggleSort('nombre')" class="sortable">Municipio <span class="sort-ic">{{ sortIcon('nombre') }}</span></th>
                   <th @click="toggleSort('subregion')" class="sortable">Subregión <span class="sort-ic">{{ sortIcon('subregion') }}</span></th>
                   <th @click="toggleSort('vias')" class="sortable th-num">Vías <span class="sort-ic">{{ sortIcon('vias') }}</span></th>
                   <th @click="toggleSort('km')" class="sortable th-num">Longitud <span class="sort-ic">{{ sortIcon('km') }}</span></th>
-                  <th @click="toggleSort('avance')" class="sortable th-num">Avance prom. <span class="sort-ic">{{ sortIcon('avance') }}</span></th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="m in municipiosRows" :key="m.nombre" class="data-row">
+                <tr v-for="(m, i) in municipiosRows" :key="m.nombre" class="data-row">
+                  <td class="td-num td-idx">{{ i + 1 }}</td>
                   <td class="td-nombre">{{ m.nombre || '—' }}</td>
                   <td><span class="sub-chip">{{ m.subregion }}</span></td>
                   <td class="td-num">{{ m.vias }}</td>
                   <td class="td-num">{{ m.km }} km</td>
-                  <td class="td-num">
-                    <div class="avance-cell">
-                      <div class="mini-bar-wrap">
-                        <div class="mini-bar" :style="{ width: m.avance + '%' }" />
-                      </div>
-                      <span class="avance-pct">{{ m.avance }}%</span>
-                    </div>
-                  </td>
                 </tr>
                 <tr v-if="!municipiosRows.length">
                   <td colspan="5" class="empty-row">Sin resultados para "{{ busqueda }}"</td>
@@ -282,29 +276,21 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
             <table class="data-table">
               <thead>
                 <tr>
+                  <th class="th-num th-idx">#</th>
                   <th @click="toggleSort('circuito')" class="sortable">Circuito <span class="sort-ic">{{ sortIcon('circuito') }}</span></th>
                   <th @click="toggleSort('municipio')" class="sortable">Municipio <span class="sort-ic">{{ sortIcon('municipio') }}</span></th>
                   <th @click="toggleSort('subregion')" class="sortable">Subregión <span class="sort-ic">{{ sortIcon('subregion') }}</span></th>
                   <th @click="toggleSort('km')" class="sortable th-num">Km <span class="sort-ic">{{ sortIcon('km') }}</span></th>
-                  <th @click="toggleSort('avance')" class="sortable th-num">Avance <span class="sort-ic">{{ sortIcon('avance') }}</span></th>
                   <th>Contratista</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="c in circuitosRows" :key="c.circuito" class="data-row">
+                <tr v-for="(c, i) in circuitosRows" :key="c.circuito" class="data-row">
+                  <td class="td-num td-idx">{{ i + 1 }}</td>
                   <td class="td-nombre">{{ c.circuito || '—' }}</td>
                   <td>{{ c.municipio || '—' }}</td>
                   <td><span class="sub-chip">{{ c.subregion }}</span></td>
                   <td class="td-num">{{ c.km > 0 ? c.km + ' km' : '—' }}</td>
-                  <td class="td-num">
-                    <div class="avance-cell">
-                      <span class="avance-badge" :class="avanceBadge(c.avance)">{{ avanceLabel(c.avance) }}</span>
-                      <div class="mini-bar-wrap">
-                        <div class="mini-bar" :style="{ width: c.avance + '%' }" />
-                      </div>
-                      <span class="avance-pct">{{ c.avance }}%</span>
-                    </div>
-                  </td>
                   <td class="td-contratista">{{ c.contratista || '—' }}</td>
                 </tr>
                 <tr v-if="!circuitosRows.length">
@@ -405,9 +391,12 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  border: none;
+  border: 2px solid rgba(255,255,255,.55);
   background: rgba(255,255,255,.18);
-  color: #fff;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -415,7 +404,7 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
   flex-shrink: 0;
   transition: background .18s;
 }
-.btn-close:hover { background: rgba(255,255,255,.32); }
+.btn-close:hover { background: rgba(255,255,255,.32); border-color: #fff; }
 
 /* ── Search bar ───────────────────────────────────────────────────────────── */
 .search-bar {
@@ -478,6 +467,8 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
 .data-table th.sortable { cursor: pointer; }
 .data-table th.sortable:hover { background: #dff0e8; }
 .th-num { text-align: right; }
+.th-idx { width: 32px; text-align: center; color: #9ca3af; font-weight: 500; }
+.td-idx { text-align: center; color: #d1d5db; font-size: 11px; font-weight: 600; }
 .sort-ic { color: #2d8653; font-size: 12px; margin-left: 2px; }
 
 .data-row { border-bottom: 1px solid #f0f4f2; transition: background .12s; }
@@ -557,7 +548,9 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
   gap: 8px;
   margin-bottom: 6px;
 }
-.long-name { font-size: 14px; font-weight: 600; color: #1f2937; flex: 1; }
+.long-name-wrap { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.long-name { font-size: 13px; font-weight: 600; color: #1f2937; }
+.long-sub  { font-size: 10px; color: #9ca3af; font-weight: 500; }
 .long-km   { font-size: 14px; font-weight: 700; color: #0b5640; }
 .long-pct  { font-size: 12px; color: #6b7280; min-width: 36px; text-align: right; }
 .long-bar-track {

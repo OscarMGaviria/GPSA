@@ -241,11 +241,7 @@ onUnmounted(() => {
             <p class="mhead-inst">Gobernación de Antioquia · Secretaría de Infraestructura Física</p>
             <h2 class="mhead-name">{{ name }}</h2>
           </div>
-          <button class="btn-x" @click="emit('close')" aria-label="Cerrar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+          <button class="btn-x" @click="emit('close')" aria-label="Cerrar">✕</button>
         </header>
 
         <!-- ── TWO COLUMNS ── -->
@@ -478,12 +474,14 @@ onUnmounted(() => {
   border: 2px solid rgba(255,255,255,.55);
   border-radius: 8px;
   background: rgba(255,255,255,.15);
-  color: #fff;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
   transition: background .15s, border-color .15s;
 }
-.btn-x svg { width: 18px; height: 18px; stroke-width: 2.5; }
 .btn-x:hover { background: rgba(255,255,255,.28); border-color: #fff; }
 
 /* ── Two columns ── */

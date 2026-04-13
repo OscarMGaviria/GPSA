@@ -1,7 +1,11 @@
 import { ref, watch } from 'vue'
 import maplibregl from 'maplibre-gl'
+import { useMapStore } from '../stores/useMapStore.js'
+
+const normUp = s => (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
 
 export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias, center, zoom, refreshVisibleCallouts } = {}) {
+  const store = useMapStore()
   const selectedSubregion = ref('')
   const selectedMunicipio = ref('')
   const noResults         = ref(false)
@@ -11,11 +15,26 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     else coords.forEach(c => coordsBounds(c, bounds))
   }
 
-  function flyToGeometry(geometry, opts = {}) {
+  let _zoomLocked = false
+
+  function lockZoom() {
     const map = getMap()
-    const bounds = new maplibregl.LngLatBounds()
-    coordsBounds(geometry.coordinates, bounds)
-    if (!bounds.isEmpty()) map.fitBounds(bounds, { ...opts, duration: 900 })
+    if (!map || _zoomLocked) return
+    map.scrollZoom.disable()
+    map.doubleClickZoom.disable()
+    map.touchZoomRotate.disable()
+    map.keyboard.disable()
+    _zoomLocked = true
+  }
+
+  function unlockZoom() {
+    const map = getMap()
+    if (!map || !_zoomLocked) return
+    map.scrollZoom.enable()
+    map.doubleClickZoom.enable()
+    map.touchZoomRotate.enable()
+    map.keyboard.enable()
+    _zoomLocked = false
   }
 
   function flyToGeometries(geometries, opts = {}) {
@@ -41,9 +60,9 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     } else if (selectedMunicipio.value && cachedMunicipios.value) {
       // Inferir subregión del municipio seleccionado
       const feat = cachedMunicipios.value.features.find(
-        f => f.properties.mpio_nombr?.toUpperCase() === mpio.toUpperCase()
+        f => f.properties.MPIO_NOMBR?.toUpperCase() === mpio.toUpperCase()
       )
-      const raw = feat?.properties.subregion ?? ''
+      const raw = feat?.properties.SUBREGION ?? ''
       selectedSubregion.value = raw
         ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
         : ''
@@ -54,12 +73,12 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     if (map.getLayer('municipios-fill')) {
       const mpioFilter = ['all']
       if (sub  && sub  !== 'Todas las subregiones')
-        mpioFilter.push(['==', ['upcase', ['get', 'subregion']], sub.toUpperCase()])
+        mpioFilter.push(['==', ['upcase', ['get', 'SUBREGION']], normUp(sub)])
       if (mpio && mpio !== 'Todos los municipios')
-        mpioFilter.push(['==', ['upcase', ['get', 'mpio_nombr']], mpio.toUpperCase()])
+        mpioFilter.push(['==', ['upcase', ['get', 'MPIO_NOMBR']], mpio.toUpperCase()])
       // Búsqueda de texto también filtra municipios por nombre
       if (search && !circuito)
-        mpioFilter.push(['>', ['index-of', search, ['downcase', ['coalesce', ['get', 'mpio_nombr'], '']]], -1])
+        mpioFilter.push(['>', ['index-of', search, ['downcase', ['coalesce', ['get', 'MPIO_NOMBR'], '']]], -1])
       const f = mpioFilter.length > 1 ? mpioFilter : null
       map.setFilter('municipios-fill',    f)
       map.setFilter('municipios-outline', f)
@@ -71,45 +90,54 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     }
 
     if (map.getLayer('vias-line')) {
+      const hasSub  = sub      && sub      !== 'Todas las subregiones'
+      const hasMpio = mpio     && mpio     !== 'Todos los municipios'
+      const hasCir  = circuito && circuito !== 'Todos los circuitos'
+      const hasAny  = hasSub || hasMpio || hasCir || !!search
+
       let viasFilter = null
-      if (circuito && circuito !== 'Todos los circuitos') {
-        viasFilter = ['==', ['get', 'name'], circuito]
-      } else if (search) {
-        viasFilter = ['>', ['index-of', search, ['downcase', ['coalesce', ['get', 'name'], '']]], -1]
+      if (hasAny) {
+        const names = store.filteredStats.viasDetalle.map(v => v.nombre)
+        viasFilter = names.length
+          ? ['in', ['get', 'NOMBRE_VIA'], ['literal', names]]
+          : ['==', ['literal', false], ['literal', true]]
       }
       map.setFilter('vias-line',   viasFilter)
       map.setFilter('vias-casing', viasFilter)
     }
 
-    // ── Zoom al feature coincidente ────────────────────────────────────────
-    if (mpio && mpio !== 'Todos los municipios' && cachedMunicipios.value) {
-      const feat = cachedMunicipios.value.features.find(
-        f => f.properties.mpio_nombr?.toUpperCase() === mpio.toUpperCase()
-      )
-      if (feat) flyToGeometry(feat.geometry, { padding: 80 })
-    } else if (sub && sub !== 'Todas las subregiones' && cachedMunicipios.value) {
-      const feats = cachedMunicipios.value.features.filter(
-        f => f.properties.subregion?.toUpperCase() === sub.toUpperCase()
-      )
-      if (feats.length) flyToGeometries(feats.map(f => f.geometry), { padding: 60 })
-    } else if (circuito && circuito !== 'Todos los circuitos' && cachedVias.value) {
-      const feat = cachedVias.value.features.find(f => f.properties.name === circuito)
-      if (feat) flyToGeometry(feat.geometry, { padding: 80 })
-    } else if (search) {
-      // Zoom al primer municipio que coincida con el texto buscado
-      const mpioMatch = cachedMunicipios.value?.features.find(
-        f => f.properties.mpio_nombr?.toLowerCase().includes(search)
-      )
-      if (mpioMatch) {
-        flyToGeometry(mpioMatch.geometry, { padding: 80 })
-      } else {
-        // Si no hay municipio, zoom a la primera vía que coincida
-        const viaMatch = cachedVias.value?.features.find(
-          f => f.properties.name?.toLowerCase().includes(search)
-        )
-        if (viaMatch) flyToGeometry(viaMatch.geometry, { padding: 80 })
+    // ── Zoom + lock/unlock ─────────────────────────────────────────────────
+    const hasSub  = sub      && sub      !== 'Todas las subregiones'
+    const hasMpio = mpio     && mpio     !== 'Todos los municipios'
+    const hasCir  = circuito && circuito !== 'Todos los circuitos'
+    const hasAnyFilter = hasSub || hasMpio || hasCir || !!search
+
+    if (hasAnyFilter && cachedMunicipios.value) {
+      let feats = cachedMunicipios.value.features
+      if (hasMpio) {
+        feats = feats.filter(f => f.properties.MPIO_NOMBR?.toUpperCase() === mpio.toUpperCase())
+      } else if (hasSub) {
+        feats = feats.filter(f => normUp(f.properties.SUBREGION) === normUp(sub))
+      } else if (hasCir && cachedVias.value) {
+        const via = cachedVias.value.features.find(f => f.properties.CIRCUITO === circuito)
+        if (via) flyToGeometries([via.geometry], { padding: 100 })
+        feats = []
+      } else if (search && cachedVias.value) {
+        const searchNames = new Set(store.filteredStats.viasDetalle.map(v => v.nombre))
+        const vias = cachedVias.value.features.filter(f => searchNames.has(f.properties.NOMBRE_VIA))
+        if (vias.length) flyToGeometries(vias.map(f => f.geometry), { padding: 100 })
+        feats = []
       }
+      if (feats.length) flyToGeometries(feats.map(f => f.geometry), { padding: 60 })
+
+      // Calcular etiquetas DESPUÉS de que el mapa termine de animarse
+      map.once('moveend', () => {
+        lockZoom()
+        refreshVisibleCallouts?.(filters)
+      })
     } else {
+      unlockZoom()
+      refreshVisibleCallouts?.(filters)
       map.flyTo({ center, zoom, duration: 900 })
     }
 
@@ -119,10 +147,10 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
       if (hasTextFilter) {
         let count
         if (circuito && circuito !== 'Todos los circuitos') {
-          count = cachedVias.value.features.filter(f => f.properties.name === circuito).length
+          count = cachedVias.value.features.filter(f => f.properties.CIRCUITO === circuito).length
         } else {
           count = cachedVias.value.features.filter(
-            f => f.properties.name?.toLowerCase().includes(search)
+            f => f.properties.NOMBRE_VIA?.toLowerCase().includes(search)
           ).length
         }
         noResults.value = count === 0
@@ -132,8 +160,6 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     } else {
       noResults.value = false
     }
-
-    refreshVisibleCallouts?.(filters)
   }
 
   watch(filtersRef, (filters) => { applyFilters(filters) }, { deep: true })

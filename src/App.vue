@@ -1,14 +1,30 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppHeader  from './components/organisms/AppHeader.vue'
 import MapView    from './components/organisms/MapView.vue'
 import StatsPanel from './components/organisms/StatsPanel.vue'
+import AppTour    from './components/organisms/AppTour.vue'
 import { useMapStore } from './stores/useMapStore.js'
 
 const store = useMapStore()
-const { activeFilters, filterOptions, mapStats, mapLoading, filteredMunicipioOptions } = storeToRefs(store)
+const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions } = storeToRefs(store)
 const isPanelOpen = ref(true)
+const showTour = ref(localStorage.getItem('simeva-tour-done') !== '1')
+
+// Subregión activa en la gráfica: la seleccionada explícitamente,
+// o la que corresponde al municipio seleccionado (inferida del mapa municipiosPorSubregion)
+const activeChartSubregion = computed(() => {
+  const sub = activeFilters.value.subregion
+  if (sub && sub !== 'Todas las subregiones') return sub
+  const mpio = activeFilters.value.municipio
+  if (!mpio || mpio === 'Todos los municipios') return ''
+  const mpioMap = filterOptions.value.municipiosPorSubregion
+  for (const [subName, mpios] of Object.entries(mpioMap)) {
+    if (mpios.some(m => m.toLowerCase() === mpio.toLowerCase())) return subName
+  }
+  return ''
+})
 
 // Sincronizar URL al cambiar filtros
 watch(activeFilters, (f) => {
@@ -24,27 +40,47 @@ watch(activeFilters, (f) => {
 
 <template>
   <div id="app">
+
+    <!-- ── Loading full-screen ── -->
+    <Transition name="loader-fade">
+      <div v-if="mapLoading" class="app-loader">
+        <div class="loader-ring">
+          <svg viewBox="0 0 50 50" class="loader-svg">
+            <circle class="loader-track" cx="25" cy="25" r="20" />
+            <circle class="loader-arc"   cx="25" cy="25" r="20" />
+          </svg>
+        </div>
+        <span class="loader-text">Cargando datos…</span>
+      </div>
+    </Transition>
+
+    <AppTour v-if="showTour" @close="showTour = false" />
+
     <AppHeader
       @filter-change="store.setFilter"
       :panel-open="isPanelOpen"
       @toggle-panel="isPanelOpen = !isPanelOpen"
+      @start-tour="showTour = true"
       :subregion-options="filterOptions.subregiones"
       :municipio-options="filteredMunicipioOptions"
       :circuito-options="filterOptions.circuitos"
+      :active-filters="activeFilters"
     />
     <div class="content-area">
       <MapView />
       <StatsPanel
         :is-open="isPanelOpen"
         :loading="mapLoading"
-        :vias-intervenidas="mapStats.viasIntervenidas"
-        :longitud-total="mapStats.longitudTotal"
-        :municipios="mapStats.municipios"
-        :circuitos="mapStats.circuitos"
+        :vias-intervenidas="filteredStats.viasIntervenidas"
+        :longitud-total="filteredStats.longitudTotal"
+        :municipios="filteredStats.municipios"
+        :circuitos="filteredStats.circuitos"
         :subregiones="mapStats.subregiones"
-        :vias-detalle="mapStats.viasDetalle"
-        :active-subregion="activeFilters.subregion"
-        @filter-subregion="sub => store.setFilter({ ...activeFilters, subregion: sub, municipio: 'Todos los municipios' })"
+        :vias-detalle="filteredStats.viasDetalle"
+        :total-vias-global="mapStats.viasIntervenidas"
+        :total-km-global="mapStats.longitudTotal"
+        :active-subregion="activeChartSubregion"
+        @filter-subregion="sub => store.setFilter({ search: '', subregion: sub, municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })"
       />
     </div>
   </div>
@@ -65,4 +101,56 @@ watch(activeFilters, (f) => {
   flex: 1;
   overflow: hidden;
 }
+
+/* ── Loading full-screen ── */
+.app-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(234, 244, 237, 0.92);
+  backdrop-filter: blur(6px);
+}
+.loader-ring {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 4px 12px rgba(26, 92, 58, 0.35));
+}
+.loader-svg {
+  width: 100%;
+  height: 100%;
+  animation: spin 1.4s linear infinite;
+}
+.loader-track {
+  fill: none;
+  stroke: #c8e6d4;
+  stroke-width: 4;
+}
+.loader-arc {
+  fill: none;
+  stroke: #1a5c3a;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 80 45;
+  animation: dash 1.4s ease-in-out infinite;
+}
+.loader-text {
+  font-family: 'Prompt', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a5c3a;
+  letter-spacing: 0.3px;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes spin  { to { transform: rotate(360deg); } }
+@keyframes dash  { 0% { stroke-dashoffset: 0; } 50% { stroke-dashoffset: -50; } 100% { stroke-dashoffset: -125; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.loader-fade-enter-active { transition: opacity .3s ease; }
+.loader-fade-leave-active { transition: opacity .6s ease; }
+.loader-fade-enter-from,
+.loader-fade-leave-to     { opacity: 0; }
 </style>

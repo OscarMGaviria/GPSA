@@ -1,5 +1,5 @@
 import { ref, onUnmounted } from 'vue'
-import { getLocalizaciones, getMunicipios, parseDescription, extractPhotosByPhase, extractKm, calcGeomKm } from '../services/api.js'
+import { getLocalizaciones, getMunicipios } from '../services/api.js'
 
 function sentenceCase(str) {
   if (!str) return str
@@ -17,15 +17,13 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
   const loadError        = ref(false)
   const fromCache        = ref(false)
   const hoverLabel       = ref({ name: '', x: 0, y: 0, visible: false })
+  const viaHoverLabel    = ref({ name: '', km: null, x: 0, y: 0, visible: false })
   const selectedVia      = ref(null)
   const cachedMunicipios = ref(null)
   const cachedVias       = ref(null)
   let destroyed = false
 
-  onUnmounted(() => {
-    destroyed = true
-    popup?.remove()
-  })
+  onUnmounted(() => { destroyed = true })
 
   async function loadSimeva() {
     const map = getMap()
@@ -57,40 +55,36 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     }
 
     // Normaliza texto para comparar sin acentos ni mayúsculas
-    const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    const norm = s => (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 
-    // Municipios que tienen al menos una vía registrada
-    const mpioNormSet = new Set()
-    if (geoVias) {
-      for (const f of geoVias.features) {
-        const desc    = parseDescription(f.properties.description ?? '')
-        const mpioKey = Object.keys(desc).find(k => /municipio/i.test(k))
-        if (mpioKey) {
-          const mpio = String(desc[mpioKey]).trim()
-          if (mpio) mpioNormSet.add(norm(mpio))
-        }
-      }
+    const SUBREGIONES_FIJAS = [
+      'Valle de aburrá', 'Oriente', 'Occidente', 'Norte',
+      'Nordeste', 'Urabá', 'Bajo cauca', 'Magdalena medio', 'Suroeste',
+    ]
+    const subNorm = SUBREGIONES_FIJAS.map(norm)
+
+    function canonicalSub(raw) {
+      const idx = subNorm.indexOf(norm(sentenceCase(raw ?? '')))
+      return idx !== -1 ? SUBREGIONES_FIJAS[idx] : sentenceCase(raw ?? '')
     }
 
-    // ── Emitir opciones para filtros ──────────────────────────────────────────
+    // ── Opciones para filtros ─────────────────────────────────────────────────
     const subregiones = geoMunicipios
-      ? [...new Set(geoMunicipios.features.map(f => sentenceCase(f.properties.subregion)).filter(Boolean))].sort()
+      ? [...new Set(geoMunicipios.features.map(f => canonicalSub(f.properties.SUBREGION)).filter(Boolean))].sort()
       : []
     const municipioOpts = geoMunicipios
-      ? [...new Set(geoMunicipios.features.map(f => sentenceCase(f.properties.mpio_nombr)).filter(Boolean))]
-          .filter(m => mpioNormSet.has(norm(m)))
-          .sort()
+      ? [...new Set(geoMunicipios.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))].sort()
       : []
     const circuitos = geoVias
-      ? geoVias.features.map(f => f.properties.name).filter(Boolean).sort()
+      ? [...new Set(geoVias.features.map(f => f.properties.CIRCUITO).filter(Boolean))].sort()
       : []
 
     const municipiosPorSubregion = {}
     if (geoMunicipios) {
       for (const f of geoMunicipios.features) {
-        const sub  = sentenceCase(f.properties.subregion)
-        const mpio = sentenceCase(f.properties.mpio_nombr)
-        if (sub && mpio && mpioNormSet.has(norm(mpio))) {
+        const sub  = canonicalSub(f.properties.SUBREGION)
+        const mpio = sentenceCase(f.properties.MPIO_NOMBR)
+        if (sub && mpio) {
           if (!municipiosPorSubregion[sub]) municipiosPorSubregion[sub] = []
           if (!municipiosPorSubregion[sub].includes(mpio)) municipiosPorSubregion[sub].push(mpio)
         }
@@ -105,122 +99,31 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       municipiosPorSubregion,
     })
 
-    // ── Emitir estadísticas ───────────────────────────────────────────────────
-    const totalCircuitos   = geoVias?.features.length ?? 0
-    const uniqueMunicipios = geoMunicipios
-      ? new Set(geoMunicipios.features.map(f => f.properties.mpio_nombr)).size : 0
-
-    const SUBREGIONES_FIJAS = [
-      'Valle de aburrá', 'Oriente', 'Occidente', 'Norte',
-      'Nordeste', 'Urabá', 'Bajo cauca', 'Magdalena medio', 'Suroeste',
-    ]
-
-    // Lookup municipio → subregión desde geoMunicipios
-    const municipioToSub = {}
-    if (geoMunicipios) {
-      for (const f of geoMunicipios.features) {
-        const mpio = f.properties.mpio_nombr
-        const sub  = f.properties.subregion
-        if (mpio && sub) municipioToSub[norm(mpio)] = sentenceCase(sub)
-      }
-    }
-
-    // Mapa normalizado de subregiones fijas para match robusto
-    const subNorm = SUBREGIONES_FIJAS.map(norm)
-
-    // ── Helpers espaciales ────────────────────────────────────────────────────
-    function pointInRing(pt, ring) {
-      let inside = false
-      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-        const [xi, yi] = ring[i], [xj, yj] = ring[j]
-        if ((yi > pt[1]) !== (yj > pt[1]) &&
-            pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi) + xi)
-          inside = !inside
-      }
-      return inside
-    }
-
-    function pointInGeometry(pt, geom) {
-      if (geom.type === 'Polygon')
-        return pointInRing(pt, geom.coordinates[0])
-      if (geom.type === 'MultiPolygon')
-        return geom.coordinates.some(poly => pointInRing(pt, poly[0]))
-      return false
-    }
-
-    function geoCentroid(geom) {
-      const pts = []
-      function collect(c) { typeof c[0] === 'number' ? pts.push(c) : c.forEach(collect) }
-      collect(geom.coordinates)
-      if (!pts.length) return null
-      return [
-        pts.reduce((s, p) => s + p[0], 0) / pts.length,
-        pts.reduce((s, p) => s + p[1], 0) / pts.length,
-      ]
-    }
-
-    function subregionFromPoint(pt) {
-      if (!geoMunicipios || !pt) return null
-      const feat = geoMunicipios.features.find(m => pointInGeometry(pt, m.geometry))
-      if (!feat) return null
-      const sub = sentenceCase(feat.properties.subregion ?? '')
-      const idx = subNorm.indexOf(norm(sub))
-      return idx !== -1 ? SUBREGIONES_FIJAS[idx] : null
-    }
-
-    function resolveSubregion(desc, geometry) {
-      // 1. Campo subregión en la descripción
-      const subKey = Object.keys(desc).find(k => /subregi/i.test(k))
-      if (subKey) {
-        const idx = subNorm.indexOf(norm(sentenceCase(String(desc[subKey]))))
-        if (idx !== -1) return SUBREGIONES_FIJAS[idx]
-      }
-      // 2. Campo municipio en la descripción → lookup
-      const mpioKey = Object.keys(desc).find(k => /municipio/i.test(k))
-      if (mpioKey) {
-        const sub = municipioToSub[norm(String(desc[mpioKey]))]
-        if (sub) {
-          const idx = subNorm.indexOf(norm(sub))
-          if (idx !== -1) return SUBREGIONES_FIJAS[idx]
-        }
-      }
-      // 3. Fallback espacial: centroide de la vía contra polígonos de municipios
-      return subregionFromPoint(geoCentroid(geometry))
-    }
-
-    let longitudTotal    = 0
+    // ── Estadísticas desde propiedades directas del GeoJSON ──────────────────
+    const viasDetalle = []
+    let longitudTotal = 0
     const kmPorSubregion = {}
-    const viasDetalle    = []
 
     if (geoVias) {
       for (const f of geoVias.features) {
-        const desc = parseDescription(f.properties.description ?? '')
-        const km   = calcGeomKm(f.geometry) || extractKm(desc) || 0
-        const sub  = resolveSubregion(desc, f.geometry) ?? 'Sin subregión'
+        const p    = f.properties
+        const km   = parseFloat(p.long_km) || 0
+        const sub  = canonicalSub(p.SUBREGION) ?? 'Sin subregión'
+        const mpio = sentenceCase(p.MPIO_NOMBR ?? '')
 
-        if (km) {
-          longitudTotal += km
-          kmPorSubregion[sub] = (kmPorSubregion[sub] ?? 0) + km
-        }
-
-        // Extraer campos clave de cada vía para los modales de detalle
-        const get = (pattern) => {
-          const key = Object.keys(desc).find(k => pattern.test(k))
-          return key ? String(desc[key]).trim() : ''
-        }
-        const avanceRaw = parseFloat(get(/avance/i).replace('%', '').replace(',', '.')) || 0
+        longitudTotal += km
+        if (km) kmPorSubregion[sub] = (kmPorSubregion[sub] ?? 0) + km
 
         viasDetalle.push({
-          nombre:      f.properties.name ?? 'Sin nombre',
-          codigo:      get(/c[oó]digo/i),
-          municipio:   sentenceCase(get(/municipio/i)),
+          nombre:      p.NOMBRE_VIA ?? 'Sin nombre',
+          codigo:      p.CODIGO_VIA ?? '',
+          municipio:   mpio,
           subregion:   sub,
           km:          Math.round(km * 100) / 100,
-          avance:      Math.round(avanceRaw * 10) / 10,
-          contratista: get(/contratista/i),
-          fechaInicio: get(/fecha/i),
-          plazo:       get(/plazo/i),
-          circuito:    get(/circuito/i),
+          avance:      parseFloat(p.Avance_Fis) || 0,
+          contratista: p.CONTRATIST ?? '',
+          plazo:       p.PLAZO_MESE ? `${p.PLAZO_MESE} meses` : '',
+          circuito:    p.CIRCUITO ?? '',
         })
       }
     }
@@ -228,18 +131,18 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const totalKm = longitudTotal || 1
     const subregionesStats = SUBREGIONES_FIJAS.map(name => {
       const km = kmPorSubregion[name] ?? 0
-      return {
-        name,
-        km:  Math.round(km * 100) / 100,
-        pct: Math.round((km / totalKm) * 100),
-      }
+      return { name, km: Math.round(km * 100) / 100, pct: Math.round((km / totalKm) * 100) }
     })
 
+    const uniqueVias       = new Set(geoVias?.features.map(f => f.properties.NOMBRE_VIA).filter(Boolean)).size
+    const uniqueMunicipios = new Set(geoVias?.features.map(f => f.properties.MPIO_NOMBR).filter(Boolean)).size
+    const uniqueCircuitos  = new Set(geoVias?.features.map(f => f.properties.CIRCUITO).filter(Boolean)).size
+
     onStatsLoaded?.({
-      viasIntervenidas: totalCircuitos,
+      viasIntervenidas: uniqueVias,
       longitudTotal:    Math.round(longitudTotal * 100) / 100,
       municipios:       uniqueMunicipios,
-      circuitos:        totalCircuitos,
+      circuitos:        uniqueCircuitos,
       subregiones:      subregionesStats,
       viasDetalle,
     })
@@ -270,7 +173,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           type: 'symbol',
           source: 'municipios',
           layout: {
-            'text-field': ['get', 'mpio_nombr'],
+            'text-field': ['get', 'MPIO_NOMBR'],
             'text-size': ['interpolate', ['linear'], ['zoom'], 7, 9, 10, 13],
             'text-anchor': 'center',
             'text-max-width': 8,
@@ -286,21 +189,15 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
         let hoveredMpio = null
         map.on('mousemove', 'municipios-fill', (e) => {
-          map.getCanvas().style.cursor = 'pointer'
           if (hoveredMpio !== null)
             map.setFeatureState({ source: 'municipios', id: hoveredMpio }, { hover: false })
           hoveredMpio = e.features[0].id
           map.setFeatureState({ source: 'municipios', id: hoveredMpio }, { hover: true })
-          const name  = e.features[0].properties.mpio_nombr ?? ''
-          const point = e.point
-          hoverLabel.value = { name: capitalize(name), x: point.x, y: point.y, visible: true }
         })
         map.on('mouseleave', 'municipios-fill', () => {
-          map.getCanvas().style.cursor = ''
           if (hoveredMpio !== null)
             map.setFeatureState({ source: 'municipios', id: hoveredMpio }, { hover: false })
           hoveredMpio = null
-          hoverLabel.value = { ...hoverLabel.value, visible: false }
         })
       } catch (err) {
         console.error('[SIMEVA] Error cargando municipios:', err)
@@ -310,17 +207,13 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     // ── Capa vías ─────────────────────────────────────────────────────────────
     if (geoVias) {
       try {
-        map.addSource('vias', { type: 'geojson', data: geoVias })
+        map.addSource('vias', { type: 'geojson', data: geoVias, generateId: true })
         map.addLayer({
           id: 'vias-casing',
           type: 'line',
           source: 'vias',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: {
-            'line-color': '#ffffff',
-            'line-width': ['coalesce', ['get', 'stroke-width'], 5],
-            'line-opacity': 0.4,
-          },
+          paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.4 },
         })
         map.addLayer({
           id: 'vias-line',
@@ -328,24 +221,98 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           source: 'vias',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: {
-            'line-color':   ['coalesce', ['get', 'stroke'],         '#ffaa00'],
-            'line-width':   ['coalesce', ['get', 'stroke-width'],   5],
-            'line-opacity': ['coalesce', ['get', 'stroke-opacity'], 1],
+            'line-color':   ['coalesce', ['get', 'stroke'], '#ffaa00'],
+            'line-width':   5,
+            'line-opacity': 1,
+          },
+        })
+        // Capa de dash animado al hacer hover
+        map.addLayer({
+          id: 'vias-hover-dash',
+          type: 'line',
+          source: 'vias',
+          layout: { 'line-cap': 'butt', 'line-join': 'round' },
+          filter: ['==', 'NOMBRE_VIA', ''],   // oculta hasta que haya hover
+          paint: {
+            'line-color':     '#ffff00',
+            'line-width':     6,
+            'line-opacity':   0.9,
+            'line-dasharray': [0, 4, 3],
           },
         })
 
+        // Secuencia de dasharray para simular movimiento (marching ants)
+        const DASH_SEQ = [
+          [0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5],
+          [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
+          [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5],
+          [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1],
+          [0, 3.5, 3, 0.5], [0, 4, 3, 0],
+        ]
+        let dashStep = 0
+        let dashRaf  = null
+        let lastDashTime = 0
+
+        function animateDash(ts) {
+          if (ts - lastDashTime > 60) {   // ~16 fps
+            dashStep = (dashStep + 1) % DASH_SEQ.length
+            map.setPaintProperty('vias-hover-dash', 'line-dasharray', DASH_SEQ[dashStep])
+            lastDashTime = ts
+          }
+          dashRaf = requestAnimationFrame(animateDash)
+        }
+
+        function startDash(nombreVia) {
+          map.setFilter('vias-hover-dash', ['==', ['get', 'NOMBRE_VIA'], nombreVia])
+          if (!dashRaf) dashRaf = requestAnimationFrame(animateDash)
+        }
+
+        function stopDash() {
+          map.setFilter('vias-hover-dash', ['==', 'NOMBRE_VIA', ''])
+          if (dashRaf) { cancelAnimationFrame(dashRaf); dashRaf = null }
+        }
+
+        // Mapa NOMBRE_VIA → km para el tooltip
+        const viaKmMap = {}
+        for (const v of viasDetalle) viaKmMap[v.nombre] = v.km
+
+        let hoveredVia = null
+
         map.on('click', 'vias-line', (e) => {
           const p    = e.features[0].properties
-          const feat = cachedVias.value?.features.find(f => f.properties.name === p.name)
+          const feat = cachedVias.value?.features.find(f => f.properties.NOMBRE_VIA === p.NOMBRE_VIA)
           selectedVia.value = {
-            name:        p.name ?? 'Vía',
-            description: parseDescription(p.description ?? ''),
-            photos:      extractPhotosByPhase(p, p.description ?? ''),
-            geometry:    feat?.geometry ?? null,
+            name:        p.NOMBRE_VIA ?? 'Vía',
+            description: {
+              Municipio:   sentenceCase(p.MPIO_NOMBR ?? ''),
+              Subregión:   canonicalSub(p.SUBREGION),
+              Circuito:    p.CIRCUITO ?? '',
+              Código:      p.CODIGO_VIA ?? '',
+              Contratista: p.CONTRATIST ?? '',
+              'Longitud (km)': parseFloat(p.long_km) || '',
+              'Avance físico': p.Avance_Fis != null ? `${p.Avance_Fis}%` : '',
+              'Plazo (meses)': p.PLAZO_MESE ?? '',
+            },
+            photos:   [],
+            geometry: feat?.geometry ?? null,
           }
         })
-        map.on('mouseenter', 'vias-line', () => { map.getCanvas().style.cursor = 'pointer' })
-        map.on('mouseleave', 'vias-line', () => { map.getCanvas().style.cursor = '' })
+
+        map.on('mousemove', 'vias-line', (e) => {
+          map.getCanvas().style.cursor = 'pointer'
+          const name = e.features[0].properties.NOMBRE_VIA ?? ''
+          if (name !== hoveredVia) {
+            startDash(name)
+            hoveredVia = name
+          }
+          viaHoverLabel.value = { name, km: viaKmMap[name] ?? null, x: e.point.x, y: e.point.y, visible: true }
+        })
+        map.on('mouseleave', 'vias-line', () => {
+          map.getCanvas().style.cursor = ''
+          stopDash()
+          hoveredVia = null
+          viaHoverLabel.value = { ...viaHoverLabel.value, visible: false }
+        })
 
         buildCallouts?.(geoVias.features)
         map.on('move',   updateCalloutPositions)
@@ -358,5 +325,5 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     loading.value = false
   }
 
-  return { loading, loadError, fromCache, hoverLabel, selectedVia, cachedMunicipios, cachedVias, loadSimeva }
+  return { loading, loadError, fromCache, hoverLabel, viaHoverLabel, selectedVia, cachedMunicipios, cachedVias, loadSimeva }
 }

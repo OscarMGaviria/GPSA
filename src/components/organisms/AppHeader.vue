@@ -1,5 +1,5 @@
 <script setup>
-import { PanelRightClose, PanelRightOpen } from 'lucide-vue-next'
+import { PanelRightClose, PanelRightOpen, HelpCircle } from 'lucide-vue-next'
 import FilterBar from '../molecules/FilterBar.vue'
 
 const props = defineProps({
@@ -9,9 +9,10 @@ const props = defineProps({
   municipioOptions: { type: Array,   default: () => ['Todos los municipios'] },
   circuitoOptions:  { type: Array,   default: () => ['Todos los circuitos'] },
   panelOpen:        { type: Boolean, default: true },
+  activeFilters:    { type: Object,  default: null },
 })
 
-const emit = defineEmits(['filter-change', 'toggle-panel'])
+const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour'])
 </script>
 
 <template>
@@ -36,10 +37,22 @@ const emit = defineEmits(['filter-change', 'toggle-panel'])
         :subregion-options="subregionOptions"
         :municipio-options="municipioOptions"
         :circuito-options="circuitoOptions"
+        :active-filters="activeFilters"
         @filter-change="emit('filter-change', $event)"
       />
 
       <div class="header-sep"></div>
+
+      <div class="btn-panel-wrapper">
+        <button
+          class="btn-panel"
+          @click="emit('start-tour')"
+          aria-label="Abrir tutorial"
+        >
+          <HelpCircle :size="15" />
+        </button>
+        <span class="btn-tooltip">¿Cómo usar SIMEVA?</span>
+      </div>
 
       <div class="btn-panel-wrapper">
         <button
@@ -69,6 +82,8 @@ const emit = defineEmits(['filter-change', 'toggle-panel'])
   background: linear-gradient(135deg, #0b5640 0%, #0d6b4e 60%, #0a4d38 100%);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
   position: relative;
+  z-index: 100;
+  overflow: visible;
 }
 
 .app-header::before {

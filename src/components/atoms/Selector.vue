@@ -20,6 +20,10 @@ const props = defineProps({
   modelValue: {
     type: String,
     default: ''
+  },
+  align: {
+    type: String,
+    default: 'left'  // 'left' | 'right'
   }
 })
 
@@ -72,7 +76,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
 
     <!-- Dropdown -->
     <Transition name="dropdown">
-      <div v-if="isOpen" class="dropdown-panel">
+      <div v-if="isOpen" class="dropdown-panel" :class="{ 'align-right': align === 'right' }">
 
         <!-- Search box -->
         <div class="dropdown-search">
@@ -168,6 +172,11 @@ onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
   position: absolute;
   top: calc(100% + 5px);
   left: 0;
+}
+
+.dropdown-panel.align-right {
+  left: auto;
+  right: 0;
   min-width: 100%;
   z-index: 200;
   background: #ffffff;

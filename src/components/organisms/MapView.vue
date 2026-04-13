@@ -5,17 +5,15 @@ import { BASEMAPS } from '../../composables/useMapInit.js'
 import { useMapOrchestrator } from '../../composables/useMapOrchestrator.js'
 import { useMapStore } from '../../stores/useMapStore.js'
 import ViaDetailModal from './ViaDetailModal.vue'
-import MapSearch from '../molecules/MapSearch.vue'
 
 const store = useMapStore()
 const mapContainer = ref(null)
 
 const {
   activeBasemap, switcherOpen, terrainActive, switchBasemap, toggleTerrain,
-  loading, loadError, fromCache, hoverLabel, loadSimeva,
+  loading, loadError, fromCache, hoverLabel, viaHoverLabel, loadSimeva,
   selectedVia,
   selectedSubregion, selectedMunicipio,
-  visibleCallouts,
   noResults,
   openVia,
 } = useMapOrchestrator(mapContainer, () => store.activeFilters)
@@ -49,47 +47,6 @@ const {
       </div>
     </Transition>
 
-    <!-- Loading overlay -->
-    <Transition name="loader-fade">
-      <div v-if="loading" class="map-loader">
-        <div class="loader-ring">
-          <svg viewBox="0 0 50 50" class="loader-svg">
-            <circle class="loader-track" cx="25" cy="25" r="20" />
-            <circle class="loader-arc"   cx="25" cy="25" r="20" />
-          </svg>
-        </div>
-        <span class="loader-text">Cargando datos…</span>
-      </div>
-    </Transition>
-
-    <!-- ── Callout overlay: líneas + labels por circuito (solo con filtro activo) ── -->
-    <svg v-if="visibleCallouts.length" class="callout-svg" aria-hidden="true">
-      <g v-for="c in visibleCallouts" :key="c.name + '-line'">
-        <line
-          :x1="c.lineEndX" :y1="c.lineEndY"
-          :x2="c.screenX"  :y2="c.screenY"
-          class="co-line"
-        />
-        <circle :cx="c.screenX" :cy="c.screenY" r="5" class="co-dot" />
-        <circle :cx="c.screenX" :cy="c.screenY" r="3" class="co-dot-inner" />
-      </g>
-    </svg>
-
-    <template v-if="visibleCallouts.length">
-      <div
-        v-for="c in visibleCallouts"
-        :key="c.name + '-label'"
-        class="callout-label"
-        :style="{ left: c.labelX + 'px', top: c.labelY + 'px' }"
-      >
-        <div class="co-name">{{ c.name }}</div>
-        <div class="co-km">
-          <span class="co-km-val">{{ c.km != null ? c.km.toLocaleString('es-CO') : '—' }}</span>
-          <span class="co-km-unit"> Km</span>
-        </div>
-      </div>
-    </template>
-
     <!-- Letreros verticales (izquierda): subregión + municipio juntos -->
     <div v-if="selectedSubregion || selectedMunicipio" class="subreg-group">
       <Transition name="subreg">
@@ -109,13 +66,18 @@ const {
       <img src="/A toda maquina.png" alt="A Toda Máquina" />
     </div>
 
-    <!-- Tooltip hover municipio -->
-    <Transition name="tooltip">
+    <!-- Tooltip hover vía -->
+    <Transition name="via-tip">
       <div
-        v-if="hoverLabel.visible"
-        class="mpio-tooltip"
-        :style="{ left: hoverLabel.x + 'px', top: hoverLabel.y + 'px' }"
-      >{{ hoverLabel.name }}</div>
+        v-if="viaHoverLabel.visible"
+        class="via-tooltip"
+        :style="{ left: viaHoverLabel.x + 'px', top: viaHoverLabel.y + 'px' }"
+      >
+        <div class="vt-name">{{ viaHoverLabel.name }}</div>
+        <div v-if="viaHoverLabel.km != null" class="vt-km">
+          {{ viaHoverLabel.km.toLocaleString('es-CO') }} km
+        </div>
+      </div>
     </Transition>
 
     <!-- Banner de datos desde caché (offline) -->
@@ -125,10 +87,7 @@ const {
       </div>
     </Transition>
 
-    <!-- Buscador flotante de vías -->
-    <MapSearch @open-via="openVia" />
-
-    <!-- Toast: sin resultados -->
+<!-- Toast: sin resultados -->
     <Transition name="loader-fade">
       <div v-if="noResults" class="no-results-toast">
         <svg viewBox="0 0 20 20" fill="currentColor" class="nr-icon">
@@ -489,101 +448,57 @@ const {
   background: #f9fafb;
 }
 
-/* ── Callout overlay ── */
-.callout-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 15;
-  overflow: visible;
-}
-.co-line {
-  stroke: #0b5640;
-  stroke-width: 1.5;
-  stroke-dasharray: 5 4;
-  opacity: 0.75;
-}
-.co-dot {
-  fill: #ffffff;
-  stroke: #0b5640;
-  stroke-width: 2;
-}
-.co-dot-inner { fill: #0b5640; }
-
-.callout-label {
-  position: absolute;
-  z-index: 16;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-width: 120px;
-  max-width: 175px;
-}
-.co-name {
-  font-family: 'Prompt', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  color: #1a3c2d;
-  line-height: 1.25;
-}
-.co-km {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 1px;
-  background: #0b5640;
-  border-radius: 6px;
-  padding: 2px 10px 2px 8px;
-}
-.co-km-val {
-  font-family: 'Prompt', sans-serif;
-  font-size: 18px;
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1;
-}
-.co-km-unit {
-  font-family: 'Prompt', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.85);
-}
-
-/* ── Tooltip hover municipio ── */
-.mpio-tooltip {
+/* ── Tooltip hover vía ── */
+.via-tooltip {
   position: absolute;
   z-index: 30;
   pointer-events: none;
-  transform: translate(-50%, calc(-100% - 10px));
+  transform: translate(-50%, calc(-100% - 12px));
   background: #0b5640;
   color: #fff;
   font-family: 'Prompt', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: 8px;
+  padding: 6px 12px 7px;
   white-space: nowrap;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.mpio-tooltip::after {
+.via-tooltip::after {
   content: '';
   position: absolute;
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border: 5px solid transparent;
+  border: 6px solid transparent;
   border-top-color: #0b5640;
 }
-.tooltip-enter-active, .tooltip-leave-active {
-  transition: opacity .12s ease, transform .12s ease;
+.vt-name {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  max-width: 240px;
+  white-space: normal;
 }
-.tooltip-enter-from, .tooltip-leave-to {
+.vt-km {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+}
+.via-tip-enter-active {
+  transition: opacity .15s ease, transform .15s cubic-bezier(.34,1.56,.64,1);
+}
+.via-tip-leave-active {
+  transition: opacity .1s ease, transform .1s ease;
+}
+.via-tip-enter-from {
   opacity: 0;
-  transform: translate(-50%, calc(-100% - 6px));
+  transform: translate(-50%, calc(-100% - 6px)) scale(0.88);
+}
+.via-tip-leave-to {
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 8px));
 }
 
 /* ── Letreros verticales ── */
@@ -701,72 +616,4 @@ const {
 .error-retry:hover  { background: #2d8653; transform: translateY(-1px); }
 .error-retry:active { transform: translateY(0); }
 
-/* ── Loading overlay ──────────────────────────────────────────────────────── */
-.map-loader {
-  position: absolute;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: rgba(234, 244, 237, 0.82);
-  backdrop-filter: blur(6px);
-}
-
-.loader-ring {
-  width: 56px;
-  height: 56px;
-  filter: drop-shadow(0 4px 10px rgba(26, 92, 58, 0.3));
-}
-
-.loader-svg {
-  width: 100%;
-  height: 100%;
-  animation: spin 1.4s linear infinite;
-}
-
-.loader-track {
-  fill: none;
-  stroke: #c8e6d4;
-  stroke-width: 4;
-}
-
-.loader-arc {
-  fill: none;
-  stroke: #1a5c3a;
-  stroke-width: 4;
-  stroke-linecap: round;
-  stroke-dasharray: 80 45;
-  animation: dash 1.4s ease-in-out infinite;
-}
-
-.loader-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a5c3a;
-  letter-spacing: 0.3px;
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes dash {
-  0%   { stroke-dashoffset: 0; }
-  50%  { stroke-dashoffset: -50; }
-  100% { stroke-dashoffset: -125; }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
-}
-
-.loader-fade-enter-active { transition: opacity .3s ease; }
-.loader-fade-leave-active { transition: opacity .5s ease; }
-.loader-fade-enter-from,
-.loader-fade-leave-to     { opacity: 0; }
 </style>

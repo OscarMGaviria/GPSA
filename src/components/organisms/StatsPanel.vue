@@ -2,8 +2,8 @@
 import { ref, watch, computed, onUnmounted } from 'vue'
 import { Route, Ruler, MapPin, GitBranch } from 'lucide-vue-next'
 import StatCard       from '../atoms/StatCard.vue'
-import ProgressRing   from '../atoms/ProgressRing.vue'
 import ProgressBar    from '../atoms/ProgressBar.vue'
+import RadarChart     from '../atoms/RadarChart.vue'
 import StatsDetailModal from './StatsDetailModal.vue'
 
 const emit = defineEmits(['filter-subregion'])
@@ -29,8 +29,10 @@ const props = defineProps({
   // Subregiones
   subregiones: { type: Array, default: () => [] },
 
-  // Detalle de vías para modales
-  viasDetalle: { type: Array, default: () => [] },
+  // Detalle de vías para modales y radar
+  viasDetalle:    { type: Array,  default: () => [] },
+  totalViasGlobal: { type: Number, default: 1 },
+  totalKmGlobal:   { type: Number, default: 1 },
 })
 
 // ── Modal de detalle ──────────────────────────────────────────────────────
@@ -116,6 +118,44 @@ onUnmounted(() => {
   cancelAllRafs()
 })
 
+// ── Avance en km calculado desde viasDetalle ────────────────────────────────
+const avanceKmCalc = computed(() => {
+  const vias = props.viasDetalle
+  if (!vias.length) return { pct: 0, intervenidos: 0, contractuales: 0, pendientes: 0 }
+  const contractuales  = vias.reduce((s, v) => s + (v.km || 0), 0)
+  const avanceProm     = vias.reduce((s, v) => s + (v.avance || 0), 0) / vias.length
+  const intervenidos   = contractuales * avanceProm / 100
+  const pendientes     = contractuales - intervenidos
+  return {
+    pct:          Math.round(avanceProm),
+    intervenidos: Math.round(intervenidos * 100) / 100,
+    contractuales: Math.round(contractuales * 100) / 100,
+    pendientes:   Math.round(pendientes * 100) / 100,
+  }
+})
+
+// ── Radar chart ─────────────────────────────────────────────────────────────
+const radarAxes = computed(() => {
+  const vias = props.viasDetalle
+  if (!vias.length) return []
+
+  const totalVias   = vias.length
+  const totalKm     = vias.reduce((s, v) => s + (v.km || 0), 0)
+  const iniciadas   = vias.filter(v => (v.avance || 0) > 0).length
+  const avanceFis   = Math.round(vias.reduce((s, v) => s + (v.avance || 0), 0) / totalVias)
+  const avanceFin   = Math.round(vias.reduce((s, v) => s + (v.avanceFin || v.avance || 0), 0) / totalVias)
+  const coberturaKm = Math.min(100, Math.round((totalKm / (props.totalKmGlobal || 1)) * 100))
+  const viasIni     = Math.round((iniciadas / totalVias) * 100)
+
+  return [
+    { label: 'Av. Físico',    value: avanceFis },
+    { label: 'Av. Financiero', value: avanceFin },
+    { label: 'Km cobertura',  value: coberturaKm },
+    { label: 'Vías iniciadas', value: viasIni },
+    { label: 'Contratadas',   value: Math.min(100, Math.round((totalVias / (props.totalViasGlobal || 1)) * 100)) },
+  ]
+})
+
 // ── Bar chart helpers ───────────────────────────────────────────────────────
 const ABREVIATURAS = {
   'valle de aburra': 'Valle',
@@ -134,7 +174,11 @@ function shortLabel(name) {
   return ABREVIATURAS[key] ?? name
 }
 
-const maxKm = computed(() => Math.max(...props.subregiones.map(s => s.km), 1))
+const subregionesFiltradas = computed(() =>
+  props.subregiones.filter(s => s.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') !== 'valle de aburra')
+)
+
+const maxKm = computed(() => Math.max(...subregionesFiltradas.value.map(s => s.km), 1))
 
 function toggleSubregion(name) {
   const next = props.activeSubregion === name ? 'Todas las subregiones' : name
@@ -187,20 +231,14 @@ const yTicks = computed(() => {
       <!-- ── Avance físico + Avance en km ──────────────────────────────── -->
       <div class="avance-row" :class="{ animate: showContent }">
 
-        <!-- Avance físico -->
-        <div class="avance-card">
+        <!-- Radar de avance -->
+        <div class="avance-card radar-card">
           <div class="section-label">
-            <span class="sl-dot">✓</span> Avance físico
+            <span class="sl-dot">◈</span> Indicadores de avance
           </div>
-          <div class="ring-wrap">
-            <ProgressRing
-              :pct="avanceFisicoPct"
-              :size="110"
-              :stroke="10"
-              sublabel="Ponderado por longitud intervenida"
-            />
+          <div class="radar-wrap">
+            <RadarChart :axes="radarAxes" :size="160" />
           </div>
-          <span class="phase-badge">Inicio</span>
         </div>
 
         <!-- Avance en km -->
@@ -209,32 +247,33 @@ const yTicks = computed(() => {
             <span class="sl-dot">↗</span> Avance en kilómetros
           </div>
 
+          <div class="km-pct-label">{{ avanceKmCalc.pct }}% avance físico promedio</div>
           <ProgressBar
-            :pct="avanceKmPct"
+            :pct="avanceKmCalc.pct"
             color="#2d8653"
             track-color="#c6e8d3"
             :height="10"
           />
           <div class="km-range">
             <span>0 km</span>
-            <span>{{ kmContractuales.toFixed(1) }} km totales</span>
+            <span>{{ avanceKmCalc.contractuales.toFixed(1) }} km totales</span>
           </div>
 
           <div class="km-metrics">
             <div class="km-metric">
-              <span class="km-val">{{ kmIntervenidos.toFixed(1) }}</span>
+              <span class="km-val">{{ avanceKmCalc.intervenidos.toFixed(1) }}</span>
               <span class="km-unit">km</span>
               <span class="km-lbl">INTERVENIDOS</span>
             </div>
             <div class="km-sep" />
             <div class="km-metric">
-              <span class="km-val">{{ kmContractuales.toFixed(1) }}</span>
+              <span class="km-val">{{ avanceKmCalc.contractuales.toFixed(1) }}</span>
               <span class="km-unit">km</span>
               <span class="km-lbl">CONTRACTUALES</span>
             </div>
             <div class="km-sep" />
             <div class="km-metric pending">
-              <span class="km-val">{{ kmPendientes.toFixed(1) }}</span>
+              <span class="km-val">{{ avanceKmCalc.pendientes.toFixed(1) }}</span>
               <span class="km-unit">km</span>
               <span class="km-lbl">PENDIENTES</span>
             </div>
@@ -261,7 +300,7 @@ const yTicks = computed(() => {
             </div>
 
             <div
-              v-for="(s, i) in subregiones"
+              v-for="(s, i) in subregionesFiltradas"
               :key="s.name"
               class="bar-col"
               :class="{ 'bar-col--active': activeSubregion === s.name, 'bar-col--dimmed': activeSubregion && activeSubregion !== s.name }"
@@ -271,7 +310,6 @@ const yTicks = computed(() => {
               :title="activeSubregion === s.name ? `Quitar filtro: ${s.name}` : `Filtrar por ${s.name}`"
             >
               <div class="bar-outer">
-                <span v-if="s.km > 0" class="bar-badge">{{ s.km }} km</span>
                 <div
                   class="bar-fill"
                   :class="{ 'bar-fill--empty': s.km === 0 }"
@@ -399,24 +437,25 @@ const yTicks = computed(() => {
 }
 
 .avance-card {
-  background: rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.42);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.75);
+  border: 1px solid rgba(255,255,255,0.8);
   border-radius: 16px;
   padding: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 20px rgba(11,86,64,.08), 0 1px 4px rgba(0,0,0,.05),
-              inset 0 1px 0 rgba(255,255,255,0.6);
-  transition: box-shadow .2s ease, background .2s ease;
+  box-shadow: 0 4px 16px rgba(45,134,83,.12), 0 1px 4px rgba(0,0,0,.06),
+              inset 0 1px 0 rgba(255,255,255,0.65);
+  transition: transform .22s ease, box-shadow .22s ease, background .22s ease;
 }
 .avance-card:hover {
-  background: rgba(255,255,255,0.72);
-  box-shadow: 0 8px 32px rgba(11,86,64,.13), 0 2px 8px rgba(0,0,0,.06),
-              inset 0 1px 0 rgba(255,255,255,0.7);
+  transform: translateY(-3px) scale(1.01);
+  background: rgba(255,255,255,0.75);
+  box-shadow: 0 10px 32px rgba(45,134,83,.2), 0 3px 8px rgba(0,0,0,.08),
+              inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
 .section-label {
@@ -433,6 +472,9 @@ const yTicks = computed(() => {
 
 .ring-wrap { align-self: center; }
 
+.radar-card { align-items: center; }
+.radar-wrap { align-self: center; display: flex; align-items: center; justify-content: center; flex: 1; }
+
 .phase-badge {
   background: #fce7f3;
   color: #be185d;
@@ -446,6 +488,14 @@ const yTicks = computed(() => {
 .avance-km { align-items: stretch; gap: 6px; }
 .avance-km .section-label { margin-bottom: 2px; }
 
+.km-pct-label {
+  font-family: 'Prompt', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2d8653;
+  text-align: right;
+  margin-bottom: 2px;
+}
 .km-range {
   display: flex;
   justify-content: space-between;
@@ -578,16 +628,16 @@ const yTicks = computed(() => {
   color: #fff;
 }
 .bar-col--dimmed {
-  opacity: 0.38;
+  opacity: 0.55;
   transition: opacity .2s;
 }
 .bar-col--dimmed:hover {
-  opacity: 0.75;
+  opacity: 0.85;
 }
 .bar-col:hover .bar-fill {
-  background: linear-gradient(180deg, #3fad72 0%, #236b46 100%);
+  background: linear-gradient(180deg, rgba(45,134,83,0.75) 0%, rgba(26,92,58,0.65) 100%);
   width: 90%;
-  box-shadow: 0 -4px 12px rgba(45, 134, 83, 0.5);
+  box-shadow: 0 -4px 12px rgba(45, 134, 83, 0.3);
   transform: scaleY(1) translateY(-3px);
 }
 .bar-col:hover .bar-label {
@@ -633,7 +683,7 @@ const yTicks = computed(() => {
   width: 78%;
   border-radius: 4px 4px 0 0;
   min-height: 4px;
-  background: linear-gradient(180deg, #2d8653 0%, #1a5c3a 100%);
+  background: linear-gradient(180deg, rgba(45,134,83,0.45) 0%, rgba(26,92,58,0.35) 100%);
   animation: barGrow .7s cubic-bezier(.34,1.10,.64,1) both;
   transform-origin: bottom;
   transition: width .25s ease, background .25s ease, box-shadow .25s ease, transform .25s ease;
