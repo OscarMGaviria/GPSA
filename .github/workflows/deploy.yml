@@ -26,8 +26,8 @@ jobs:
       - run: npm install
       - run: npm run build
         env:
-          VITE_API_LOCALIZACIONES: https://a2c20de4-18de-4c7e-b253-88c2fd0c0b3f.mock.pstmn.io/maps/geojson/SIMEVA/localizaciones
-          VITE_API_MUNICIPIOS: https://78577c12-0232-4b96-8123-281e22b01558.mock.pstmn.io/maps/geojson/SIMEVA/municipios
+          VITE_API_LOCALIZACIONES: https://apim-simeva-qa.azure-api.net/maps/geojson/simeva/localizacion
+          VITE_API_MUNICIPIOS: https://apim-simeva-qa.azure-api.net/maps/geojson/simeva/municipios
 
       - uses: actions/upload-pages-artifact@v3
         with:
