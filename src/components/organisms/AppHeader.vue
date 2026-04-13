@@ -1,5 +1,5 @@
 <script setup>
-import { PanelRightClose, PanelRightOpen } from 'lucide-vue-next'
+import { PanelRightClose, PanelRightOpen, HelpCircle } from 'lucide-vue-next'
 import FilterBar from '../molecules/FilterBar.vue'
 
 const props = defineProps({
@@ -12,7 +12,7 @@ const props = defineProps({
   activeFilters:    { type: Object,  default: null },
 })
 
-const emit = defineEmits(['filter-change', 'toggle-panel'])
+const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour'])
 </script>
 
 <template>
@@ -42,6 +42,17 @@ const emit = defineEmits(['filter-change', 'toggle-panel'])
       />
 
       <div class="header-sep"></div>
+
+      <div class="btn-panel-wrapper">
+        <button
+          class="btn-panel"
+          @click="emit('start-tour')"
+          aria-label="Abrir tutorial"
+        >
+          <HelpCircle :size="15" />
+        </button>
+        <span class="btn-tooltip">¿Cómo usar SIMEVA?</span>
+      </div>
 
       <div class="btn-panel-wrapper">
         <button

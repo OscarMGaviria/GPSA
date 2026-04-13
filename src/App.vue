@@ -4,11 +4,13 @@ import { storeToRefs } from 'pinia'
 import AppHeader  from './components/organisms/AppHeader.vue'
 import MapView    from './components/organisms/MapView.vue'
 import StatsPanel from './components/organisms/StatsPanel.vue'
+import AppTour    from './components/organisms/AppTour.vue'
 import { useMapStore } from './stores/useMapStore.js'
 
 const store = useMapStore()
 const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions } = storeToRefs(store)
 const isPanelOpen = ref(true)
+const showTour = ref(localStorage.getItem('simeva-tour-done') !== '1')
 
 // Subregión activa en la gráfica: la seleccionada explícitamente,
 // o la que corresponde al municipio seleccionado (inferida del mapa municipiosPorSubregion)
@@ -52,10 +54,13 @@ watch(activeFilters, (f) => {
       </div>
     </Transition>
 
+    <AppTour v-if="showTour" @close="showTour = false" />
+
     <AppHeader
       @filter-change="store.setFilter"
       :panel-open="isPanelOpen"
       @toggle-panel="isPanelOpen = !isPanelOpen"
+      @start-tour="showTour = true"
       :subregion-options="filterOptions.subregiones"
       :municipio-options="filteredMunicipioOptions"
       :circuito-options="filterOptions.circuitos"

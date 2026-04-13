@@ -118,6 +118,22 @@ onUnmounted(() => {
   cancelAllRafs()
 })
 
+// ── Avance en km calculado desde viasDetalle ────────────────────────────────
+const avanceKmCalc = computed(() => {
+  const vias = props.viasDetalle
+  if (!vias.length) return { pct: 0, intervenidos: 0, contractuales: 0, pendientes: 0 }
+  const contractuales  = vias.reduce((s, v) => s + (v.km || 0), 0)
+  const avanceProm     = vias.reduce((s, v) => s + (v.avance || 0), 0) / vias.length
+  const intervenidos   = contractuales * avanceProm / 100
+  const pendientes     = contractuales - intervenidos
+  return {
+    pct:          Math.round(avanceProm),
+    intervenidos: Math.round(intervenidos * 100) / 100,
+    contractuales: Math.round(contractuales * 100) / 100,
+    pendientes:   Math.round(pendientes * 100) / 100,
+  }
+})
+
 // ── Radar chart ─────────────────────────────────────────────────────────────
 const radarAxes = computed(() => {
   const vias = props.viasDetalle
@@ -231,32 +247,33 @@ const yTicks = computed(() => {
             <span class="sl-dot">↗</span> Avance en kilómetros
           </div>
 
+          <div class="km-pct-label">{{ avanceKmCalc.pct }}% avance físico promedio</div>
           <ProgressBar
-            :pct="avanceKmPct"
+            :pct="avanceKmCalc.pct"
             color="#2d8653"
             track-color="#c6e8d3"
             :height="10"
           />
           <div class="km-range">
             <span>0 km</span>
-            <span>{{ kmContractuales.toFixed(1) }} km totales</span>
+            <span>{{ avanceKmCalc.contractuales.toFixed(1) }} km totales</span>
           </div>
 
           <div class="km-metrics">
             <div class="km-metric">
-              <span class="km-val">{{ kmIntervenidos.toFixed(1) }}</span>
+              <span class="km-val">{{ avanceKmCalc.intervenidos.toFixed(1) }}</span>
               <span class="km-unit">km</span>
               <span class="km-lbl">INTERVENIDOS</span>
             </div>
             <div class="km-sep" />
             <div class="km-metric">
-              <span class="km-val">{{ kmContractuales.toFixed(1) }}</span>
+              <span class="km-val">{{ avanceKmCalc.contractuales.toFixed(1) }}</span>
               <span class="km-unit">km</span>
               <span class="km-lbl">CONTRACTUALES</span>
             </div>
             <div class="km-sep" />
             <div class="km-metric pending">
-              <span class="km-val">{{ kmPendientes.toFixed(1) }}</span>
+              <span class="km-val">{{ avanceKmCalc.pendientes.toFixed(1) }}</span>
               <span class="km-unit">km</span>
               <span class="km-lbl">PENDIENTES</span>
             </div>
@@ -471,6 +488,14 @@ const yTicks = computed(() => {
 .avance-km { align-items: stretch; gap: 6px; }
 .avance-km .section-label { margin-bottom: 2px; }
 
+.km-pct-label {
+  font-family: 'Prompt', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2d8653;
+  text-align: right;
+  margin-bottom: 2px;
+}
 .km-range {
   display: flex;
   justify-content: space-between;
