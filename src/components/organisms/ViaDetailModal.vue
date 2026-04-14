@@ -1,13 +1,16 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import maplibregl from 'maplibre-gl'
+import { useCircuitoPhotos } from '../../composables/useCircuitoPhotos.js'
 
 const props = defineProps({ via: { type: Object, required: true } })
 const emit  = defineEmits(['close'])
 
 // ── Datos ────────────────────────────────────────────────────────────────────
-const desc   = computed(() => props.via.description || {})
-const photos = computed(() => props.via.photos || { antes: [], durante: [], despues: [] })
+const desc     = computed(() => props.via.description || {})
+const circuito = computed(() => desc.value['Circuito'] ?? '')
+
+const { photos } = useCircuitoPhotos(circuito)
 const name   = computed(() => props.via.name || 'Tramo sin nombre')
 
 const get = (...keys) => {

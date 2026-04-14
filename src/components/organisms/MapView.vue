@@ -12,7 +12,7 @@ const mapContainer = ref(null)
 const {
   activeBasemap, switcherOpen, terrainActive, switchBasemap, toggleTerrain,
   loading, loadError, fromCache, hoverLabel, viaHoverLabel, loadSimeva,
-  selectedVia,
+  selectedVia, selectedMpio,
   selectedSubregion, selectedMunicipio,
   noResults,
   openVia,
@@ -30,6 +30,28 @@ const {
       :via="selectedVia"
       @close="selectedVia = null"
     />
+
+    <!-- Modal municipio -->
+    <Transition name="mpio-modal">
+      <div v-if="selectedMpio" class="mpio-modal-overlay" @click.self="selectedMpio = null">
+        <div class="mpio-modal">
+          <button class="mpio-close" @click="selectedMpio = null">✕</button>
+          <div class="mpio-header">
+            <svg class="mpio-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+              <circle cx="12" cy="9" r="2.5"/>
+            </svg>
+            <span class="mpio-nombre">{{ selectedMpio.nombre }}</span>
+          </div>
+          <div class="mpio-body">
+            <div class="mpio-row">
+              <span class="mpio-lbl">Subregión</span>
+              <span class="mpio-val">{{ selectedMpio.subregion }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Error overlay -->
     <Transition name="loader-fade">
@@ -570,6 +592,100 @@ const {
   object-fit: contain;
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.22));
 }
+/* ── Modal municipio ─────────────────────────────────────────────────────── */
+.mpio-modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 30, 18, 0.45);
+  backdrop-filter: blur(3px);
+}
+.mpio-modal {
+  position: relative;
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(63,173,114,0.3);
+  border-radius: 18px;
+  padding: 0;
+  min-width: 240px;
+  max-width: 320px;
+  box-shadow: 0 12px 40px rgba(11,86,64,0.25), 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+.mpio-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: rgba(107,114,128,0.1);
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background .15s;
+  z-index: 1;
+}
+.mpio-close:hover { background: rgba(239,68,68,0.25); }
+.mpio-header {
+  background: linear-gradient(135deg, #0b5640 0%, #0d6b4e 100%);
+  padding: 18px 20px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mpio-icon {
+  width: 22px;
+  height: 22px;
+  color: rgba(255,255,255,0.85);
+  flex-shrink: 0;
+}
+.mpio-nombre {
+  font-family: 'Prompt', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  text-transform: capitalize;
+}
+.mpio-body {
+  padding: 14px 20px 18px;
+}
+.mpio-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f4f1;
+}
+.mpio-lbl {
+  font-family: 'Prompt', sans-serif;
+  font-size: 11.5px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+.mpio-val {
+  font-family: 'Prompt', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b5640;
+  text-transform: capitalize;
+}
+
+.mpio-modal-enter-active { transition: opacity .2s ease, transform .25s cubic-bezier(.34,1.10,.64,1); }
+.mpio-modal-leave-active { transition: opacity .15s ease, transform .15s ease; }
+.mpio-modal-enter-from  { opacity: 0; transform: scale(.92); }
+.mpio-modal-leave-to    { opacity: 0; transform: scale(.95); }
+
 /* ── Error overlay ────────────────────────────────────────────────────────── */
 .map-error {
   position: absolute;

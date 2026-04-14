@@ -19,6 +19,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
   const hoverLabel       = ref({ name: '', x: 0, y: 0, visible: false })
   const viaHoverLabel    = ref({ name: '', km: null, x: 0, y: 0, visible: false })
   const selectedVia      = ref(null)
+  const selectedMpio     = ref(null)
   const cachedMunicipios = ref(null)
   const cachedVias       = ref(null)
   let destroyed = false
@@ -72,19 +73,24 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const subregiones = geoMunicipios
       ? [...new Set(geoMunicipios.features.map(f => canonicalSub(f.properties.SUBREGION)).filter(Boolean))].sort()
       : []
-    const municipioOpts = geoMunicipios
-      ? [...new Set(geoMunicipios.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))].sort()
+    // Solo municipios que tienen vías en localizacion.geojson
+    const municipioOpts = geoVias
+      ? [...new Set(geoVias.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))].sort()
       : []
     const circuitos = geoVias
       ? [...new Set(geoVias.features.map(f => f.properties.CIRCUITO).filter(Boolean))].sort()
       : []
 
+    // municipiosPorSubregion también solo con municipios que tienen vías
+    const municipiosConVias = new Set(
+      geoVias?.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean) ?? []
+    )
     const municipiosPorSubregion = {}
     if (geoMunicipios) {
       for (const f of geoMunicipios.features) {
         const sub  = canonicalSub(f.properties.SUBREGION)
         const mpio = sentenceCase(f.properties.MPIO_NOMBR)
-        if (sub && mpio) {
+        if (sub && mpio && municipiosConVias.has(mpio)) {
           if (!municipiosPorSubregion[sub]) municipiosPorSubregion[sub] = []
           if (!municipiosPorSubregion[sub].includes(mpio)) municipiosPorSubregion[sub].push(mpio)
         }
@@ -201,6 +207,14 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           if (hoveredMpio !== null)
             map.setFeatureState({ source: 'municipios', id: hoveredMpio }, { hover: false })
           hoveredMpio = null
+        })
+
+        map.on('click', 'municipios-fill', (e) => {
+          const p = e.features[0].properties
+          selectedMpio.value = {
+            nombre:    sentenceCase(p.MPIO_NOMBR ?? ''),
+            subregion: canonicalSub(p.SUBREGION),
+          }
         })
       } catch (err) {
         console.error('[SIMEVA] Error cargando municipios:', err)
@@ -328,5 +342,5 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     loading.value = false
   }
 
-  return { loading, loadError, fromCache, hoverLabel, viaHoverLabel, selectedVia, cachedMunicipios, cachedVias, loadSimeva }
+  return { loading, loadError, fromCache, hoverLabel, viaHoverLabel, selectedVia, selectedMpio, cachedMunicipios, cachedVias, loadSimeva }
 }
