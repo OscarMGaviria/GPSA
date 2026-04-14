@@ -134,25 +134,48 @@ const avanceKmCalc = computed(() => {
   }
 })
 
+// ── Avance en plazo (meses transcurridos vs plazo total) ─────────────────────
+const FECHA_INICIO_POR_CONTRATO = {
+  '25OO111B2821': '2026-01-01',
+  '25OO111B2822': '2026-01-01',
+  '25OO111B2823': '2026-01-01',
+  '25OO111B2824': '2026-01-01',
+  '25OO111B2825': '2026-01-01',
+  '25OO111B2826': '2026-01-01',
+  '4600018883':   '2026-01-01',
+}
+const FECHA_INICIO_DEFAULT = '2026-01-01'
+
+function mesesTranscurridos(contrato) {
+  const fechaStr = FECHA_INICIO_POR_CONTRATO[contrato] ?? FECHA_INICIO_DEFAULT
+  const inicio   = new Date(fechaStr)
+  const hoy      = new Date()
+  return (hoy.getFullYear() - inicio.getFullYear()) * 12
+       + (hoy.getMonth()    - inicio.getMonth())
+}
+
 // ── Radar chart ─────────────────────────────────────────────────────────────
 const radarAxes = computed(() => {
   const vias = props.viasDetalle
   if (!vias.length) return []
 
-  const totalVias   = vias.length
-  const totalKm     = vias.reduce((s, v) => s + (v.km || 0), 0)
-  const iniciadas   = vias.filter(v => (v.avance || 0) > 0).length
-  const avanceFis   = Math.round(vias.reduce((s, v) => s + (v.avance || 0), 0) / totalVias)
-  const avanceFin   = Math.round(vias.reduce((s, v) => s + (v.avanceFin || v.avance || 0), 0) / totalVias)
-  const coberturaKm = Math.min(100, Math.round((totalKm / (props.totalKmGlobal || 1)) * 100))
-  const viasIni     = Math.round((iniciadas / totalVias) * 100)
+  const totalVias = vias.length
+  const avanceFis = Math.round(vias.reduce((s, v) => s + (v.avance    || 0), 0) / totalVias)
+  const avanceFin = Math.round(vias.reduce((s, v) => s + (v.avanceFin || 0), 0) / totalVias)
+
+  // Avance en plazo: promedio de (meses transcurridos / plazo total) por vía
+  const avancePlazo = Math.min(100, Math.round(
+    vias.reduce((s, v) => {
+      const plazo = v.plazoMeses || 1
+      const transcurridos = mesesTranscurridos(v.contrato)
+      return s + Math.min(100, (transcurridos / plazo) * 100)
+    }, 0) / totalVias
+  ))
 
   return [
-    { label: 'Av. Físico',    value: avanceFis },
-    { label: 'Av. Financiero', value: avanceFin },
-    { label: 'Km cobertura',  value: coberturaKm },
-    { label: 'Vías iniciadas', value: viasIni },
-    { label: 'Contratadas',   value: Math.min(100, Math.round((totalVias / (props.totalViasGlobal || 1)) * 100)) },
+    { label: 'Físico',     value: avanceFis },
+    { label: 'Financiero', value: avanceFin },
+    { label: 'Plazo',      value: avancePlazo },
   ]
 })
 

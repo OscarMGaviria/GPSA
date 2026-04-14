@@ -121,7 +121,10 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           subregion:   sub,
           km:          Math.round(km * 100) / 100,
           avance:      parseFloat(p.Avance_Fis) || 0,
+          avanceFin:   parseFloat(p.Avance_Fin) || 0,
           contratista: p.CONTRATIST ?? '',
+          contrato:    p.NO_CONTRAT ?? '',
+          plazoMeses:  parseFloat(p.PLAZO_MESE) || 0,
           plazo:       p.PLAZO_MESE ? `${p.PLAZO_MESE} meses` : '',
           circuito:    p.CIRCUITO ?? '',
         })
