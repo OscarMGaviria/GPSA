@@ -249,7 +249,7 @@ function highlight(text, q) {
 
 /* ── Dropdown animation ── */
 .dropdown-enter-active {
-  transition: opacity .15s ease, transform .15s cubic-bezier(.34,1.56,.64,1);
+  transition: opacity .15s ease, transform .18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .dropdown-leave-active {
   transition: opacity .1s ease, transform .1s ease;

@@ -14,7 +14,7 @@ defineProps({
     <div class="pbar-track" :style="{ height: height + 'px', background: trackColor }">
       <div
         class="pbar-fill"
-        :style="{ width: pct + '%', background: color }"
+        :style="{ transform: 'scaleX(' + pct / 100 + ')', background: color }"
       />
     </div>
   </div>
@@ -39,8 +39,10 @@ defineProps({
   overflow: hidden;
 }
 .pbar-fill {
+  width: 100%;
   height: 100%;
   border-radius: 99px;
-  transition: width 0.7s cubic-bezier(.4,0,.2,1);
+  transform-origin: left;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 </style>

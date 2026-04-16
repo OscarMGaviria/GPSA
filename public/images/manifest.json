@@ -1,147 +1,321 @@
 {
   "Abejorral - La Frontera": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Abejorral - Santa Barbara": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Alto del Cardal - Toledo": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Amalfi - Portachuelos - Santa Isabel": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Andes - San José - Pueblo Rico": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Caramanta - Cristales - San Roque": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Carolina del Príncipe - Angostura": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Cáceres - La Chilona": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Ebejico - Miserenga": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Ebéjico - Heliconia - Medellin": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "El Guayabo - El Salto - Partidas a Guadalupe": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Entrerríos - Labores - San José de la Montana": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Frontino - Nutibara": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Guarne - Yolombal": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "La Quiebra - Santa Ana": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "La Ye - Yondó": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Mutata - Pavarando": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Remedios - La Y De La Virgen - Puerto Berrío": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Salgar - La Quiebra - Concordia": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "San Pedro - El Tres - Turbo": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "San Pedro de Urabá - Arboletes": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "San Pedro de Urabá - Necoclí": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "San Rafael - San Roque - Santo Domingo - Alejandría": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "San Vicente - El Peñol": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Santa Rosa - Carolina del Príncipe": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Sonsón - Aguadas (Puente San Rafael)": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Sopetrán - Horizontes - Belmira": {
-    "antes": [],
-    "durante": ["durante.jpg"],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Titiribi - Armenia": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   },
   "Valparaíso - Támesis": {
-    "antes": [],
-    "durante": [],
-    "despues": []
+    "antes": [
+      "antes.jpg"
+    ],
+    "durante": [
+      "durante.jpg"
+    ],
+    "despues": [
+      "despues.jpg"
+    ]
   }
 }

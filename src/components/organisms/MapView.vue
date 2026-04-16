@@ -88,6 +88,19 @@ const {
       <img src="/A toda maquina.png" alt="A Toda Máquina" />
     </div>
 
+    <!-- Leyenda del mapa -->
+    <div class="map-legend">
+      <div class="legend-item">
+        <span class="legend-line legend-line--via"></span>
+        <span class="legend-label">Tramo vial intervenido</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch legend-swatch--mpio"></span>
+        <span class="legend-label">Municipio con intervención</span>
+      </div>
+      <div class="legend-hint">Clic en un tramo para ver detalles</div>
+    </div>
+
     <!-- Tooltip hover vía -->
     <Transition name="via-tip">
       <div
@@ -96,8 +109,9 @@ const {
         :style="{ left: viaHoverLabel.x + 'px', top: viaHoverLabel.y + 'px' }"
       >
         <div class="vt-name">{{ viaHoverLabel.name }}</div>
-        <div v-if="viaHoverLabel.km != null" class="vt-km">
-          {{ viaHoverLabel.km.toLocaleString('es-CO') }} km
+        <div class="vt-meta">
+          <span v-if="viaHoverLabel.km != null" class="vt-km">{{ viaHoverLabel.km.toLocaleString('es-CO') }} km</span>
+          <span v-if="viaHoverLabel.avance != null" class="vt-avance">{{ viaHoverLabel.avance }}% avance</span>
         </div>
       </div>
     </Transition>
@@ -214,16 +228,15 @@ const {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.96);
+  background: #fef9ec;
   border: 1px solid #fde68a;
-  border-left: 4px solid #f59e0b;
   border-radius: 10px;
   padding: 9px 14px;
   font-family: 'Prompt', sans-serif;
   font-size: 12.5px;
   font-weight: 600;
   color: #92400e;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
   backdrop-filter: blur(8px);
   pointer-events: none;
 }
@@ -253,16 +266,17 @@ const {
   cursor: pointer;
   color: #6b7280;
   outline: none;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: background 0.15s ease-out, border-color 0.15s ease-out, color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out;
 }
-
-.terrain-toggle:hover {
-  background: #f3f4f6;
-  border-color: #cbd5e1;
-  color: #374151;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+.terrain-toggle:active { transform: scale(0.93); }
+@media (hover: hover) and (pointer: fine) {
+  .terrain-toggle:hover {
+    background: #f3f4f6;
+    border-color: #cbd5e1;
+    color: #374151;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  }
 }
-
 .terrain-toggle.is-active {
   border-color: #2563eb;
   background: #eff6ff;
@@ -297,16 +311,17 @@ const {
   cursor: pointer;
   color: #6b7280;
   outline: none;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: background 0.15s ease-out, border-color 0.15s ease-out, color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out;
 }
-
-.switcher-toggle:hover {
-  background: #f3f4f6;
-  border-color: #cbd5e1;
-  color: #374151;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+.switcher-toggle:active { transform: scale(0.93); }
+@media (hover: hover) and (pointer: fine) {
+  .switcher-toggle:hover {
+    background: #f3f4f6;
+    border-color: #cbd5e1;
+    color: #374151;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  }
 }
-
 .switcher-toggle.is-open {
   border-color: #16a34a;
   background: #f0fdf4;
@@ -338,14 +353,15 @@ const {
   border-radius: 7px;
   background: transparent;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background 0.12s ease-out, border-color 0.12s ease-out, transform 0.1s ease-out;
   width: 100%;
   text-align: left;
   outline: none;
 }
-
-.basemap-btn:hover { background: #f3f4f6; }
-
+.basemap-btn:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .basemap-btn:hover { background: #f3f4f6; }
+}
 .basemap-btn.is-active {
   background: #f0fdf4;
   border-color: #16a34a;
@@ -379,20 +395,20 @@ const {
 /* ── Animación: abre hacia arriba con spring ── */
 .panel-enter-active {
   transition:
-    opacity 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity 0.25s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.25s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .panel-leave-active {
   transition:
-    opacity 0.18s cubic-bezier(0.4, 0, 1, 1),
-    transform 0.18s cubic-bezier(0.4, 0, 1, 1);
+    opacity 0.15s cubic-bezier(0.4, 0, 1, 1),
+    transform 0.15s cubic-bezier(0.4, 0, 1, 1);
 }
 
 .panel-enter-from,
 .panel-leave-to {
   opacity: 0;
-  transform: translateY(14px) scale(0.88);
+  transform: translateY(8px) scale(0.95);
 }
 
 /* ── Controles MapLibre ── */
@@ -470,12 +486,67 @@ const {
   background: #f9fafb;
 }
 
+/* ── Leyenda del mapa ── */
+.map-legend {
+  position: absolute;
+  bottom: 36px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  padding: 9px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.legend-line {
+  display: block;
+  width: 22px;
+  height: 4px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+.legend-line--via { background: #ffaa00; }
+.legend-swatch {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.legend-swatch--mpio { background: rgba(45, 134, 83, 0.22); border: 1px solid rgba(45, 134, 83, 0.5); }
+.legend-label {
+  font-family: 'Prompt', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+}
+.legend-hint {
+  font-family: 'Prompt', sans-serif;
+  font-size: 10px;
+  color: #9ca3af;
+  padding-top: 2px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 1px;
+}
+
 /* ── Tooltip hover vía ── */
 .via-tooltip {
   position: absolute;
   z-index: 30;
   pointer-events: none;
   transform: translate(-50%, calc(-100% - 12px));
+  transform-origin: bottom center;
   background: #0b5640;
   color: #fff;
   font-family: 'Prompt', sans-serif;
@@ -503,20 +574,34 @@ const {
   max-width: 240px;
   white-space: normal;
 }
+.vt-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .vt-km {
   font-size: 11px;
   font-weight: 500;
   color: rgba(255,255,255,0.75);
 }
+.vt-avance {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.15);
+  padding: 1px 6px;
+  border-radius: 99px;
+}
 .via-tip-enter-active {
-  transition: opacity .15s ease, transform .15s cubic-bezier(.34,1.56,.64,1);
+  transition: opacity .15s ease, transform .18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .via-tip-leave-active {
   transition: opacity .1s ease, transform .1s ease;
 }
 .via-tip-enter-from {
   opacity: 0;
-  transform: translate(-50%, calc(-100% - 6px)) scale(0.88);
+  transform: translate(-50%, calc(-100% - 6px)) scale(0.95);
 }
 .via-tip-leave-to {
   opacity: 0;
@@ -574,7 +659,7 @@ const {
   animation: subregIn .42s cubic-bezier(.34,1.10,.64,1) both;
 }
 .subreg-leave-active .subreg-text {
-  animation: subregOut .22s ease-in both;
+  animation: subregOut .22s ease-out both;
 }
 
 /* ── Logo A Toda Máquina ── */
@@ -727,9 +812,25 @@ const {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .2s ease, transform .15s ease;
+  transition: background .2s ease-out, transform .1s ease-out;
 }
-.error-retry:hover  { background: #2d8653; transform: translateY(-1px); }
-.error-retry:active { transform: translateY(0); }
+.error-retry:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .error-retry:hover { background: #2d8653; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-enter-active,
+  .panel-leave-active,
+  .via-tip-enter-active,
+  .via-tip-leave-active,
+  .loader-fade-enter-active,
+  .loader-fade-leave-active { transition: none; }
+  .terrain-toggle:active,
+  .switcher-toggle:active,
+  .basemap-btn:active,
+  .error-retry:active { transform: none; }
+  .subreg-enter-active .subreg-text,
+  .subreg-leave-active .subreg-text { animation: none; opacity: 1; }
+}
 
 </style>

@@ -21,7 +21,7 @@ const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour'])
     <!-- LEFT: logo + branding -->
     <div class="header-brand">
       <div class="header-logo">
-        <img src="/Escudo de armas.png" alt="Gobernación de Antioquia" class="header-logo-img" />
+        <img src="/Escudo de armas.png" alt="Gobernación de Antioquia" class="header-logo-img" fetchpriority="high" />
       </div>
       <div class="header-titles">
         <h1 class="header-title">{{ title }}</h1>

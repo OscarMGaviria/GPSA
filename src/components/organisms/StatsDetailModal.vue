@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Search, ChevronUp, ChevronDown, Route, Ruler, MapPin, GitBranch } from 'lucide-vue-next'
+import { groupViasFiltered, calcLongitudRows, calcMunicipiosRows, calcCircuitosRows, avanceBadge, avanceLabel } from '../../utils/aggregations.js'
 
 const props = defineProps({
   tipo:        { type: String, required: true }, // 'vias' | 'longitud' | 'municipios' | 'circuitos'
@@ -9,6 +10,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+
+// ── Visibilidad con animación de salida ───────────────────────────────────
+const visible = ref(true)
+function requestClose() { visible.value = false }
+function onAfterLeave() { emit('close') }
 
 // ── Búsqueda y ordenamiento ────────────────────────────────────────────────
 const busqueda  = ref('')
@@ -22,110 +28,14 @@ function toggleSort(key) {
 
 // ── Datos derivados por tipo ───────────────────────────────────────────────
 
-// Vista: Vías intervenidas — agrupar duplicados por nombre y sumar km
-const viasFiltered = computed(() => {
-  const grouped = {}
-  for (const v of props.viasDetalle) {
-    const key = v.nombre
-    if (!grouped[key]) grouped[key] = { ...v, km: 0 }
-    grouped[key].km += v.km
-  }
-  const lista = Object.values(grouped).map(v => ({ ...v, km: Math.round(v.km * 100) / 100 }))
-
-  const q = busqueda.value.toLowerCase()
-  const filtered = q
-    ? lista.filter(v =>
-        v.nombre.toLowerCase().includes(q) ||
-        v.municipio.toLowerCase().includes(q) ||
-        v.subregion.toLowerCase().includes(q) ||
-        v.contratista.toLowerCase().includes(q)
-      )
-    : lista
-
-  return filtered.sort((a, b) => {
-    const va = a[sortKey.value] ?? ''
-    const vb = b[sortKey.value] ?? ''
-    const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es')
-    return sortAsc.value ? cmp : -cmp
-  })
-})
-
-// Vista: Longitud por municipio (de mayor a menor)
-const longitudRows = computed(() => {
-  const map = {}
-  for (const v of props.viasDetalle) {
-    const key = v.municipio || 'Sin municipio'
-    if (!map[key]) map[key] = { name: key, subregion: v.subregion, km: 0 }
-    map[key].km += v.km
-  }
-  const rows = Object.values(map)
-    .map(r => ({ ...r, km: Math.round(r.km * 100) / 100 }))
-    .filter(r => r.km > 0)
-    .sort((a, b) => b.km - a.km)
-  const total = rows.reduce((s, r) => s + r.km, 0) || 1
-  return rows.map(r => ({ ...r, pctReal: Math.round((r.km / total) * 100) }))
-})
-
-// Vista: Municipios — agrupar vías por municipio, ordenar por km desc por defecto
-const municipiosRows = computed(() => {
-  const map = {}
-  for (const v of props.viasDetalle) {
-    const key = v.municipio || 'Sin municipio'
-    if (!map[key]) map[key] = { nombre: key, subregion: v.subregion, vias: 0, km: 0 }
-    map[key].vias++
-    map[key].km += v.km
-  }
-  const rows = Object.values(map).map(r => ({
-    ...r,
-    km: Math.round(r.km * 100) / 100,
-  }))
-
-  const q = busqueda.value.toLowerCase()
-  const filtered = q ? rows.filter(r =>
-    r.nombre.toLowerCase().includes(q) || r.subregion.toLowerCase().includes(q)
-  ) : rows
-
-  // Por defecto: km descendente; si el usuario hace clic en otra columna usa sortKey
-  const key = sortKey.value === 'nombre' ? 'km' : sortKey.value
-  const asc = sortKey.value === 'nombre' ? false : sortAsc.value
-  return filtered.sort((a, b) => {
-    const va = a[key] ?? ''
-    const vb = b[key] ?? ''
-    const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es')
-    return asc ? cmp : -cmp
-  })
-})
-
-// Vista: Circuitos — igual que vías pero agrupado por circuito
-const circuitosRows = computed(() => {
-  const map = {}
-  for (const v of props.viasDetalle) {
-    const key = v.circuito || v.nombre
-    if (!map[key]) map[key] = { circuito: key, municipio: v.municipio, subregion: v.subregion, tramos: 0, km: 0, avanceSum: 0, contratista: v.contratista }
-    map[key].tramos++
-    map[key].km        += v.km
-    map[key].avanceSum += v.avance
-  }
-  const rows = Object.values(map).map(r => ({
-    ...r,
-    km:     Math.round(r.km * 100) / 100,
-    avance: r.tramos ? Math.round((r.avanceSum / r.tramos) * 10) / 10 : 0,
-  }))
-
-  const q = busqueda.value.toLowerCase()
-  const filtered = q ? rows.filter(r =>
-    r.circuito.toLowerCase().includes(q) ||
-    r.municipio.toLowerCase().includes(q) ||
-    r.subregion.toLowerCase().includes(q)
-  ) : rows
-
-  return filtered.sort((a, b) => {
-    const va = a[sortKey.value] ?? ''
-    const vb = b[sortKey.value] ?? ''
-    const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es')
-    return sortAsc.value ? cmp : -cmp
-  })
-})
+// Vista: Vías intervenidas
+const viasFiltered  = computed(() => groupViasFiltered(props.viasDetalle, busqueda.value, sortKey.value, sortAsc.value))
+// Vista: Longitud por municipio
+const longitudRows  = computed(() => calcLongitudRows(props.viasDetalle))
+// Vista: Municipios
+const municipiosRows = computed(() => calcMunicipiosRows(props.viasDetalle, busqueda.value, sortKey.value === 'nombre' ? 'km' : sortKey.value, sortKey.value === 'nombre' ? false : sortAsc.value))
+// Vista: Circuitos
+const circuitosRows = computed(() => calcCircuitosRows(props.viasDetalle, busqueda.value, sortKey.value, sortAsc.value))
 
 // ── Config por tipo ────────────────────────────────────────────────────────
 const CONFIG = {
@@ -137,28 +47,51 @@ const CONFIG = {
 const cfg = computed(() => CONFIG[props.tipo] ?? CONFIG.vias)
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-function avanceBadge(pct) {
-  if (pct === 0)   return 'badge--pending'
-  if (pct >= 100)  return 'badge--done'
-  return 'badge--active'
-}
-function avanceLabel(pct) {
-  if (pct === 0)  return 'Sin iniciar'
-  if (pct >= 100) return 'Finalizado'
-  return 'En obra'
-}
-
 function sortIcon(key) { return sortKey.value === key ? (sortAsc.value ? '↑' : '↓') : '' }
 
+// ── Animación de barras + count-up (longitud) ─────────────────────────────
+const barsVisible = ref(false)
+const animLong    = ref([])   // [{ km: 0, pct: 0 }, ...]
+let barsTimer = null
+
+watch(barsVisible, (val) => {
+  if (!val) return
+  const rows = longitudRows.value
+  animLong.value = rows.map(() => ({ km: 0, pct: 0 }))
+  rows.forEach((row, i) => {
+    setTimeout(() => {
+      const dur = 650, s = performance.now()
+      ;(function step(now) {
+        const t = Math.min((now - s) / dur, 1)
+        const e = 1 - Math.pow(1 - t, 3)
+        animLong.value[i].km  = row.km      * e
+        animLong.value[i].pct = row.pctReal * e
+        if (t < 1) requestAnimationFrame(step)
+        else { animLong.value[i].km = row.km; animLong.value[i].pct = row.pctReal }
+      }(performance.now()))
+    }, i * 55)
+  })
+})
+
 // ── Teclado ────────────────────────────────────────────────────────────────
-function onKey(e) { if (e.key === 'Escape') emit('close') }
-onMounted(()  => { document.addEventListener('keydown', onKey); document.body.style.overflow = 'hidden' })
-onUnmounted(() => { document.removeEventListener('keydown', onKey); document.body.style.overflow = '' })
+function onKey(e) { if (e.key === 'Escape') requestClose() }
+onMounted(() => {
+  document.addEventListener('keydown', onKey)
+  document.body.style.overflow = 'hidden'
+  // Esperar que la animación de entrada del modal termine (~220ms) antes de llenar barras
+  barsTimer = setTimeout(() => { barsVisible.value = true }, 280)
+})
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKey)
+  document.body.style.overflow = ''
+  clearTimeout(barsTimer)
+})
 </script>
 
 <template>
   <teleport to="body">
-    <div class="modal-backdrop" @click.self="emit('close')">
+    <Transition name="modal-anim" @after-leave="onAfterLeave">
+    <div v-if="visible" class="modal-backdrop" @click.self="requestClose">
       <div class="modal" role="dialog" :aria-label="cfg.titulo">
 
         <!-- Header -->
@@ -172,7 +105,7 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
               <p class="modal-desc">{{ cfg.desc }}</p>
             </div>
           </div>
-          <button class="btn-close" @click="emit('close')" aria-label="Cerrar">✕</button>
+          <button class="btn-close" @click="requestClose" aria-label="Cerrar">✕</button>
         </div>
 
         <!-- Buscador (no aplica a longitud) -->
@@ -205,8 +138,9 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
                   <th>Contratista</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr v-for="(v, i) in viasFiltered" :key="v.codigo || v.nombre" class="data-row">
+              <TransitionGroup name="row" tag="tbody">
+                <tr v-for="(v, i) in viasFiltered" :key="v.codigo || v.nombre" class="data-row"
+                    :style="{ '--delay': Math.min(i * 30, 420) + 'ms' }">
                   <td class="td-num td-idx">{{ i + 1 }}</td>
                   <td class="td-nombre">
                     <span class="nombre-text">{{ v.nombre }}</span>
@@ -217,27 +151,33 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
                   <td class="td-num">{{ v.km > 0 ? v.km + ' km' : '—' }}</td>
                   <td class="td-contratista">{{ v.contratista || '—' }}</td>
                 </tr>
-                <tr v-if="!viasFiltered.length">
+                <tr v-if="!viasFiltered.length" key="__empty">
                   <td colspan="6" class="empty-row">Sin resultados para "{{ busqueda }}"</td>
                 </tr>
-              </tbody>
+              </TransitionGroup>
             </table>
           </template>
 
           <!-- LONGITUD -->
           <template v-else-if="tipo === 'longitud'">
             <div class="longitud-grid">
-              <div v-for="row in longitudRows" :key="row.name" class="longitud-row">
+              <div v-for="(row, i) in longitudRows" :key="row.name" class="longitud-row">
                 <div class="long-header">
                   <div class="long-name-wrap">
                     <span class="long-name">{{ row.name }}</span>
                     <span class="long-sub">{{ row.subregion }}</span>
                   </div>
-                  <span class="long-km">{{ row.km }} km</span>
-                  <span class="long-pct">{{ row.pctReal }}%</span>
+                  <span class="long-km">{{ animLong[i] ? animLong[i].km.toFixed(2) : row.km }} km</span>
+                  <span class="long-pct">{{ animLong[i] ? Math.round(animLong[i].pct) : row.pctReal }}%</span>
                 </div>
                 <div class="long-bar-track">
-                  <div class="long-bar-fill" :style="{ width: row.pctReal + '%' }" />
+                  <div
+                    class="long-bar-fill"
+                    :style="{
+                      transform: 'scaleX(' + (barsVisible ? row.pctReal / 100 : 0) + ')',
+                      transitionDelay: barsVisible ? (i * 55) + 'ms' : '0ms'
+                    }"
+                  />
                 </div>
               </div>
               <div v-if="!longitudRows.length" class="empty-row">Sin datos disponibles.</div>
@@ -256,18 +196,19 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
                   <th @click="toggleSort('km')" class="sortable th-num">Longitud <span class="sort-ic">{{ sortIcon('km') }}</span></th>
                 </tr>
               </thead>
-              <tbody>
-                <tr v-for="(m, i) in municipiosRows" :key="m.nombre" class="data-row">
+              <TransitionGroup name="row" tag="tbody">
+                <tr v-for="(m, i) in municipiosRows" :key="m.nombre" class="data-row"
+                    :style="{ '--delay': Math.min(i * 30, 420) + 'ms' }">
                   <td class="td-num td-idx">{{ i + 1 }}</td>
                   <td class="td-nombre">{{ m.nombre || '—' }}</td>
                   <td><span class="sub-chip">{{ m.subregion }}</span></td>
                   <td class="td-num">{{ m.vias }}</td>
                   <td class="td-num">{{ m.km }} km</td>
                 </tr>
-                <tr v-if="!municipiosRows.length">
+                <tr v-if="!municipiosRows.length" key="__empty">
                   <td colspan="5" class="empty-row">Sin resultados para "{{ busqueda }}"</td>
                 </tr>
-              </tbody>
+              </TransitionGroup>
             </table>
           </template>
 
@@ -284,8 +225,9 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
                   <th>Contratista</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr v-for="(c, i) in circuitosRows" :key="c.circuito" class="data-row">
+              <TransitionGroup name="row" tag="tbody">
+                <tr v-for="(c, i) in circuitosRows" :key="c.circuito" class="data-row"
+                    :style="{ '--delay': Math.min(i * 30, 420) + 'ms' }">
                   <td class="td-num td-idx">{{ i + 1 }}</td>
                   <td class="td-nombre">{{ c.circuito || '—' }}</td>
                   <td>{{ c.municipio || '—' }}</td>
@@ -293,10 +235,10 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
                   <td class="td-num">{{ c.km > 0 ? c.km + ' km' : '—' }}</td>
                   <td class="td-contratista">{{ c.contratista || '—' }}</td>
                 </tr>
-                <tr v-if="!circuitosRows.length">
+                <tr v-if="!circuitosRows.length" key="__empty">
                   <td colspan="6" class="empty-row">Sin resultados para "{{ busqueda }}"</td>
                 </tr>
-              </tbody>
+              </TransitionGroup>
             </table>
           </template>
 
@@ -305,11 +247,12 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
         <!-- Footer -->
         <div class="modal-footer">
           <span class="footer-hint">Presiona <kbd>Esc</kbd> para cerrar</span>
-          <button class="btn-cerrar" @click="emit('close')">Cerrar</button>
+          <button class="btn-cerrar" @click="requestClose">Cerrar</button>
         </div>
 
       </div>
     </div>
+    </Transition>
   </teleport>
 </template>
 
@@ -326,9 +269,30 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
   align-items: center;
   justify-content: center;
   padding: 16px;
-  animation: fadeIn .18s ease both;
 }
-@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+/* ── Transición entrada/salida ────────────────────────────────────────────── */
+.modal-anim-enter-active {
+  transition: opacity 0.2s ease;
+}
+.modal-anim-leave-active {
+  transition: opacity 0.18s ease;
+}
+.modal-anim-enter-from,
+.modal-anim-leave-to {
+  opacity: 0;
+}
+.modal-anim-enter-active .modal {
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.1, 0.64, 1);
+}
+.modal-anim-leave-active .modal {
+  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.4, 0, 1, 1);
+}
+.modal-anim-enter-from .modal,
+.modal-anim-leave-to .modal {
+  opacity: 0;
+  transform: translateY(24px) scale(0.97);
+}
 
 /* ── Modal shell ──────────────────────────────────────────────────────────── */
 .modal {
@@ -341,12 +305,7 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
   box-shadow:
     0 24px 80px rgba(11, 86, 64, .22),
     0 6px 20px rgba(0, 0, 0, .14);
-  animation: slideUp .22s cubic-bezier(.34,1.1,.64,1) both;
   overflow: hidden;
-}
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(24px) scale(.97) }
-  to   { opacity: 1; transform: translateY(0)    scale(1)   }
 }
 
 /* ── Header ───────────────────────────────────────────────────────────────── */
@@ -402,9 +361,12 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background .18s;
+  transition: background .18s ease-out, transform 0.1s ease-out;
 }
-.btn-close:hover { background: rgba(255,255,255,.32); border-color: #fff; }
+.btn-close:active { transform: scale(0.93); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-close:hover { background: rgba(255,255,255,.32); border-color: #fff; }
+}
 
 /* ── Search bar ───────────────────────────────────────────────────────────── */
 .search-bar {
@@ -523,20 +485,6 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
 .badge--pending { background: #f3f4f6; color: #6b7280; }
 .badge--active  { background: #fef3c7; color: #d97706; }
 .badge--done    { background: #d1fae5; color: #059669; }
-.mini-bar-wrap {
-  width: 52px;
-  height: 5px;
-  background: #e5e7eb;
-  border-radius: 99px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.mini-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #2d8653, #0b5640);
-  border-radius: 99px;
-  transition: width .4s ease;
-}
 .avance-pct { font-size: 12px; font-weight: 700; color: #374151; min-width: 32px; text-align: right; }
 
 /* ── Vista longitud ───────────────────────────────────────────────────────── */
@@ -560,10 +508,15 @@ onUnmounted(() => { document.removeEventListener('keydown', onKey); document.bod
   overflow: hidden;
 }
 .long-bar-fill {
+  width: 100%;
   height: 100%;
   background: linear-gradient(90deg, #3fad72, #0b5640);
   border-radius: 99px;
-  transition: width .6s cubic-bezier(.34,1.1,.64,1);
+  transform-origin: left;
+  transition: transform 0.65s cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .long-bar-fill { transition: none; }
 }
 
 /* ── Footer ───────────────────────────────────────────────────────────────── */
@@ -595,7 +548,28 @@ kbd {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity .18s;
+  transition: opacity .18s ease-out, transform 0.1s ease-out;
 }
-.btn-cerrar:hover { opacity: .88; }
+.btn-cerrar:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-cerrar:hover { opacity: .88; }
+}
+/* ── TransitionGroup filas ────────────────────────────────────────────────── */
+.row-enter-active {
+  transition: opacity 0.22s ease-out, transform 0.22s ease-out;
+  transition-delay: var(--delay, 0ms);
+}
+.row-enter-from { opacity: 0; transform: translateY(5px); }
+.row-move       { transition: transform 0.28s cubic-bezier(0.23, 1, 0.32, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-anim-enter-active,
+  .modal-anim-leave-active,
+  .modal-anim-enter-active .modal,
+  .modal-anim-leave-active .modal { transition: none; }
+  .btn-close:active,
+  .btn-cerrar:active { transform: none; }
+  .row-enter-active, .row-move { transition: none; }
+  .long-bar-fill { transition: none; }
+}
 </style>

@@ -2,9 +2,15 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import maplibregl from 'maplibre-gl'
 import { useCircuitoPhotos } from '../../composables/useCircuitoPhotos.js'
+import { parseAvancePct, getBarColor, getStatusLabel, getStatusClass } from '../../utils/via.js'
 
 const props = defineProps({ via: { type: Object, required: true } })
 const emit  = defineEmits(['close'])
+
+// ── Visibilidad con animación de salida ───────────────────────────────────
+const visible = ref(true)
+function requestClose() { visible.value = false }
+function onAfterLeave() { emit('close') }
 
 // ── Datos ────────────────────────────────────────────────────────────────────
 const desc     = computed(() => props.via.description || {})
@@ -18,28 +24,10 @@ const get = (...keys) => {
   return ''
 }
 
-const avancePct = computed(() => {
-  const raw = get('Avance', 'avance') || '0'
-  return Math.min(100, Math.max(0, parseFloat(String(raw).replace('%', '').replace(',', '.')) || 0))
-})
-
-const barColor = computed(() => {
-  if (avancePct.value === 0)  return '#9ca3af'
-  if (avancePct.value >= 100) return '#16a34a'
-  return '#0b5640'
-})
-
-const statusLabel = computed(() => {
-  if (avancePct.value === 0)  return 'Sin iniciar'
-  if (avancePct.value >= 100) return 'Finalizado'
-  return 'En obra'
-})
-
-const statusClass = computed(() => {
-  if (avancePct.value === 0)  return 'pill--pending'
-  if (avancePct.value >= 100) return 'pill--done'
-  return 'pill--active'
-})
+const avancePct   = computed(() => parseAvancePct(desc.value))
+const barColor    = computed(() => getBarColor(avancePct.value))
+const statusLabel = computed(() => getStatusLabel(avancePct.value))
+const statusClass = computed(() => getStatusClass(avancePct.value))
 
 // Orden de la tabla
 const TABLE_FIELDS = [
@@ -73,9 +61,36 @@ const activeIdx   = ref(0)
 const activePhotos = computed(() => photos.value[activePhase.value] || [])
 const prev = () => { activeIdx.value = (activeIdx.value - 1 + activePhotos.value.length) % activePhotos.value.length }
 const next = () => { activeIdx.value = (activeIdx.value + 1) % activePhotos.value.length }
-const setPhase = (key) => { activePhase.value = key; activeIdx.value = 0 }
+
+// ── Slide entre fases (dirección) ─────────────────────────────────────────────
+const PHASE_ORDER = { antes: 0, durante: 1, despues: 2 }
+const phaseDir    = ref('next')
+const slideTransition = computed(() => 'phase-' + phaseDir.value)
+
+function setPhase(key) {
+  const from = PHASE_ORDER[activePhase.value] ?? 0
+  const to   = PHASE_ORDER[key] ?? 0
+  phaseDir.value    = to >= from ? 'next' : 'prev'
+  activePhase.value = key
+  activeIdx.value   = 0
+}
 
 const hasPhotos = computed(() => availablePhases.value.length > 0)
+
+// ── Animación barra avance + count-up % ──────────────────────────────────────
+const barVisible  = ref(false)
+const displayPct  = ref(0)
+let   barTimer    = null
+
+function countUpPct(target) {
+  const dur = 700, s = performance.now()
+  ;(function step(now) {
+    const t = Math.min((now - s) / dur, 1)
+    displayPct.value = Math.round(target * (1 - Math.pow(1 - t, 3)))
+    if (t < 1) requestAnimationFrame(step)
+    else displayPct.value = target
+  }(performance.now()))
+}
 
 // ── Route animation ───────────────────────────────────────────────────────────
 const showRoute   = ref(false)
@@ -216,7 +231,7 @@ function replayRoute() {
 
 // ── Keyboard / scroll lock ────────────────────────────────────────────────────
 const onKey = (e) => {
-  if (e.key === 'Escape')     emit('close')
+  if (e.key === 'Escape')     requestClose()
   if (e.key === 'ArrowLeft')  prev()
   if (e.key === 'ArrowRight') next()
 }
@@ -225,17 +240,24 @@ onMounted(() => {
   document.body.style.overflow = 'hidden'
   const first = availablePhases.value[0]
   if (first) activePhase.value = first.key
+  // Barra y % arrancan después de la animación de entrada del modal (~260ms)
+  barTimer = setTimeout(() => {
+    barVisible.value = true
+    countUpPct(avancePct.value)
+  }, 280)
 })
 onUnmounted(() => {
   document.removeEventListener('keydown', onKey)
   document.body.style.overflow = ''
   cleanupRoute()
+  clearTimeout(barTimer)
 })
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="backdrop" @click.self="emit('close')">
+    <Transition name="modal-anim" @after-leave="onAfterLeave">
+    <div v-if="visible" class="backdrop" @click.self="requestClose">
       <div class="modal" role="dialog" aria-modal="true">
 
         <!-- ── HEADER ── -->
@@ -244,7 +266,7 @@ onUnmounted(() => {
             <p class="mhead-inst">Gobernación de Antioquia · Secretaría de Infraestructura Física</p>
             <h2 class="mhead-name">{{ name }}</h2>
           </div>
-          <button class="btn-x" @click="emit('close')" aria-label="Cerrar">✕</button>
+          <button class="btn-x" @click="requestClose" aria-label="Cerrar">✕</button>
         </header>
 
         <!-- ── TWO COLUMNS ── -->
@@ -260,11 +282,11 @@ onUnmounted(() => {
                 <span class="status-pill" :class="statusClass">{{ statusLabel }}</span>
               </div>
               <div class="avance-pct-row">
-                <span class="avance-pct">{{ avancePct }}<span class="avance-sym">%</span></span>
+                <span class="avance-pct">{{ barVisible ? displayPct : 0 }}<span class="avance-sym">%</span></span>
               </div>
               <div class="bar-wrap">
                 <div class="bar-track">
-                  <div class="bar-fill" :style="{ width: avancePct + '%', background: barColor }" />
+                  <div class="bar-fill" :style="{ transform: 'scaleX(' + (barVisible ? avancePct / 100 : 0) + ')', background: barColor }" />
                 </div>
                 <div class="bar-ticks">
                   <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
@@ -282,7 +304,8 @@ onUnmounted(() => {
               </p>
               <table class="info-tbl">
                 <tbody>
-                  <tr v-for="[k, v] in tableRows" :key="k">
+                  <tr v-for="([k, v], idx) in tableRows" :key="k"
+                      :style="{ animationDelay: (300 + idx * 35) + 'ms' }">
                     <td class="td-key">{{ k }}</td>
                     <td class="td-val" :class="{ 'td-val--bold': k === 'Contratista' }">{{ v }}</td>
                   </tr>
@@ -347,19 +370,27 @@ onUnmounted(() => {
 
               <!-- Photo viewer -->
               <template v-if="hasPhotos && activePhotos.length">
-                <div class="photo-stage">
-                  <img
-                    :src="activePhotos[activeIdx]"
-                    :alt="`${activePhase} ${activeIdx + 1}`"
-                    class="photo-img"
-                  />
-                  <button v-if="activePhotos.length > 1" class="pnav pnav--l" @click="prev" aria-label="Anterior">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <button v-if="activePhotos.length > 1" class="pnav pnav--r" @click="next" aria-label="Siguiente">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                  <span class="photo-ctr">{{ activeIdx + 1 }} / {{ activePhotos.length }}</span>
+                <div class="phase-wrap">
+                  <Transition :name="slideTransition" mode="out-in">
+                    <div class="photo-stage" :key="activePhase">
+                      <Transition name="photo-cross" mode="out-in">
+                        <img
+                          :key="activeIdx"
+                          :src="activePhotos[activeIdx]"
+                          :alt="`${activePhase} ${activeIdx + 1}`"
+                          class="photo-img"
+                          decoding="async"
+                        />
+                      </Transition>
+                      <button v-if="activePhotos.length > 1" class="pnav pnav--l" @click="prev" aria-label="Anterior">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                      </button>
+                      <button v-if="activePhotos.length > 1" class="pnav pnav--r" @click="next" aria-label="Siguiente">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                      <span class="photo-ctr">{{ activeIdx + 1 }} / {{ activePhotos.length }}</span>
+                    </div>
+                  </Transition>
                 </div>
 
                 <!-- Thumbnails -->
@@ -370,7 +401,7 @@ onUnmounted(() => {
                     :class="{ 'is-active': i === activeIdx }"
                     @click="activeIdx = i"
                   >
-                    <img :src="src" :alt="`miniatura ${i + 1}`" />
+                    <img :src="src" :alt="`miniatura ${i + 1}`" loading="lazy" decoding="async" />
                   </button>
                 </div>
               </template>
@@ -389,11 +420,12 @@ onUnmounted(() => {
         <!-- ── FOOTER ── -->
         <footer class="mfoot">
           <span class="mfoot-brand">Sistema de Seguimiento — Red Vial Departamental</span>
-          <button class="btn-cerrar" @click="emit('close')">Cerrar</button>
+          <button class="btn-cerrar" @click="requestClose">Cerrar</button>
         </footer>
 
       </div>
     </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -409,9 +441,30 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  animation: bfade .2s ease;
 }
-@keyframes bfade { from { opacity: 0 } to { opacity: 1 } }
+
+/* ── Transición entrada/salida ── */
+.modal-anim-enter-active {
+  transition: opacity 0.2s ease;
+}
+.modal-anim-leave-active {
+  transition: opacity 0.18s ease;
+}
+.modal-anim-enter-from,
+.modal-anim-leave-to {
+  opacity: 0;
+}
+.modal-anim-enter-active .modal {
+  transition: opacity 0.26s ease, transform 0.26s cubic-bezier(0.34, 1.1, 0.64, 1);
+}
+.modal-anim-leave-active .modal {
+  transition: opacity 0.16s ease, transform 0.16s cubic-bezier(0.4, 0, 1, 1);
+}
+.modal-anim-enter-from .modal,
+.modal-anim-leave-to .modal {
+  opacity: 0;
+  transform: translateY(22px) scale(0.97);
+}
 
 /* ── Modal shell ── */
 .modal {
@@ -425,12 +478,7 @@ onUnmounted(() => {
   box-shadow:
     0 40px 80px rgba(0,0,0,.28),
     0 8px 24px rgba(0,0,0,.16);
-  animation: mup .26s cubic-bezier(.34,1.10,.64,1);
   overflow: hidden;
-}
-@keyframes mup {
-  from { opacity: 0; transform: translateY(22px) scale(.97) }
-  to   { opacity: 1; transform: none }
 }
 
 /* ── Header ── */
@@ -483,9 +531,12 @@ onUnmounted(() => {
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background .15s, border-color .15s;
+  transition: background .15s ease-out, border-color .15s ease-out, transform .1s ease-out;
 }
-.btn-x:hover { background: rgba(255,255,255,.28); border-color: #fff; }
+.btn-x:active { transform: scale(0.93); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-x:hover { background: rgba(255,255,255,.28); border-color: #fff; }
+}
 
 /* ── Two columns ── */
 .mcols {
@@ -587,10 +638,10 @@ onUnmounted(() => {
   overflow: hidden;
 }
 .bar-fill {
+  width: 100%;
   height: 100%;
   border-radius: 99px;
-  min-width: 3px;
-  transition: width .7s cubic-bezier(.4,0,.2,1);
+  transform-origin: left;
 }
 .bar-ticks {
   display: flex;
@@ -647,9 +698,12 @@ onUnmounted(() => {
   font-weight: 600;
   color: #6b7280;
   cursor: pointer;
-  transition: all .14s;
+  transition: background .14s ease-out, border-color .14s ease-out, color .14s ease-out, transform .1s ease-out;
 }
-.phase-tab:hover { border-color: #0b5640; color: #0b5640; }
+.phase-tab:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .phase-tab:hover { border-color: #0b5640; color: #0b5640; }
+}
 .phase-tab.is-active { background: #0b5640; color: #fff; border-color: #0b5640; }
 .phase-count {
   font-size: 10px;
@@ -660,22 +714,63 @@ onUnmounted(() => {
 }
 .phase-tab:not(.is-active) .phase-count { background: #f3f4f6; color: #9ca3af; }
 
-/* ── Photo viewer ── */
-.photo-stage {
+/* ── Bar fill animación ── */
+.bar-fill {
+  transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ── Stagger filas info ── */
+@keyframes rowSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.info-tbl tr {
+  animation: rowSlideIn 0.22s ease-out both;
+}
+
+/* ── Photo wrapper (mantiene espacio durante transiciones) ── */
+.phase-wrap {
   position: relative;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #111;
   aspect-ratio: 4 / 3;
   flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* ── Photo viewer ── */
+.photo-stage {
+  position: absolute;
+  inset: 0;
+  background: #111;
+  overflow: hidden;
 }
 .photo-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: opacity .2s;
 }
+
+/* ── Crossfade entre fotos (flechas / miniaturas) ── */
+.photo-cross-enter-active { transition: opacity 0.18s ease-out; }
+.photo-cross-leave-active { position: absolute; inset: 0; transition: opacity 0.13s ease-out; }
+.photo-cross-enter-from,
+.photo-cross-leave-to     { opacity: 0; }
+
+/* ── Slide entre fases (Antes / Durante / Después) ── */
+.phase-next-enter-active,
+.phase-prev-enter-active  {
+  transition: opacity 0.22s ease-out, transform 0.22s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.phase-next-leave-active,
+.phase-prev-leave-active  {
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  position: absolute; inset: 0;
+}
+.phase-next-enter-from { opacity: 0; transform: translateX(14px); }
+.phase-next-leave-to   { opacity: 0; transform: translateX(-14px); }
+.phase-prev-enter-from { opacity: 0; transform: translateX(-14px); }
+.phase-prev-leave-to   { opacity: 0; transform: translateX(14px); }
 .pnav {
   position: absolute;
   top: 50%; transform: translateY(-50%);
@@ -687,9 +782,12 @@ onUnmounted(() => {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   backdrop-filter: blur(4px);
-  transition: background .14s;
+  transition: background .14s ease-out, transform .1s ease-out;
 }
-.pnav:hover { background: rgba(0,0,0,.68); }
+.pnav:active { transform: translateY(-50%) scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .pnav:hover { background: rgba(0,0,0,.68); }
+}
 .pnav svg   { width: 14px; height: 14px; }
 .pnav--l    { left: 9px; }
 .pnav--r    { right: 9px; }
@@ -770,10 +868,13 @@ onUnmounted(() => {
   font-weight: 600;
   color: #6b7280;
   cursor: pointer;
-  transition: all .14s;
+  transition: background .14s ease-out, border-color .14s ease-out, color .14s ease-out, transform .1s ease-out;
 }
 .right-tab svg { width: 13px; height: 13px; flex-shrink: 0; }
-.right-tab:hover:not(:disabled) { border-color: #0b5640; color: #0b5640; }
+.right-tab:active:not(:disabled) { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .right-tab:hover:not(:disabled) { border-color: #0b5640; color: #0b5640; }
+}
 .right-tab.is-active { background: #0b5640; color: #fff; border-color: #0b5640; }
 .right-tab:disabled  { opacity: .4; cursor: not-allowed; }
 
@@ -832,11 +933,14 @@ onUnmounted(() => {
   background: #fff;
   cursor: pointer;
   color: #6b7280;
-  transition: background .13s, color .13s, border-color .13s;
+  transition: background .13s ease-out, color .13s ease-out, border-color .13s ease-out, transform .1s ease-out;
   flex-shrink: 0;
 }
 .btn-replay svg { width: 14px; height: 14px; }
-.btn-replay:hover { background: #f0fdf4; color: #0b5640; border-color: #0b5640; }
+.btn-replay:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-replay:hover { background: #f0fdf4; color: #0b5640; border-color: #0b5640; }
+}
 
 /* ── Footer ── */
 .mfoot {
@@ -863,8 +967,32 @@ onUnmounted(() => {
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: background .14s, transform .1s;
+  transition: background .14s ease-out, transform .1s ease-out;
 }
-.btn-cerrar:hover  { background: #2d8653; transform: translateY(-1px); }
-.btn-cerrar:active { transform: none; }
+.btn-cerrar:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .btn-cerrar:hover { background: #2d8653; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-anim-enter-active,
+  .modal-anim-leave-active,
+  .modal-anim-enter-active .modal,
+  .modal-anim-leave-active .modal { transition: none; }
+  .btn-x:active,
+  .btn-cerrar:active,
+  .btn-replay:active,
+  .phase-tab:active,
+  .right-tab:active { transform: none; }
+  .pnav:active { transform: translateY(-50%); }
+  .bar-fill { transition: none; }
+  .info-tbl tr { animation: none; }
+  .photo-cross-enter-active,
+  .photo-cross-leave-active,
+  .phase-next-enter-active,
+  .phase-next-leave-active,
+  .phase-prev-enter-active,
+  .phase-prev-leave-active { transition: none; }
+  @keyframes routePulse { from { opacity: 1; transform: scale(1); } }
+  @keyframes rowSlideIn  { from { opacity: 1; transform: none; } }
+}
 </style>

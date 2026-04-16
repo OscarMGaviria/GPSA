@@ -5,6 +5,7 @@ import StatCard       from '../atoms/StatCard.vue'
 import ProgressBar    from '../atoms/ProgressBar.vue'
 import RadarChart     from '../atoms/RadarChart.vue'
 import StatsDetailModal from './StatsDetailModal.vue'
+import { shortLabel, mesesTranscurridos, calcAvanceKm } from '../../utils/stats.js'
 
 const emit = defineEmits(['filter-subregion'])
 
@@ -119,40 +120,9 @@ onUnmounted(() => {
 })
 
 // ── Avance en km calculado desde viasDetalle ────────────────────────────────
-const avanceKmCalc = computed(() => {
-  const vias = props.viasDetalle
-  if (!vias.length) return { pct: 0, intervenidos: 0, contractuales: 0, pendientes: 0 }
-  const contractuales  = vias.reduce((s, v) => s + (v.km || 0), 0)
-  const avanceProm     = vias.reduce((s, v) => s + (v.avance || 0), 0) / vias.length
-  const intervenidos   = contractuales * avanceProm / 100
-  const pendientes     = contractuales - intervenidos
-  return {
-    pct:          Math.round(avanceProm),
-    intervenidos: Math.round(intervenidos * 100) / 100,
-    contractuales: Math.round(contractuales * 100) / 100,
-    pendientes:   Math.round(pendientes * 100) / 100,
-  }
-})
+const avanceKmCalc = computed(() => calcAvanceKm(props.viasDetalle))
 
 // ── Avance en plazo (meses transcurridos vs plazo total) ─────────────────────
-const FECHA_INICIO_POR_CONTRATO = {
-  '25OO111B2821': '2026-01-01',
-  '25OO111B2822': '2026-01-01',
-  '25OO111B2823': '2026-01-01',
-  '25OO111B2824': '2026-01-01',
-  '25OO111B2825': '2026-01-01',
-  '25OO111B2826': '2026-01-01',
-  '4600018883':   '2026-01-01',
-}
-const FECHA_INICIO_DEFAULT = '2026-01-01'
-
-function mesesTranscurridos(contrato) {
-  const fechaStr = FECHA_INICIO_POR_CONTRATO[contrato] ?? FECHA_INICIO_DEFAULT
-  const inicio   = new Date(fechaStr)
-  const hoy      = new Date()
-  return (hoy.getFullYear() - inicio.getFullYear()) * 12
-       + (hoy.getMonth()    - inicio.getMonth())
-}
 
 // ── Radar chart ─────────────────────────────────────────────────────────────
 const radarAxes = computed(() => {
@@ -179,23 +149,7 @@ const radarAxes = computed(() => {
   ]
 })
 
-// ── Bar chart helpers ───────────────────────────────────────────────────────
-const ABREVIATURAS = {
-  'valle de aburra': 'Valle',
-  'oriente':         'Oriente',
-  'occidente':       'Occidente',
-  'norte':           'Norte',
-  'nordeste':        'Nordeste',
-  'uraba':           'Urabá',
-  'bajo cauca':      'Bajo C.',
-  'magdalena medio': 'Magd. M.',
-  'suroeste':        'Suroeste',
-}
-
-function shortLabel(name) {
-  const key = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  return ABREVIATURAS[key] ?? name
-}
+// ── Bar chart helpers ─────────────────────────────────────────────────────────
 
 const subregionesFiltradas = computed(() =>
   props.subregiones.filter(s => s.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') !== 'valle de aburra')
@@ -227,16 +181,20 @@ const yTicks = computed(() => {
           <div v-for="n in 4" :key="n" class="stat-skeleton" />
         </template>
         <template v-else>
-          <StatCard title="Vías intervenidas" :value="fmtVias" @click="abrirModal('vias')" title-attr="Ver detalle de vías">
+          <StatCard title="Vías intervenidas" :value="fmtVias" @click="abrirModal('vias')"
+            tooltip="Tramos de vía incluidos en el programa de pavimentación departamental">
             <Route :size="18" />
           </StatCard>
-          <StatCard title="Longitud total" :value="fmtLong" unit="km" @click="abrirModal('longitud')" title-attr="Ver distribución por subregión">
+          <StatCard title="Longitud total" :value="fmtLong" unit="km" @click="abrirModal('longitud')"
+            tooltip="Kilómetros totales de vía contratados para intervención">
             <Ruler :size="18" />
           </StatCard>
-          <StatCard title="Municipios" :value="fmtMpios" @click="abrirModal('municipios')" title-attr="Ver detalle por municipio">
+          <StatCard title="Municipios" :value="fmtMpios" @click="abrirModal('municipios')"
+            tooltip="Municipios de Antioquia con al menos un tramo intervenido">
             <MapPin :size="18" />
           </StatCard>
-          <StatCard title="Circuitos" :value="fmtCirc" @click="abrirModal('circuitos')" title-attr="Ver detalle de circuitos">
+          <StatCard title="Circuitos" :value="fmtCirc" @click="abrirModal('circuitos')"
+            tooltip="Circuitos viales: conjuntos de tramos agrupados por corredor">
             <GitBranch :size="18" />
           </StatCard>
         </template>
@@ -460,25 +418,28 @@ const yTicks = computed(() => {
 }
 
 .avance-card {
-  background: rgba(255,255,255,0.42);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(200,223,208,0.55);
   border-radius: 16px;
   padding: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 16px rgba(45,134,83,.12), 0 1px 4px rgba(0,0,0,.06),
-              inset 0 1px 0 rgba(255,255,255,0.65);
-  transition: transform .22s ease, box-shadow .22s ease, background .22s ease;
+  box-shadow: 0 2px 8px rgba(45,134,83,.08), 0 1px 3px rgba(0,0,0,.05);
+  transition: transform .18s ease-out, box-shadow .18s ease-out, background .18s ease-out;
 }
-.avance-card:hover {
-  transform: translateY(-3px) scale(1.01);
-  background: rgba(255,255,255,0.75);
-  box-shadow: 0 10px 32px rgba(45,134,83,.2), 0 3px 8px rgba(0,0,0,.08),
-              inset 0 1px 0 rgba(255,255,255,0.8);
+.avance-card:active {
+  transform: scale(0.97);
+  transition-duration: 100ms;
+}
+@media (hover: hover) and (pointer: fine) {
+  .avance-card:hover {
+    transform: translateY(-3px) scale(1.01);
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 8px 24px rgba(45,134,83,.14), 0 2px 6px rgba(0,0,0,.07),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+  }
 }
 
 .section-label {
@@ -654,22 +615,27 @@ const yTicks = computed(() => {
   opacity: 0.55;
   transition: opacity .2s;
 }
-.bar-col--dimmed:hover {
-  opacity: 0.85;
+.bar-col:active {
+  transform: scale(0.96);
+  transition: transform 100ms ease-out;
 }
-.bar-col:hover .bar-fill {
-  background: linear-gradient(180deg, rgba(45,134,83,0.75) 0%, rgba(26,92,58,0.65) 100%);
-  width: 90%;
-  box-shadow: 0 -4px 12px rgba(45, 134, 83, 0.3);
-  transform: scaleY(1) translateY(-3px);
-}
-.bar-col:hover .bar-label {
-  color: #1a5c3a;
-  font-weight: 700;
-}
-.bar-col:hover .bar-badge {
-  background: rgba(45, 134, 83, 0.7);
-  transform: translateX(-50%) translateY(-4px) scale(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .bar-col--dimmed:hover {
+    opacity: 0.85;
+  }
+  .bar-col:hover .bar-fill {
+    background: linear-gradient(180deg, rgba(45,134,83,0.75) 0%, rgba(26,92,58,0.65) 100%);
+    box-shadow: 0 -4px 12px rgba(45, 134, 83, 0.3);
+    transform: scaleY(1) translateY(-3px);
+  }
+  .bar-col:hover .bar-label {
+    color: #1a5c3a;
+    font-weight: 700;
+  }
+  .bar-col:hover .bar-badge {
+    background: rgba(45, 134, 83, 0.7);
+    transform: translateX(-50%) translateY(-4px) scale(1.1);
+  }
 }
 .bar-outer {
   flex: 1;
@@ -709,7 +675,7 @@ const yTicks = computed(() => {
   background: linear-gradient(180deg, rgba(45,134,83,0.45) 0%, rgba(26,92,58,0.35) 100%);
   animation: barGrow .7s cubic-bezier(.34,1.10,.64,1) both;
   transform-origin: bottom;
-  transition: width .25s ease, background .25s ease, box-shadow .25s ease, transform .25s ease;
+  transition: background .25s ease, box-shadow .25s ease, transform .25s ease;
 }
 
 @keyframes barGrow {
@@ -746,5 +712,16 @@ const yTicks = computed(() => {
   align-items: flex-end;
   justify-content: center;
   transition: color .25s ease, font-weight .25s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .avance-card,
+  .avance-card:active,
+  .bar-col,
+  .bar-col:active,
+  .bar-fill { transition: none; animation: none; }
+  @keyframes fadeSlideUp   { from { opacity: 1; transform: none; } }
+  @keyframes fadeSlideRight { from { opacity: 1; transform: none; } }
+  @keyframes barGrow       { from { transform: scaleY(1); opacity: 1; } }
+  @keyframes shimmer       { from { background-position: 0 0; } }
 }
 </style>
