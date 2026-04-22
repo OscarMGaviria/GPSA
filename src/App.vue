@@ -5,12 +5,17 @@ import AppHeader  from './components/organisms/AppHeader.vue'
 import MapView    from './components/organisms/MapView.vue'
 import StatsPanel from './components/organisms/StatsPanel.vue'
 import AppTour    from './components/organisms/AppTour.vue'
+import { useRouter } from 'vue-router'
 import { useMapStore } from './stores/useMapStore.js'
+
+const isInternal = import.meta.env.VITE_INTERNAL === 'true'
 
 const store = useMapStore()
 const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions } = storeToRefs(store)
+const router = isInternal ? useRouter() : null
 const isPanelOpen = ref(true)
-const showTour = ref(localStorage.getItem('simeva-tour-done') !== '1')
+const showTour    = ref(localStorage.getItem('simeva-tour-done') !== '1')
+const mapViewRef  = ref(null)
 
 // Subregión activa en la gráfica: la seleccionada explícitamente,
 // o la que corresponde al municipio seleccionado (inferida del mapa municipiosPorSubregion)
@@ -61,13 +66,14 @@ watch(activeFilters, (f) => {
       :panel-open="isPanelOpen"
       @toggle-panel="isPanelOpen = !isPanelOpen"
       @start-tour="showTour = true"
+      @generate-report="router.push('/reporte')"
       :subregion-options="filterOptions.subregiones"
       :municipio-options="filteredMunicipioOptions"
       :circuito-options="filterOptions.circuitos"
       :active-filters="activeFilters"
     />
     <div class="content-area">
-      <MapView />
+      <MapView ref="mapViewRef" />
       <StatsPanel
         :is-open="isPanelOpen"
         :loading="mapLoading"
@@ -81,6 +87,7 @@ watch(activeFilters, (f) => {
         :total-km-global="mapStats.longitudTotal"
         :active-subregion="activeChartSubregion"
         @filter-subregion="sub => store.setFilter({ search: '', subregion: sub, municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })"
+        @open-via="via => mapViewRef?.openVia(via)"
       />
     </div>
   </div>
@@ -95,6 +102,7 @@ watch(activeFilters, (f) => {
   display: flex;
   flex-direction: column;
 }
+
 .content-area {
   display: flex;
   flex-direction: row;

@@ -42,6 +42,22 @@ export function mesesTranscurridos(contrato, hoy = new Date()) {
 }
 
 /**
+ * Calcula el porcentaje de tiempo transcurrido respecto al plazo total.
+ * fechaIni: string en formato DD/MM/YYYY
+ * plazoMeses: número de meses del contrato
+ */
+export function pctTiempoTranscurrido(fechaIni, plazoMeses, hoy = new Date()) {
+  if (!fechaIni || !plazoMeses) return 0
+  const parts = String(fechaIni).split('/')
+  if (parts.length < 3) return 0
+  const inicio = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
+  const totalDias = parseFloat(plazoMeses) * 30
+  if (!totalDias) return 0
+  const diasTranscurridos = (hoy - inicio) / (1000 * 60 * 60 * 24)
+  return Math.min(100, Math.max(0, Math.round((diasTranscurridos / totalDias) * 100)))
+}
+
+/**
  * Calcula el resumen de avance en km a partir del array de vías.
  * Retorna { pct, intervenidos, contractuales, pendientes }
  */

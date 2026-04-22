@@ -1,8 +1,22 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, defineAsyncComponent, onMounted, onUnmounted, nextTick } from 'vue'
 import maplibregl from 'maplibre-gl'
 import { useCircuitoPhotos } from '../../composables/useCircuitoPhotos.js'
 import { parseAvancePct, getBarColor, getStatusLabel, getStatusClass } from '../../utils/via.js'
+
+const isInternal = import.meta.env.VITE_INTERNAL === 'true'
+let GanttMiniView    = null
+let CurvaSView       = null
+let ValorGanadoView  = null
+let ModuloResiliente = null
+let EnsayosView      = null
+if (import.meta.env.VITE_INTERNAL === 'true') {
+  GanttMiniView    = defineAsyncComponent(() => import('./GanttMiniView.vue'))
+  CurvaSView       = defineAsyncComponent(() => import('./CurvaSView.vue'))
+  ValorGanadoView  = defineAsyncComponent(() => import('./ValorGanadoView.vue'))
+  ModuloResiliente = defineAsyncComponent(() => import('./ModuloResiliente.vue'))
+  EnsayosView      = defineAsyncComponent(() => import('./EnsayosView.vue'))
+}
 
 const props = defineProps({ via: { type: Object, required: true } })
 const emit  = defineEmits(['close'])
@@ -31,10 +45,11 @@ const statusClass = computed(() => getStatusClass(avancePct.value))
 
 // Orden de la tabla
 const TABLE_FIELDS = [
-  'Subregión','Municipio','Circuito',
-  'Nombre de la vía','Código de la vía',
-  'Longitud circuito','Longitud tramo',
-  'Avance','Contratista','Fecha de inicio','Plazo',
+  'Subregión', 'Municipio', 'Circuito',
+  'Código de vía', 'Contrato', 'Contratista', 'Interventoría',
+  'Longitud (km)',
+  'Fecha de inicio', 'Plazo (meses)', 'Duración transcurrida',
+  'Avance físico',
 ]
 const tableRows = computed(() => {
   const used = new Set()
@@ -92,8 +107,17 @@ function countUpPct(target) {
   }(performance.now()))
 }
 
+// ── Main tabs: detalle | cronograma ─────────────────────────────────────────
+const mainTab = ref('detalle')
+function setMainTab(tab) {
+  if (activeTab.value === 'recorrido') cleanupRoute()
+  mainTab.value = tab
+}
+
+// ── Right tabs: fotos | recorrido ────────────────────────────────────────────
+const activeTab = ref('fotos')
+const showRoute = computed(() => activeTab.value === 'recorrido')
 // ── Route animation ───────────────────────────────────────────────────────────
-const showRoute   = ref(false)
 const routeMapEl  = ref(null)
 const routePlaying = ref(false)
 let _routeMap  = null
@@ -105,11 +129,13 @@ function cleanupRoute() {
   routePlaying.value = false
 }
 
-async function toggleRoute() {
-  if (showRoute.value) { showRoute.value = false; cleanupRoute(); return }
-  showRoute.value = true
-  await nextTick()
-  startRouteMap()
+async function setTab(tab) {
+  if (activeTab.value === 'recorrido' && tab !== 'recorrido') cleanupRoute()
+  activeTab.value = tab
+  if (tab === 'recorrido') {
+    await nextTick()
+    startRouteMap()
+  }
 }
 
 function startRouteMap() {
@@ -262,15 +288,82 @@ onUnmounted(() => {
 
         <!-- ── HEADER ── -->
         <header class="mhead">
-          <div class="mhead-left">
-            <p class="mhead-inst">Gobernación de Antioquia · Secretaría de Infraestructura Física</p>
+          <div class="mhead-content">
+            <span class="mhead-inst">Gobernación de Antioquia · Secretaría de Infraestructura Física</span>
             <h2 class="mhead-name">{{ name }}</h2>
+            <div class="mhead-chips">
+              <span v-if="get('Municipio')" class="mhead-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                {{ get('Municipio') }}
+              </span>
+              <span v-if="get('Longitud (km)')" class="mhead-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+                {{ get('Longitud (km)') }} km
+              </span>
+              <span v-if="avancePct > 0" class="mhead-chip mhead-chip--green">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {{ avancePct }}% ejecutado
+              </span>
+            </div>
           </div>
           <button class="btn-x" @click="requestClose" aria-label="Cerrar">✕</button>
         </header>
 
+        <!-- ── MAIN TABS (internal only) ── -->
+        <nav v-if="isInternal" class="main-tabs">
+          <button class="main-tab" :class="{ 'is-active': mainTab === 'detalle' }" @click="setMainTab('detalle')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Detalle
+          </button>
+          <button class="main-tab" :class="{ 'is-active': mainTab === 'cronograma' }" @click="setMainTab('cronograma')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Cronograma
+          </button>
+          <button class="main-tab" :class="{ 'is-active': mainTab === 'curvas' }" @click="setMainTab('curvas')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Curva S
+          </button>
+          <button class="main-tab" :class="{ 'is-active': mainTab === 'valor-ganado' }" @click="setMainTab('valor-ganado')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Valor Ganado
+          </button>
+          <button class="main-tab" :class="{ 'is-active': mainTab === 'modulo' }" @click="setMainTab('modulo')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M5 20V10l7-7 7 7v10"/></svg>
+            Mód. Resiliente
+          </button>
+          <button class="main-tab" :class="{ 'is-active': mainTab === 'ensayos' }" @click="setMainTab('ensayos')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Ensayos Lab.
+          </button>
+        </nav>
+
+        <!-- ── CRONOGRAMA FULL WIDTH ── -->
+        <div v-if="isInternal && mainTab === 'cronograma'" class="cronograma-full">
+          <component :is="GanttMiniView" :circuito="circuito" />
+        </div>
+
+        <!-- ── CURVA S ── -->
+        <div v-if="isInternal && mainTab === 'curvas'" class="cronograma-full">
+          <component :is="CurvaSView" :circuito="circuito" />
+        </div>
+
+        <!-- ── VALOR GANADO ── -->
+        <div v-if="isInternal && mainTab === 'valor-ganado'" class="cronograma-full">
+          <component :is="ValorGanadoView" :circuito="circuito" />
+        </div>
+
+        <!-- ── MÓDULO RESILIENTE ── -->
+        <div v-if="isInternal && mainTab === 'modulo'" class="cronograma-full">
+          <component :is="ModuloResiliente" :circuito="circuito" />
+        </div>
+
+        <!-- ── ENSAYOS DE LABORATORIO ── -->
+        <div v-if="isInternal && mainTab === 'ensayos'" class="cronograma-full">
+          <component :is="EnsayosView" :circuito="circuito" />
+        </div>
+
         <!-- ── TWO COLUMNS ── -->
-        <div class="mcols">
+        <div v-if="mainTab === 'detalle'" class="mcols">
 
           <!-- LEFT: datos -->
           <div class="col-left">
@@ -321,11 +414,11 @@ onUnmounted(() => {
 
               <!-- Tab bar: Fotos / Recorrido -->
               <div class="right-tabs">
-                <button class="right-tab" :class="{ 'is-active': !showRoute }" @click="showRoute && toggleRoute()">
+                <button class="right-tab" :class="{ 'is-active': activeTab === 'fotos' }" @click="setTab('fotos')">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                   Fotos
                 </button>
-                <button class="right-tab" :class="{ 'is-active': showRoute }" @click="!showRoute && toggleRoute()" :disabled="!via.geometry">
+                <button class="right-tab" :class="{ 'is-active': activeTab === 'recorrido' }" @click="setTab('recorrido')" :disabled="!via.geometry">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
                   Recorrido
                 </button>
@@ -349,7 +442,7 @@ onUnmounted(() => {
               </template>
 
               <!-- Photos -->
-              <template v-else>
+              <template v-else-if="activeTab === 'fotos'">
               <p class="block-label">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 Registro fotográfico
@@ -471,8 +564,9 @@ onUnmounted(() => {
   background: #fff;
   border-radius: 16px;
   width: 100%;
-  max-width: 960px;
-  max-height: 90vh;
+  max-width: min(95vw, 1280px);
+  height: 88vh;
+  max-height: 88vh;
   display: flex;
   flex-direction: column;
   box-shadow:
@@ -483,11 +577,10 @@ onUnmounted(() => {
 
 /* ── Header ── */
 .mhead {
-  background: linear-gradient(135deg, #083d2c 0%, #0b5640 50%, #1a7a56 100%);
-  padding: 20px 24px;
+  background: linear-gradient(110deg, #052318 0%, #0a4d38 45%, #0d6347 75%, #1a7a56 100%);
+  padding: 14px 18px 14px 22px;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 16px;
   flex-shrink: 0;
   position: relative;
@@ -497,45 +590,131 @@ onUnmounted(() => {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 90% -10%, rgba(255,255,255,0.07) 0%, transparent 55%);
+  background:
+    radial-gradient(ellipse at 110% 50%, rgba(63,173,114,.35) 0%, transparent 50%),
+    radial-gradient(ellipse at -10% 80%, rgba(5,35,24,.6) 0%, transparent 50%);
   pointer-events: none;
 }
-.mhead-left { flex: 1; min-width: 0; }
+.mhead::after {
+  content: '';
+  position: absolute;
+  right: -30px; top: -30px;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  border: 28px solid rgba(255,255,255,.04);
+  pointer-events: none;
+}
+.mhead-content { flex: 1; min-width: 0; position: relative; }
 .mhead-inst {
-  margin: 0 0 5px;
+  display: block;
+  margin: 0 0 4px;
   font-family: 'Prompt', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  color: rgba(255,255,255,.5);
-  letter-spacing: .06em;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255,255,255,.4);
+  letter-spacing: .1em;
   text-transform: uppercase;
 }
 .mhead-name {
-  margin: 0;
+  margin: 0 0 8px;
   font-family: 'Prompt', sans-serif;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 800;
   color: #fff;
-  line-height: 1.25;
-  letter-spacing: -.01em;
+  line-height: 1.2;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mhead-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.mhead-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 99px;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.18);
+  font-family: 'Prompt', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,.85);
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+.mhead-chip svg { width: 10px; height: 10px; flex-shrink: 0; opacity: .75; }
+.mhead-chip--green {
+  background: rgba(63,173,114,.25);
+  border-color: rgba(63,173,114,.45);
+  color: #a7f3d0;
 }
 .btn-x {
-  width: 36px; height: 36px;
+  width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
-  border: 2px solid rgba(255,255,255,.55);
+  border: 1.5px solid rgba(255,255,255,.25);
   border-radius: 8px;
-  background: rgba(255,255,255,.15);
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 700;
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.75);
+  font-size: 17px;
+  font-weight: 400;
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background .15s ease-out, border-color .15s ease-out, transform .1s ease-out;
+  position: relative;
+  transition: background .15s ease-out, border-color .15s ease-out, color .15s ease-out, transform .1s ease-out;
 }
+.btn-x:focus { outline: none; }
 .btn-x:active { transform: scale(0.93); }
 @media (hover: hover) and (pointer: fine) {
-  .btn-x:hover { background: rgba(255,255,255,.28); border-color: #fff; }
+  .btn-x:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.55); color: #fff; }
+}
+
+/* ── Main tabs ── */
+.main-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 10px 24px 0;
+  background: #fff;
+  border-bottom: 2px solid #f0f4f2;
+  flex-shrink: 0;
+}
+.main-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px 11px;
+  border: none;
+  background: transparent;
+  font-family: 'Prompt', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9ca3af;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 8px 8px 0 0;
+  transition: color .15s ease-out, border-color .15s ease-out, background .12s ease-out;
+}
+.main-tab svg { width: 14px; height: 14px; flex-shrink: 0; }
+.main-tab:focus { outline: none; }
+@media (hover: hover) and (pointer: fine) {
+  .main-tab:hover:not(.is-active) { color: #374151; background: #f9fafb; }
+}
+.main-tab.is-active { color: #0b5640; border-bottom-color: #0b5640; }
+
+/* ── Cronograma full-width panel ── */
+.cronograma-full {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px;
+  overflow: hidden;
 }
 
 /* ── Two columns ── */
@@ -829,6 +1008,13 @@ onUnmounted(() => {
 .thumb.is-active { border-color: #0b5640; opacity: 1; }
 .thumb:hover:not(.is-active) { opacity: .82; border-color: #9ca3af; }
 
+/* ── Gantt embed ── */
+.gantt-embed {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* ── Empty state ── */
 .no-photos {
   flex: 1;
@@ -871,6 +1057,7 @@ onUnmounted(() => {
   transition: background .14s ease-out, border-color .14s ease-out, color .14s ease-out, transform .1s ease-out;
 }
 .right-tab svg { width: 13px; height: 13px; flex-shrink: 0; }
+.right-tab:focus { outline: none; }
 .right-tab:active:not(:disabled) { transform: scale(0.96); }
 @media (hover: hover) and (pointer: fine) {
   .right-tab:hover:not(:disabled) { border-color: #0b5640; color: #0b5640; }

@@ -7,7 +7,7 @@
  * Soporta: número, string con %, string con coma decimal.
  */
 export function parseAvancePct(description = {}) {
-  const raw = description['Avance'] ?? description['avance'] ?? '0'
+  const raw = description['Avance físico'] ?? description['Avance'] ?? description['avance'] ?? '0'
   return Math.min(100, Math.max(0, parseFloat(String(raw).replace('%', '').replace(',', '.')) || 0))
 }
 

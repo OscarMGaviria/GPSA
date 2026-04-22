@@ -1,5 +1,6 @@
 import { ref, onUnmounted } from 'vue'
 import { getLocalizaciones, getMunicipios } from '../services/api.js'
+import { pctTiempoTranscurrido } from '../utils/stats.js'
 
 function sentenceCase(str) {
   if (!str) return str
@@ -113,7 +114,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     if (geoVias) {
       for (const f of geoVias.features) {
         const p    = f.properties
-        const km   = parseFloat(p.long_km) || 0
+        const km   = parseFloat(p.Long_km) || 0
         const sub  = canonicalSub(p.SUBREGION) ?? 'Sin subregión'
         const mpio = sentenceCase(p.MPIO_NOMBR ?? '')
 
@@ -126,13 +127,15 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           municipio:   mpio,
           subregion:   sub,
           km:          Math.round(km * 100) / 100,
-          avance:      parseFloat(p.Avance_Fis) || 0,
-          avanceFin:   parseFloat(p.Avance_Fin) || 0,
+          avance:      Math.round((parseFloat(p.AV_FISICO) || 0) * 100),
+          avanceFin:   Math.round((parseFloat(p.AV_FINAN)  || 0) * 100),
           contratista: p.CONTRATIST ?? '',
-          contrato:    p.NO_CONTRAT ?? '',
+          contrato:    p.CTO ?? '',
+          interventor: p.INTERV ?? '',
           plazoMeses:  parseFloat(p.PLAZO_MESE) || 0,
           plazo:       p.PLAZO_MESE ? `${p.PLAZO_MESE} meses` : '',
           circuito:    p.CIRCUITO ?? '',
+          fechaIni:    p.FECHA_INI ?? '',
         })
       }
     }
@@ -299,17 +302,23 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         map.on('click', 'vias-line', (e) => {
           const p    = e.features[0].properties
           const feat = cachedVias.value?.features.find(f => f.properties.NOMBRE_VIA === p.NOMBRE_VIA)
+          selectedMpio.value = null
           selectedVia.value = {
             name:        p.NOMBRE_VIA ?? 'Vía',
             description: {
-              Municipio:   sentenceCase(p.MPIO_NOMBR ?? ''),
-              Subregión:   canonicalSub(p.SUBREGION),
-              Circuito:    p.CIRCUITO ?? '',
-              Código:      p.CODIGO_VIA ?? '',
-              Contratista: p.CONTRATIST ?? '',
-              'Longitud (km)': parseFloat(p.long_km) || '',
-              'Avance físico': p.Avance_Fis != null ? `${p.Avance_Fis}%` : '',
-              'Plazo (meses)': p.PLAZO_MESE ?? '',
+              Municipio:               sentenceCase(p.MPIO_NOMBR ?? ''),
+              Subregión:               canonicalSub(p.SUBREGION),
+              Circuito:                p.CIRCUITO   ?? '',
+              'Código de vía':         p.CODIGO_VIA ?? '',
+              Contrato:                p.CTO        ?? '',
+              Contratista:             p.CONTRATIST ?? '',
+              Interventoría:           p.INTERV     ?? '',
+              'Longitud (km)':         parseFloat(p.Long_km) || '',
+              'Avance físico':         p.AV_FISICO != null ? `${Math.round(p.AV_FISICO * 100)}%` : '',
+              'Fecha de inicio':       p.FECHA_INI  ?? '',
+              'Plazo (meses)':         p.PLAZO_MESE ?? '',
+              'Duración transcurrida': p.FECHA_INI && p.PLAZO_MESE
+                ? `${pctTiempoTranscurrido(p.FECHA_INI, p.PLAZO_MESE)}%` : '',
             },
             photos:   [],
             geometry: feat?.geometry ?? null,

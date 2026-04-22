@@ -1,6 +1,8 @@
 <script setup>
-import { PanelRightClose, PanelRightOpen, HelpCircle } from 'lucide-vue-next'
+import { PanelRightClose, PanelRightOpen, HelpCircle, FileText } from 'lucide-vue-next'
 import FilterBar from '../molecules/FilterBar.vue'
+
+const isInternal = import.meta.env.VITE_INTERNAL === 'true'
 
 const props = defineProps({
   title:            { type: String,  default: 'Pavimentación Vial' },
@@ -12,7 +14,7 @@ const props = defineProps({
   activeFilters:    { type: Object,  default: null },
 })
 
-const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour'])
+const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour', 'generate-report'])
 </script>
 
 <template>
@@ -42,6 +44,17 @@ const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour'])
       />
 
       <div class="header-sep"></div>
+
+      <div v-if="isInternal" class="btn-panel-wrapper">
+        <button
+          class="btn-panel btn-report"
+          @click="emit('generate-report')"
+          aria-label="Generar reporte PDF"
+        >
+          <FileText :size="15" />
+        </button>
+        <span class="btn-tooltip">Generar reporte PDF</span>
+      </div>
 
       <div class="btn-panel-wrapper">
         <button
@@ -175,6 +188,8 @@ const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour'])
   color: #ffffff;
 }
 .btn-panel:active { background: rgba(255, 255, 255, 0.2); }
+.btn-report { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.35); color: #fff; }
+.btn-report:hover { background: rgba(255,255,255,0.22); }
 
 .btn-tooltip {
   position: absolute;
