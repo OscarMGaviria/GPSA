@@ -17,6 +17,8 @@ const {
   noResults,
   openVia,
 } = useMapOrchestrator(mapContainer, () => store.activeFilters)
+
+defineExpose({ openVia })
 </script>
 
 <template>
@@ -86,19 +88,6 @@ const {
     <!-- Logo A Toda Máquina -->
     <div class="atm-logo">
       <img src="/A toda maquina.png" alt="A Toda Máquina" />
-    </div>
-
-    <!-- Leyenda del mapa -->
-    <div class="map-legend">
-      <div class="legend-item">
-        <span class="legend-line legend-line--via"></span>
-        <span class="legend-label">Tramo vial intervenido</span>
-      </div>
-      <div class="legend-item">
-        <span class="legend-swatch legend-swatch--mpio"></span>
-        <span class="legend-label">Municipio con intervención</span>
-      </div>
-      <div class="legend-hint">Clic en un tramo para ver detalles</div>
     </div>
 
     <!-- Tooltip hover vía -->
@@ -486,59 +475,6 @@ const {
   background: #f9fafb;
 }
 
-/* ── Leyenda del mapa ── */
-.map-legend {
-  position: absolute;
-  bottom: 36px;
-  left: 12px;
-  z-index: 10;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 10px;
-  padding: 9px 12px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  pointer-events: none;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.10);
-}
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.legend-line {
-  display: block;
-  width: 22px;
-  height: 4px;
-  border-radius: 99px;
-  flex-shrink: 0;
-}
-.legend-line--via { background: #ffaa00; }
-.legend-swatch {
-  display: block;
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-.legend-swatch--mpio { background: rgba(45, 134, 83, 0.22); border: 1px solid rgba(45, 134, 83, 0.5); }
-.legend-label {
-  font-family: 'Prompt', sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  color: #374151;
-  white-space: nowrap;
-}
-.legend-hint {
-  font-family: 'Prompt', sans-serif;
-  font-size: 10px;
-  color: #9ca3af;
-  padding-top: 2px;
-  border-top: 1px solid #f3f4f6;
-  margin-top: 1px;
-}
 
 /* ── Tooltip hover vía ── */
 .via-tooltip {

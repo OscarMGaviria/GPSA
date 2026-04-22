@@ -9,7 +9,7 @@ const props = defineProps({
   subregiones: { type: Array,  default: () => [] },
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'open-via'])
 
 // ── Visibilidad con animación de salida ───────────────────────────────────
 const visible = ref(true)
@@ -72,6 +72,12 @@ watch(barsVisible, (val) => {
     }, i * 55)
   })
 })
+
+// ── Abrir detalle de vía desde circuito ──────────────────────────────────
+function abrirDetalleCircuito(circuitoNombre) {
+  const via = props.viasDetalle.find(v => v.circuito === circuitoNombre)
+  if (via) emit('open-via', via)
+}
 
 // ── Teclado ────────────────────────────────────────────────────────────────
 function onKey(e) { if (e.key === 'Escape') requestClose() }
@@ -226,8 +232,10 @@ onUnmounted(() => {
                 </tr>
               </thead>
               <TransitionGroup name="row" tag="tbody">
-                <tr v-for="(c, i) in circuitosRows" :key="c.circuito" class="data-row"
-                    :style="{ '--delay': Math.min(i * 30, 420) + 'ms' }">
+                <tr v-for="(c, i) in circuitosRows" :key="c.circuito" class="data-row data-row--dblclick"
+                    :style="{ '--delay': Math.min(i * 30, 420) + 'ms' }"
+                    @dblclick="abrirDetalleCircuito(c.circuito)"
+                    title="Doble clic para ver detalle del tramo">
                   <td class="td-num td-idx">{{ i + 1 }}</td>
                   <td class="td-nombre">{{ c.circuito || '—' }}</td>
                   <td>{{ c.municipio || '—' }}</td>
@@ -435,6 +443,8 @@ onUnmounted(() => {
 
 .data-row { border-bottom: 1px solid #f0f4f2; transition: background .12s; }
 .data-row:hover { background: #f5fbf7; }
+.data-row--dblclick { cursor: pointer; }
+.data-row--dblclick:active { background: #e0f2ea; }
 .data-table td { padding: 10px 14px; color: #374151; vertical-align: middle; }
 .td-num { text-align: right; font-variant-numeric: tabular-nums; }
 .td-nombre {

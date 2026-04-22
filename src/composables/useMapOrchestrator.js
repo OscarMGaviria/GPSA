@@ -4,6 +4,7 @@ import { useMapLayers }             from './useMapLayers.js'
 import { useMapFilters }            from './useMapFilters.js'
 import { useMapInit, CENTER, ZOOM } from './useMapInit.js'
 import { useMapStore }              from '../stores/useMapStore.js'
+import { pctTiempoTranscurrido }    from '../utils/stats.js'
 
 export function useMapOrchestrator(mapContainer, filtersGetter) {
   const store = useMapStore()
@@ -47,14 +48,19 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     selectedVia.value = {
       name:        p.NOMBRE_VIA ?? 'Vía',
       description: {
-        Municipio:   p.MPIO_NOMBR ?? '',
-        Subregión:   p.SUBREGION  ?? '',
-        Circuito:    p.CIRCUITO   ?? '',
-        Código:      p.CODIGO_VIA ?? '',
-        Contratista: p.CONTRATIST ?? '',
-        'Longitud (km)': parseFloat(p.long_km) || '',
-        'Avance físico': p.Avance_Fis != null ? `${p.Avance_Fis}%` : '',
-        'Plazo (meses)': p.PLAZO_MESE ?? '',
+        Municipio:               p.MPIO_NOMBR ?? '',
+        Subregión:               p.SUBREGION  ?? '',
+        Circuito:                p.CIRCUITO   ?? '',
+        'Código de vía':         p.CODIGO_VIA ?? '',
+        Contrato:                p.CTO        ?? '',
+        Contratista:             p.CONTRATIST ?? '',
+        Interventoría:           p.INTERV     ?? '',
+        'Longitud (km)':         parseFloat(p.Long_km) || '',
+        'Avance físico':         p.AV_FISICO != null ? `${Math.round(p.AV_FISICO * 100)}%` : '',
+        'Fecha de inicio':       p.FECHA_INI  ?? '',
+        'Plazo (meses)':         p.PLAZO_MESE ?? '',
+        'Duración transcurrida': p.FECHA_INI && p.PLAZO_MESE
+          ? `${pctTiempoTranscurrido(p.FECHA_INI, p.PLAZO_MESE)}%` : '',
       },
       photos:   [],
       geometry: feat.geometry,

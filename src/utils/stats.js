@@ -42,17 +42,35 @@ export function mesesTranscurridos(contrato, hoy = new Date()) {
 }
 
 /**
+ * Calcula el porcentaje de tiempo transcurrido respecto al plazo total.
+ * fechaIni: string en formato DD/MM/YYYY
+ * plazoMeses: número de meses del contrato
+ */
+export function pctTiempoTranscurrido(fechaIni, plazoMeses, hoy = new Date()) {
+  if (!fechaIni || !plazoMeses) return 0
+  const parts = String(fechaIni).split('/')
+  if (parts.length < 3) return 0
+  const inicio = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
+  const totalDias = parseFloat(plazoMeses) * 30
+  if (!totalDias) return 0
+  const diasTranscurridos = (hoy - inicio) / (1000 * 60 * 60 * 24)
+  return Math.min(100, Math.max(0, Math.round((diasTranscurridos / totalDias) * 100)))
+}
+
+/**
  * Calcula el resumen de avance en km a partir del array de vías.
+ * Usa el campo `estabilizado` (km reales intervenidos reportados).
  * Retorna { pct, intervenidos, contractuales, pendientes }
  */
 export function calcAvanceKm(vias) {
   if (!vias.length) return { pct: 0, intervenidos: 0, contractuales: 0, pendientes: 0 }
-  const contractuales = vias.reduce((s, v) => s + (v.km || 0), 0)
-  const avanceProm    = vias.reduce((s, v) => s + (v.avance || 0), 0) / vias.length
-  const intervenidos  = contractuales * avanceProm / 100
-  const pendientes    = contractuales - intervenidos
+  const contractuales   = vias.reduce((s, v) => s + (v.km           || 0), 0)
+  const intervenidos    = vias.reduce((s, v) => s + (v.estabilizado || 0), 0)
+  const pendientes      = contractuales - intervenidos
+  const pct             = contractuales > 0 ? (intervenidos / contractuales) * 100 : 0
+
   return {
-    pct:           Math.round(avanceProm),
+    pct:           Math.round(pct * 10) / 10,
     intervenidos:  Math.round(intervenidos  * 100) / 100,
     contractuales: Math.round(contractuales * 100) / 100,
     pendientes:    Math.round(pendientes    * 100) / 100,
