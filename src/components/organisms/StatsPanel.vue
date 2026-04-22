@@ -229,7 +229,7 @@ const yTicks = computed(() => {
             <span class="sl-dot">↗</span> Avance en kilómetros
           </div>
 
-          <div class="km-pct-label">{{ avanceKmCalc.pct }}% avance físico promedio</div>
+          <div class="km-pct-label">{{ avanceKmCalc.pct }}% km estabilizados</div>
           <ProgressBar
             :pct="avanceKmCalc.pct"
             color="#2d8653"

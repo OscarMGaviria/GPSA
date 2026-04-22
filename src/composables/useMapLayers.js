@@ -122,20 +122,21 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         if (km) kmPorSubregion[sub] = (kmPorSubregion[sub] ?? 0) + km
 
         viasDetalle.push({
-          nombre:      p.NOMBRE_VIA ?? 'Sin nombre',
-          codigo:      p.CODIGO_VIA ?? '',
-          municipio:   mpio,
-          subregion:   sub,
-          km:          Math.round(km * 100) / 100,
-          avance:      Math.round((parseFloat(p.AV_FISICO) || 0) * 100),
-          avanceFin:   Math.round((parseFloat(p.AV_FINAN)  || 0) * 100),
-          contratista: p.CONTRATIST ?? '',
-          contrato:    p.CTO ?? '',
-          interventor: p.INTERV ?? '',
-          plazoMeses:  parseFloat(p.PLAZO_MESE) || 0,
-          plazo:       p.PLAZO_MESE ? `${p.PLAZO_MESE} meses` : '',
-          circuito:    p.CIRCUITO ?? '',
-          fechaIni:    p.FECHA_INI ?? '',
+          nombre:       p.NOMBRE_VIA ?? 'Sin nombre',
+          codigo:       p.CODIGO_VIA ?? '',
+          municipio:    mpio,
+          subregion:    sub,
+          km:           Math.round(km * 100) / 100,
+          avance:       Math.round((parseFloat(p.AV_FISICO) || 0) * 100),
+          avanceFin:    Math.round((parseFloat(p.AV_FINAN)  || 0) * 100),
+          estabilizado: Math.round((parseFloat(p.ESTABILIZADO) || 0) * 100) / 100,
+          contratista:  p.CONTRATIST ?? '',
+          contrato:     p.CTO ?? '',
+          interventor:  p.INTERV ?? '',
+          plazoMeses:   parseFloat(p.PLAZO_MESE) || 0,
+          plazo:        p.PLAZO_MESE ? `${p.PLAZO_MESE} meses` : '',
+          circuito:     p.CIRCUITO ?? '',
+          fechaIni:     p.FECHA_INI ?? '',
         })
       }
     }

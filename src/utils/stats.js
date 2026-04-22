@@ -59,16 +59,18 @@ export function pctTiempoTranscurrido(fechaIni, plazoMeses, hoy = new Date()) {
 
 /**
  * Calcula el resumen de avance en km a partir del array de vías.
+ * Usa el campo `estabilizado` (km reales intervenidos reportados).
  * Retorna { pct, intervenidos, contractuales, pendientes }
  */
 export function calcAvanceKm(vias) {
   if (!vias.length) return { pct: 0, intervenidos: 0, contractuales: 0, pendientes: 0 }
-  const contractuales = vias.reduce((s, v) => s + (v.km || 0), 0)
-  const avanceProm    = vias.reduce((s, v) => s + (v.avance || 0), 0) / vias.length
-  const intervenidos  = contractuales * avanceProm / 100
-  const pendientes    = contractuales - intervenidos
+  const contractuales   = vias.reduce((s, v) => s + (v.km           || 0), 0)
+  const intervenidos    = vias.reduce((s, v) => s + (v.estabilizado || 0), 0)
+  const pendientes      = contractuales - intervenidos
+  const pct             = contractuales > 0 ? (intervenidos / contractuales) * 100 : 0
+
   return {
-    pct:           Math.round(avanceProm),
+    pct:           Math.round(pct * 10) / 10,
     intervenidos:  Math.round(intervenidos  * 100) / 100,
     contractuales: Math.round(contractuales * 100) / 100,
     pendientes:    Math.round(pendientes    * 100) / 100,
