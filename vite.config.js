@@ -35,16 +35,20 @@ function cronogramasApiPlugin() {
   }
 }
 
-// Cuando VITE_INTERNAL no está activo, Rollup no puede encontrar AppShell ni router
-// porque esos archivos no existen en producción. Este plugin los reemplaza con
-// stubs vacíos que Rollup resuelve sin error; el código que los usa nunca se ejecuta
-// porque la condición `isInternal` es false en producción.
+// En producción, los archivos internos (AppShell, router, vistas internas) no existen
+// en el repo. Este plugin hace stub de cualquier import relativo cuyo archivo no esté
+// en disco, para que Rollup pueda resolverlos sin error. El código que los usa nunca
+// se ejecuta porque las condiciones VITE_INTERNAL guardan cada rama.
 function stubInternalModulesPlugin(isInternal) {
   if (isInternal) return null
   return {
     name: 'stub-internal-modules',
-    resolveId(id) {
-      if (id === './AppShell.vue' || id === './router/index.js') return '\0stub:' + id
+    resolveId(id, importer) {
+      if (!importer || !id.startsWith('.')) return
+      const dir = path.dirname(importer.replace(/^\0/, ''))
+      const exts = ['', '.vue', '.js', '/index.js', '/index.vue']
+      const exists = exts.some(ext => fs.existsSync(path.resolve(dir, id + ext)))
+      if (!exists) return '\0stub:' + id
     },
     load(id) {
       if (id.startsWith('\0stub:')) return 'export default {}'
