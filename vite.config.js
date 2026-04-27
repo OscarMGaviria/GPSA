@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -35,8 +35,29 @@ function cronogramasApiPlugin() {
   }
 }
 
-export default defineConfig({
-  plugins: [vue(), cronogramasApiPlugin()],
+// Cuando VITE_INTERNAL no está activo, Rollup no puede encontrar AppShell ni router
+// porque esos archivos no existen en producción. Este plugin los reemplaza con
+// stubs vacíos que Rollup resuelve sin error; el código que los usa nunca se ejecuta
+// porque la condición `isInternal` es false en producción.
+function stubInternalModulesPlugin(isInternal) {
+  if (isInternal) return null
+  return {
+    name: 'stub-internal-modules',
+    resolveId(id) {
+      if (id === './AppShell.vue' || id === './router/index.js') return '\0stub:' + id
+    },
+    load(id) {
+      if (id.startsWith('\0stub:')) return 'export default {}'
+    },
+  }
+}
+
+export default defineConfig(({ mode }) => {
+  const env        = loadEnv(mode, process.cwd(), '')
+  const isInternal = env.VITE_INTERNAL === 'true'
+
+  return {
+  plugins: [vue(), cronogramasApiPlugin(), stubInternalModulesPlugin(isInternal)].filter(Boolean),
   test: {
     environment: 'jsdom',
     globals: true,
@@ -56,4 +77,5 @@ export default defineConfig({
     // Subir el umbral de advertencia — maplibre-gl es grande por necesidad
     chunkSizeWarningLimit: 800,
   },
+  }
 })
