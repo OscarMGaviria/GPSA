@@ -88,6 +88,7 @@ watch(activeFilters, (f) => {
         :active-subregion="activeChartSubregion"
         @filter-subregion="sub => store.setFilter({ search: '', subregion: sub, municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })"
         @open-via="via => mapViewRef?.openVia(via)"
+        @fly-via="via => mapViewRef?.flyToVia(via)"
       />
     </div>
   </div>

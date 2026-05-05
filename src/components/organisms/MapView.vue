@@ -16,9 +16,10 @@ const {
   selectedSubregion, selectedMunicipio,
   noResults,
   openVia,
+  flyToVia,
 } = useMapOrchestrator(mapContainer, () => store.activeFilters)
 
-defineExpose({ openVia })
+defineExpose({ openVia, flyToVia })
 </script>
 
 <template>

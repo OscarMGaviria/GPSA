@@ -7,7 +7,7 @@ import RadarChart     from '../atoms/RadarChart.vue'
 import StatsDetailModal from './StatsDetailModal.vue'
 import { shortLabel, mesesTranscurridos, calcAvanceKm } from '../../utils/stats.js'
 
-const emit = defineEmits(['filter-subregion', 'open-via'])
+const emit = defineEmits(['filter-subregion', 'open-via', 'fly-via'])
 
 const props = defineProps({
   isOpen:            { type: Boolean, default: true },
@@ -208,6 +208,7 @@ const yTicks = computed(() => {
         :subregiones="subregiones"
         @close="cerrarModal"
         @open-via="via => { cerrarModal(); emit('open-via', via) }"
+        @fly-via="via => { cerrarModal(); emit('fly-via', via) }"
       />
 
       <!-- ── Avance físico + Avance en km ──────────────────────────────── -->

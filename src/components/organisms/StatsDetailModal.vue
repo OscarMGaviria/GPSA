@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Search, ChevronUp, ChevronDown, Route, Ruler, MapPin, GitBranch } from 'lucide-vue-next'
-import { groupViasFiltered, calcLongitudRows, calcMunicipiosRows, calcCircuitosRows, avanceBadge, avanceLabel } from '../../utils/aggregations.js'
+import { calcViasAgrupadas, calcLongitudAgrupada, calcMunicipiosRows, calcCircuitosRows, avanceBadge, avanceLabel } from '../../utils/aggregations.js'
 
 const props = defineProps({
   tipo:        { type: String, required: true }, // 'vias' | 'longitud' | 'municipios' | 'circuitos'
@@ -9,7 +9,7 @@ const props = defineProps({
   subregiones: { type: Array,  default: () => [] },
 })
 
-const emit = defineEmits(['close', 'open-via'])
+const emit = defineEmits(['close', 'open-via', 'fly-via'])
 
 // ── Visibilidad con animación de salida ───────────────────────────────────
 const visible = ref(true)
@@ -28,10 +28,10 @@ function toggleSort(key) {
 
 // ── Datos derivados por tipo ───────────────────────────────────────────────
 
-// Vista: Vías intervenidas
-const viasFiltered  = computed(() => groupViasFiltered(props.viasDetalle, busqueda.value, sortKey.value, sortAsc.value))
-// Vista: Longitud por municipio
-const longitudRows  = computed(() => calcLongitudRows(props.viasDetalle))
+// Vista: Vías intervenidas (agrupado por circuito)
+const viasAgrupadas    = computed(() => calcViasAgrupadas(props.viasDetalle, busqueda.value, sortKey.value, sortAsc.value))
+// Vista: Longitud por municipio (agrupado con circuito y vía)
+const longitudAgrupada = computed(() => calcLongitudAgrupada(props.viasDetalle, busqueda.value))
 // Vista: Municipios
 const municipiosRows = computed(() => calcMunicipiosRows(props.viasDetalle, busqueda.value, sortKey.value === 'nombre' ? 'km' : sortKey.value, sortKey.value === 'nombre' ? false : sortAsc.value))
 // Vista: Circuitos
@@ -49,31 +49,46 @@ const cfg = computed(() => CONFIG[props.tipo] ?? CONFIG.vias)
 // ── Helpers ────────────────────────────────────────────────────────────────
 function sortIcon(key) { return sortKey.value === key ? (sortAsc.value ? '↑' : '↓') : '' }
 
-// ── Animación de barras + count-up (longitud) ─────────────────────────────
-const barsVisible = ref(false)
-const animLong    = ref([])   // [{ km: 0, pct: 0 }, ...]
-let barsTimer = null
+// ── Acordeón de municipios (vista longitud) ────────────────────────────────
+const expandedMunicipios = ref(new Set())
+watch(longitudAgrupada, (rows) => {
+  expandedMunicipios.value = new Set(rows.map(r => r.municipio))
+}, { immediate: true })
+function toggleMpio(key) {
+  const s = new Set(expandedMunicipios.value)
+  s.has(key) ? s.delete(key) : s.add(key)
+  expandedMunicipios.value = s
+}
+function isExpandedMpio(key) { return expandedMunicipios.value.has(key) }
 
-watch(barsVisible, (val) => {
-  if (!val) return
-  const rows = longitudRows.value
-  animLong.value = rows.map(() => ({ km: 0, pct: 0 }))
-  rows.forEach((row, i) => {
-    setTimeout(() => {
-      const dur = 650, s = performance.now()
-      ;(function step(now) {
-        const t = Math.min((now - s) / dur, 1)
-        const e = 1 - Math.pow(1 - t, 3)
-        animLong.value[i].km  = row.km      * e
-        animLong.value[i].pct = row.pctReal * e
-        if (t < 1) requestAnimationFrame(step)
-        else { animLong.value[i].km = row.km; animLong.value[i].pct = row.pctReal }
-      }(performance.now()))
-    }, i * 55)
-  })
+// ── Acordeón de circuitos (vista vías) ────────────────────────────────────
+const expandedCircuitos = ref(new Set())
+watch(viasAgrupadas, (rows) => {
+  expandedCircuitos.value = new Set(rows.map(r => r.circuito))
+}, { immediate: true })
+function toggleCircuito(key) {
+  const s = new Set(expandedCircuitos.value)
+  s.has(key) ? s.delete(key) : s.add(key)
+  expandedCircuitos.value = s
+}
+function isExpanded(key) { return expandedCircuitos.value.has(key) }
+function volarAlTramo(via) { emit('fly-via', via) }
+
+// ── Expandir / colapsar todo ───────────────────────────────────────────────
+const allExpanded = computed(() => {
+  if (props.tipo === 'vias')     return viasAgrupadas.value.length > 0    && viasAgrupadas.value.every(r => isExpanded(r.circuito))
+  if (props.tipo === 'longitud') return longitudAgrupada.value.length > 0 && longitudAgrupada.value.every(r => isExpandedMpio(r.municipio))
+  return false
 })
+function toggleExpandAll() {
+  if (props.tipo === 'vias') {
+    expandedCircuitos.value = allExpanded.value ? new Set() : new Set(viasAgrupadas.value.map(r => r.circuito))
+  } else if (props.tipo === 'longitud') {
+    expandedMunicipios.value = allExpanded.value ? new Set() : new Set(longitudAgrupada.value.map(r => r.municipio))
+  }
+}
 
-// ── Abrir detalle de vía desde circuito ──────────────────────────────────
+// ── Abrir detalle de vía desde circuito (vista circuitos) ─────────────────
 function abrirDetalleCircuito(circuitoNombre) {
   const via = props.viasDetalle.find(v => v.circuito === circuitoNombre)
   if (via) emit('open-via', via)
@@ -84,13 +99,10 @@ function onKey(e) { if (e.key === 'Escape') requestClose() }
 onMounted(() => {
   document.addEventListener('keydown', onKey)
   document.body.style.overflow = 'hidden'
-  // Esperar que la animación de entrada del modal termine (~220ms) antes de llenar barras
-  barsTimer = setTimeout(() => { barsVisible.value = true }, 280)
 })
 onUnmounted(() => {
   document.removeEventListener('keydown', onKey)
   document.body.style.overflow = ''
-  clearTimeout(barsTimer)
 })
 </script>
 
@@ -114,80 +126,144 @@ onUnmounted(() => {
           <button class="btn-close" @click="requestClose" aria-label="Cerrar">✕</button>
         </div>
 
-        <!-- Buscador (no aplica a longitud) -->
-        <div v-if="tipo !== 'longitud'" class="search-bar">
+        <!-- Buscador -->
+        <div class="search-bar">
           <Search :size="15" class="search-icon" />
           <input
             v-model="busqueda"
             type="text"
-            :placeholder="`Buscar ${tipo === 'vias' ? 'vía, municipio o contratista' : tipo === 'municipios' ? 'municipio o subregión' : 'circuito o municipio'}…`"
+            :placeholder="`Buscar ${tipo === 'vias' ? 'circuito, vía, código o contratista' : tipo === 'longitud' ? 'municipio, circuito o vía' : tipo === 'municipios' ? 'municipio o subregión' : 'circuito o municipio'}…`"
             class="search-input"
           />
           <span v-if="busqueda" class="search-count">
-            {{ tipo === 'vias' ? viasFiltered.length : tipo === 'municipios' ? municipiosRows.length : circuitosRows.length }} resultado(s)
+            {{ tipo === 'vias' ? viasAgrupadas.length : tipo === 'longitud' ? longitudAgrupada.length : tipo === 'municipios' ? municipiosRows.length : circuitosRows.length }} resultado(s)
           </span>
+          <button v-if="tipo === 'vias' || tipo === 'longitud'" class="btn-expand-all" @click="toggleExpandAll">
+            <ChevronUp v-if="allExpanded" :size="13" />
+            <ChevronDown v-else :size="13" />
+            {{ allExpanded ? 'Colapsar todo' : 'Expandir todo' }}
+          </button>
         </div>
 
         <!-- ── Contenido por tipo ────────────────────────────────────────── -->
         <div class="modal-body">
 
-          <!-- VÍAS -->
+          <!-- VÍAS (acordeón por circuito) -->
           <template v-if="tipo === 'vias'">
             <table class="data-table">
               <thead>
                 <tr>
                   <th class="th-num th-idx">#</th>
-                  <th @click="toggleSort('nombre')" class="sortable">Nombre <span class="sort-ic">{{ sortIcon('nombre') }}</span></th>
-                  <th @click="toggleSort('municipio')" class="sortable">Municipio <span class="sort-ic">{{ sortIcon('municipio') }}</span></th>
+                  <th @click="toggleSort('circuito')" class="sortable">Circuito <span class="sort-ic">{{ sortIcon('circuito') }}</span></th>
+                  <th>Vía</th>
+                  <th>Código</th>
                   <th @click="toggleSort('subregion')" class="sortable">Subregión <span class="sort-ic">{{ sortIcon('subregion') }}</span></th>
                   <th @click="toggleSort('km')" class="sortable th-num">Km <span class="sort-ic">{{ sortIcon('km') }}</span></th>
-                  <th>Contratista</th>
+                  <th class="th-acciones">Acciones</th>
                 </tr>
               </thead>
-              <TransitionGroup name="row" tag="tbody">
-                <tr v-for="(v, i) in viasFiltered" :key="v.codigo || v.nombre" class="data-row"
-                    :style="{ '--delay': Math.min(i * 30, 420) + 'ms' }">
-                  <td class="td-num td-idx">{{ i + 1 }}</td>
-                  <td class="td-nombre">
-                    <span class="nombre-text">{{ v.nombre }}</span>
-                    <span v-if="v.codigo" class="codigo-badge">{{ v.codigo }}</span>
-                  </td>
-                  <td>{{ v.municipio || '—' }}</td>
-                  <td><span class="sub-chip">{{ v.subregion }}</span></td>
-                  <td class="td-num">{{ v.km > 0 ? v.km + ' km' : '—' }}</td>
-                  <td class="td-contratista">{{ v.contratista || '—' }}</td>
+              <tbody>
+                <template v-for="(c, i) in viasAgrupadas" :key="c.circuito">
+                  <!-- Cabecera del circuito (acordeón) -->
+                  <tr class="circuit-header-row" @click="toggleCircuito(c.circuito)">
+                    <td class="circuit-num">{{ i + 1 }}</td>
+                    <td colspan="4" class="circuit-title-cell">
+                      <div class="circuit-title-wrap">
+                        <Route :size="15" class="circuit-icon" />
+                        <div class="circuit-title-text">
+                          <span class="circuit-name">{{ c.circuito }}</span>
+                          <span class="circuit-contratista">{{ c.contratista }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="td-num circuit-km-total">{{ c.km > 0 ? c.km + ' km' : '—' }}</td>
+                    <td class="circuit-toggle-cell">
+                      <ChevronUp v-if="isExpanded(c.circuito)" :size="15" class="chevron-ic" />
+                      <ChevronDown v-else :size="15" class="chevron-ic" />
+                    </td>
+                  </tr>
+                  <!-- Filas de vías (visibles cuando el circuito está expandido) -->
+                  <template v-if="isExpanded(c.circuito)">
+                    <tr v-for="v in c.vias" :key="(v.codigo || v.nombre) + c.circuito" class="via-row">
+                      <td></td>
+                      <td></td>
+                      <td class="via-nombre-cell">
+                        <span class="nombre-text">{{ v.nombre }}</span>
+                      </td>
+                      <td>
+                        <span v-if="v.codigo" class="codigo-badge">{{ v.codigo }}</span>
+                      </td>
+                      <td><span class="sub-chip">{{ c.subregion }}</span></td>
+                      <td class="td-num via-km">{{ v.km > 0 ? v.km + ' km' : '—' }}</td>
+                      <td class="via-acciones-cell">
+                        <button class="btn-ver-mapa" @click.stop="volarAlTramo(v)" title="Ver en el mapa">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  </template>
+                </template>
+                <tr v-if="!viasAgrupadas.length">
+                  <td colspan="7" class="empty-row">Sin resultados para "{{ busqueda }}"</td>
                 </tr>
-                <tr v-if="!viasFiltered.length" key="__empty">
-                  <td colspan="6" class="empty-row">Sin resultados para "{{ busqueda }}"</td>
-                </tr>
-              </TransitionGroup>
+              </tbody>
             </table>
           </template>
 
-          <!-- LONGITUD -->
+          <!-- LONGITUD (acordeón por municipio) -->
           <template v-else-if="tipo === 'longitud'">
-            <div class="longitud-grid">
-              <div v-for="(row, i) in longitudRows" :key="row.name" class="longitud-row">
-                <div class="long-header">
-                  <div class="long-name-wrap">
-                    <span class="long-name">{{ row.name }}</span>
-                    <span class="long-sub">{{ row.subregion }}</span>
-                  </div>
-                  <span class="long-km">{{ animLong[i] ? animLong[i].km.toFixed(2) : row.km }} km</span>
-                  <span class="long-pct">{{ animLong[i] ? Math.round(animLong[i].pct) : row.pctReal }}%</span>
-                </div>
-                <div class="long-bar-track">
-                  <div
-                    class="long-bar-fill"
-                    :style="{
-                      transform: 'scaleX(' + (barsVisible ? row.pctReal / 100 : 0) + ')',
-                      transitionDelay: barsVisible ? (i * 55) + 'ms' : '0ms'
-                    }"
-                  />
-                </div>
-              </div>
-              <div v-if="!longitudRows.length" class="empty-row">Sin datos disponibles.</div>
-            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="th-num th-idx">#</th>
+                  <th>Municipio</th>
+                  <th>Circuito</th>
+                  <th>Vía</th>
+                  <th>Código</th>
+                  <th class="th-num">Km</th>
+                  <th class="th-toggle"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="(m, i) in longitudAgrupada" :key="m.municipio">
+                  <tr class="mpio-header-row" @click="toggleMpio(m.municipio)">
+                    <td class="mpio-num">{{ i + 1 }}</td>
+                    <td colspan="4" class="mpio-title-cell">
+                      <div class="mpio-title-wrap">
+                        <MapPin :size="14" class="mpio-icon" />
+                        <div class="mpio-title-text">
+                          <span class="mpio-name">{{ m.municipio }}</span>
+                          <span class="mpio-sub">{{ m.subregion }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="td-num mpio-km-total">{{ m.km }} km</td>
+                    <td class="mpio-toggle-cell">
+                      <ChevronUp v-if="isExpandedMpio(m.municipio)" :size="14" class="chevron-ic" />
+                      <ChevronDown v-else :size="14" class="chevron-ic" />
+                    </td>
+                  </tr>
+                  <template v-if="isExpandedMpio(m.municipio)">
+                    <tr v-for="v in m.vias" :key="(v.codigo || v.nombre) + m.municipio" class="via-row">
+                      <td></td>
+                      <td></td>
+                      <td class="via-circuito-cell">{{ v.circuito || '—' }}</td>
+                      <td class="via-nombre-cell">
+                        <span class="nombre-text">{{ v.nombre }}</span>
+                      </td>
+                      <td>
+                        <span v-if="v.codigo" class="codigo-badge">{{ v.codigo }}</span>
+                      </td>
+                      <td class="td-num via-km">{{ v.km > 0 ? v.km + ' km' : '—' }}</td>
+                      <td></td>
+                    </tr>
+                  </template>
+                </template>
+                <tr v-if="!longitudAgrupada.length">
+                  <td colspan="7" class="empty-row">Sin resultados para "{{ busqueda }}"</td>
+                </tr>
+              </tbody>
+            </table>
           </template>
 
           <!-- MUNICIPIOS -->
@@ -401,6 +477,23 @@ onUnmounted(() => {
   color: #6b7280;
   white-space: nowrap;
 }
+.btn-expand-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid #c8e6d4;
+  border-radius: 99px;
+  background: #fff;
+  color: #0b5640;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.btn-expand-all:hover { background: #e8f5ee; }
 
 /* ── Body ─────────────────────────────────────────────────────────────────── */
 .modal-body {
@@ -497,36 +590,41 @@ onUnmounted(() => {
 .badge--done    { background: #d1fae5; color: #059669; }
 .avance-pct { font-size: 12px; font-weight: 700; color: #374151; min-width: 32px; text-align: right; }
 
-/* ── Vista longitud ───────────────────────────────────────────────────────── */
-.longitud-grid { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
-.longitud-row {}
-.long-header {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 6px;
+/* ── Vista longitud: acordeón por municipio ───────────────────────────────── */
+.th-toggle { width: 44px; }
+.mpio-header-row {
+  background: #f8faf9;
+  border-top: 2px solid #d4ead9;
+  cursor: pointer;
+  user-select: none;
 }
-.long-name-wrap { flex: 1; display: flex; flex-direction: column; gap: 1px; }
-.long-name { font-size: 13px; font-weight: 600; color: #1f2937; }
-.long-sub  { font-size: 10px; color: #9ca3af; font-weight: 500; }
-.long-km   { font-size: 14px; font-weight: 700; color: #0b5640; }
-.long-pct  { font-size: 12px; color: #6b7280; min-width: 36px; text-align: right; }
-.long-bar-track {
-  height: 10px;
-  background: #e5f0ea;
-  border-radius: 99px;
-  overflow: hidden;
+.mpio-header-row:hover { background: #edf7f2; }
+.mpio-num {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b5640;
+  width: 36px;
 }
-.long-bar-fill {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, #3fad72, #0b5640);
-  border-radius: 99px;
-  transform-origin: left;
-  transition: transform 0.65s cubic-bezier(0.23, 1, 0.32, 1);
+.mpio-title-cell { padding: 10px 14px; }
+.mpio-title-wrap { display: flex; align-items: center; gap: 10px; }
+.mpio-icon { color: #0b5640; flex-shrink: 0; }
+.mpio-title-text { display: flex; flex-direction: column; gap: 2px; }
+.mpio-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: .02em;
 }
-@media (prefers-reduced-motion: reduce) {
-  .long-bar-fill { transition: none; }
+.mpio-sub { font-size: 11px; color: #6b7280; }
+.mpio-km-total { font-size: 13px; font-weight: 600; color: #374151; }
+.mpio-toggle-cell { text-align: center; }
+.via-circuito-cell {
+  font-size: 11px;
+  color: #6b7280;
+  max-width: 160px;
+  padding-left: 18px !important;
 }
 
 /* ── Footer ───────────────────────────────────────────────────────────────── */
@@ -564,6 +662,84 @@ kbd {
 @media (hover: hover) and (pointer: fine) {
   .btn-cerrar:hover { opacity: .88; }
 }
+/* ── Vista vías: acordeón por circuito ────────────────────────────────────── */
+.th-acciones { text-align: center; width: 72px; }
+
+/* Cabecera de circuito */
+.circuit-header-row {
+  background: #f8faf9;
+  border-top: 2px solid #d4ead9;
+  cursor: pointer;
+  user-select: none;
+}
+.circuit-header-row:hover { background: #edf7f2; }
+.circuit-num {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b5640;
+  width: 36px;
+}
+.circuit-title-cell { padding: 10px 14px; }
+.circuit-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.circuit-icon { color: #0b5640; flex-shrink: 0; }
+.circuit-title-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.circuit-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  line-height: 1.2;
+}
+.circuit-contratista {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 400;
+}
+.circuit-km-total {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+.circuit-toggle-cell {
+  text-align: center;
+  width: 44px;
+}
+.chevron-ic { color: #0b5640; }
+
+/* Filas de vía */
+.via-row { background: #fff; border-bottom: 1px solid #f0f4f2; }
+.via-row:hover { background: #f9fdfb; }
+.via-nombre-cell { padding-left: 18px !important; max-width: 220px; }
+.via-km { color: #374151; }
+
+/* Botón ojo */
+.via-acciones-cell { text-align: center; }
+.btn-ver-mapa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: #e8f5ee;
+  color: #0b5640;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.btn-ver-mapa:hover { background: #c7e9d5; }
+.btn-ver-mapa:active { transform: scale(0.92); }
+
 /* ── TransitionGroup filas ────────────────────────────────────────────────── */
 .row-enter-active {
   transition: opacity 0.22s ease-out, transform 0.22s ease-out;

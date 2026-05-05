@@ -28,3 +28,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Datos en vivo (se editan directamente, no versionar)
+public/data/localizacion.geojson
+public/data/localizacion*.geojson
+public/data/localizacion - copia.geojson
+
+# Archivos temporales y comprimidos
+*.zip
+skills-lock.json

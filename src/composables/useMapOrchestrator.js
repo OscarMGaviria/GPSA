@@ -67,6 +67,16 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     }
   }
 
+  function flyToVia(via) {
+    if (!_map || !cachedVias.value) return
+    const feat = cachedVias.value.features.find(f => f.properties.NOMBRE_VIA === via.nombre)
+    if (!feat) return
+    const bounds = new maplibregl.LngLatBounds()
+    function walk(c) { typeof c[0] === 'number' ? bounds.extend(c) : c.forEach(walk) }
+    walk(feat.geometry.coordinates)
+    if (!bounds.isEmpty()) _map.fitBounds(bounds, { padding: 80, duration: 900 })
+  }
+
   return {
     activeBasemap, switcherOpen, terrainActive, switchBasemap, toggleTerrain,
     loading, loadError, fromCache, hoverLabel, viaHoverLabel, loadSimeva,
@@ -74,5 +84,6 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     selectedSubregion, selectedMunicipio,
     noResults,
     openVia,
+    flyToVia,
   }
 }

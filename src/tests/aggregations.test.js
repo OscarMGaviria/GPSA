@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  groupViasFiltered,
-  calcLongitudRows,
+  calcViasAgrupadas,
+  calcLongitudAgrupada,
   calcMunicipiosRows,
   calcCircuitosRows,
   avanceBadge,
@@ -16,68 +16,84 @@ const VIAS = [
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
-// groupViasFiltered
+// calcViasAgrupadas
 // ─────────────────────────────────────────────────────────────────────────────
-describe('groupViasFiltered', () => {
-  it('agrupa duplicados por nombre y suma km', () => {
-    const result = groupViasFiltered(VIAS)
-    const boton = result.find(v => v.nombre === 'El Botón - Frontino')
-    expect(boton).toBeDefined()
-    expect(boton.km).toBe(15)
+describe('calcViasAgrupadas', () => {
+  it('agrupa vías por circuito y suma km correctamente', () => {
+    const result = calcViasAgrupadas(VIAS)
+    expect(result.length).toBe(3) // 3 circuitos únicos
+    const frontino = result.find(c => c.circuito === 'Frontino - Nutibara')
+    expect(frontino).toBeDefined()
+    expect(frontino.km).toBe(15) // 10 + 5
+    expect(frontino.vias.length).toBe(1) // 'El Botón - Frontino' deduplicado
   })
 
   it('devuelve array vacío si viasDetalle está vacío', () => {
-    expect(groupViasFiltered([])).toEqual([])
+    expect(calcViasAgrupadas([])).toEqual([])
   })
 
-  it('filtra por búsqueda en nombre', () => {
-    const result = groupViasFiltered(VIAS, 'guarne')
+  it('filtra por nombre de circuito', () => {
+    const result = calcViasAgrupadas(VIAS, 'guarne')
     expect(result.length).toBe(1)
-    expect(result[0].nombre).toBe('Guarne - Yolombal')
+    expect(result[0].circuito).toBe('Guarne - Yolombal')
   })
 
-  it('filtra por búsqueda en municipio', () => {
-    const result = groupViasFiltered(VIAS, 'mutatá')
+  it('filtra por nombre de vía dentro del circuito', () => {
+    const result = calcViasAgrupadas(VIAS, 'pavarando')
     expect(result.length).toBe(1)
-    expect(result[0].nombre).toBe('Mutata - Pavarando')
+    expect(result[0].circuito).toBe('Mutata - Pavarando')
   })
 
-  it('ordena por nombre ascendente por defecto', () => {
-    const result = groupViasFiltered(VIAS)
-    const nombres = result.map(v => v.nombre)
-    expect(nombres).toEqual([...nombres].sort((a, b) => a.localeCompare(b, 'es')))
+  it('ordena por circuito ascendente por defecto', () => {
+    const result = calcViasAgrupadas(VIAS)
+    const circuitos = result.map(c => c.circuito)
+    expect(circuitos).toEqual([...circuitos].sort((a, b) => a.localeCompare(b, 'es')))
   })
 
   it('ordena por km descendente cuando se pide', () => {
-    const result = groupViasFiltered(VIAS, '', 'km', false)
+    const result = calcViasAgrupadas(VIAS, '', 'km', false)
     expect(result[0].km).toBeGreaterThanOrEqual(result[1].km)
   })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// calcLongitudRows
+// calcLongitudAgrupada
 // ─────────────────────────────────────────────────────────────────────────────
-describe('calcLongitudRows', () => {
+describe('calcLongitudAgrupada', () => {
   it('agrupa km por municipio y ordena de mayor a menor', () => {
-    const result = calcLongitudRows(VIAS)
+    const result = calcLongitudAgrupada(VIAS)
     expect(result[0].km).toBeGreaterThanOrEqual(result[1].km)
   })
 
   it('calcula pctReal de cada municipio sobre el total', () => {
-    const result = calcLongitudRows(VIAS)
+    const result = calcLongitudAgrupada(VIAS)
     const sumPct = result.reduce((s, r) => s + r.pctReal, 0)
-    expect(sumPct).toBeGreaterThanOrEqual(99) // puede haber redondeo
+    expect(sumPct).toBeGreaterThanOrEqual(99)
     expect(sumPct).toBeLessThanOrEqual(101)
   })
 
   it('excluye municipios con km = 0', () => {
     const viasConCero = [...VIAS, { nombre: 'X', municipio: 'VACIO', subregion: 'Norte', km: 0 }]
-    const result = calcLongitudRows(viasConCero)
-    expect(result.find(r => r.name === 'VACIO')).toBeUndefined()
+    const result = calcLongitudAgrupada(viasConCero)
+    expect(result.find(r => r.municipio === 'VACIO')).toBeUndefined()
   })
 
   it('retorna array vacío si no hay vías', () => {
-    expect(calcLongitudRows([])).toEqual([])
+    expect(calcLongitudAgrupada([])).toEqual([])
+  })
+
+  it('incluye vías anidadas por municipio', () => {
+    const result = calcLongitudAgrupada(VIAS)
+    const frontino = result.find(r => r.municipio === 'FRONTINO')
+    expect(frontino.vias.length).toBeGreaterThan(0)
+    expect(frontino.vias[0]).toHaveProperty('circuito')
+    expect(frontino.vias[0]).toHaveProperty('nombre')
+  })
+
+  it('filtra por nombre de circuito', () => {
+    const result = calcLongitudAgrupada(VIAS, 'guarne')
+    expect(result.length).toBe(1)
+    expect(result[0].municipio).toBe('GUARNE')
   })
 })
 
