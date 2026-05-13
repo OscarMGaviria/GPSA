@@ -67,6 +67,89 @@ function cronogramasApiPlugin() {
   }
 }
 
+function photosApiPlugin() {
+  const baseDir = path.resolve('./public/images/circuitos')
+  const TIPOS   = ['antes', 'durante', 'despues']
+  return {
+    name: 'photos-api',
+    configureServer(server) {
+      server.middlewares.use('/api/circuito-photos', (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+        res.setHeader('Content-Type', 'application/json')
+        if (req.method === 'OPTIONS') { res.statusCode = 204; res.end(); return }
+
+        const parts    = req.url.split('/').filter(Boolean).map(s => decodeURIComponent(s))
+        const circuito = parts[0]
+        const tipo     = parts[1]
+
+        if (req.method === 'GET' && circuito && !tipo) {
+          const dir    = path.join(baseDir, circuito)
+          const result = {}
+          for (const t of TIPOS) result[t] = fs.existsSync(path.join(dir, t + '.jpg'))
+          return res.end(JSON.stringify(result))
+        }
+
+        if (req.method === 'POST' && circuito && tipo) {
+          if (!TIPOS.includes(tipo)) { res.statusCode = 400; return res.end(JSON.stringify({ error: 'Invalid tipo' })) }
+          const dir = path.join(baseDir, circuito)
+          fs.mkdirSync(dir, { recursive: true })
+          const chunks = []
+          req.on('data', c => chunks.push(c))
+          req.on('end', () => {
+            try { fs.writeFileSync(path.join(dir, tipo + '.jpg'), Buffer.concat(chunks)); res.end(JSON.stringify({ ok: true })) }
+            catch (e) { res.statusCode = 500; res.end(JSON.stringify({ error: e.message })) }
+          })
+          return
+        }
+
+        if (req.method === 'DELETE' && circuito && tipo) {
+          try {
+            const fp = path.join(baseDir, circuito, tipo + '.jpg')
+            if (fs.existsSync(fp)) fs.unlinkSync(fp)
+            return res.end(JSON.stringify({ ok: true }))
+          } catch (e) { res.statusCode = 500; return res.end(JSON.stringify({ error: e.message })) }
+        }
+
+        res.statusCode = 400; res.end(JSON.stringify({ error: 'Invalid request' }))
+      })
+    }
+  }
+}
+
+function hitosApiPlugin() {
+  const filePath = path.resolve('./src/data/hitos.json')
+  return {
+    name: 'hitos-api',
+    configureServer(server) {
+      server.middlewares.use('/api/hitos', (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Content-Type', 'application/json')
+        if (req.method === 'GET') {
+          res.end(fs.readFileSync(filePath, 'utf8'))
+        } else if (req.method === 'POST') {
+          let body = ''
+          req.on('data', chunk => { body += chunk })
+          req.on('end', () => {
+            try {
+              const parsed = JSON.parse(body)
+              fs.writeFileSync(filePath, JSON.stringify(parsed, null, 2))
+              res.end(JSON.stringify({ ok: true }))
+            } catch (e) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: e.message }))
+            }
+          })
+        } else {
+          res.statusCode = 405
+          res.end(JSON.stringify({ error: 'Method not allowed' }))
+        }
+      })
+    }
+  }
+}
+
 function localizacionApiPlugin() {
   const filePath = path.resolve('./public/data/localizacion.geojson')
   return {
@@ -125,7 +208,7 @@ export default defineConfig(({ mode }) => {
   const isInternal = env.VITE_INTERNAL === 'true'
 
   return {
-  plugins: [vue(), cronogramasApiPlugin(), compromisosApiPlugin(), localizacionApiPlugin(), stubInternalModulesPlugin(isInternal)].filter(Boolean),
+  plugins: [vue(), cronogramasApiPlugin(), compromisosApiPlugin(), localizacionApiPlugin(), hitosApiPlugin(), stubInternalModulesPlugin(isInternal)].filter(Boolean),
   test: {
     environment: 'jsdom',
     globals: true,

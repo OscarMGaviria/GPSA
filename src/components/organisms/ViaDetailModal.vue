@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, defineAsyncComponent, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, defineAsyncComponent, onMounted, onUnmounted, nextTick } from 'vue'
 import maplibregl from 'maplibre-gl'
 import { useCircuitoPhotos } from '../../composables/useCircuitoPhotos.js'
 import { parseAvancePct, getBarColor, getStatusLabel, getStatusClass } from '../../utils/via.js'
@@ -10,12 +10,14 @@ let CurvaSView       = null
 let ValorGanadoView  = null
 let ModuloResiliente = null
 let EnsayosView      = null
+let HitosView        = null
 if (import.meta.env.VITE_INTERNAL === 'true') {
   GanttMiniView    = defineAsyncComponent(() => import('./GanttMiniView.vue'))
   CurvaSView       = defineAsyncComponent(() => import('./CurvaSView.vue'))
   ValorGanadoView  = defineAsyncComponent(() => import('./ValorGanadoView.vue'))
   ModuloResiliente = defineAsyncComponent(() => import('./ModuloResiliente.vue'))
   EnsayosView      = defineAsyncComponent(() => import('./EnsayosView.vue'))
+  HitosView        = defineAsyncComponent(() => import('./HitosView.vue'))
 }
 
 const props = defineProps({ via: { type: Object, required: true } })
@@ -69,11 +71,27 @@ const PHASES = [
   { key: 'durante', label: 'Durante' },
   { key: 'despues', label: 'Después' },
 ]
-const availablePhases = computed(() => PHASES.filter(p => photos.value[p.key]?.length > 0))
+
+// URLs que fallaron al cargar (404 u otro error)
+const brokenUrls = ref(new Set())
+watch(circuito, () => { brokenUrls.value = new Set() })
+
+function onImgError(e) {
+  const url = e.target?.src || e.target?.currentSrc
+  if (url) brokenUrls.value = new Set([...brokenUrls.value, url])
+}
+
+function goodUrls(list) {
+  return (list || []).filter(u => !brokenUrls.value.has(u))
+}
+
+const availablePhases = computed(() =>
+  PHASES.filter(p => goodUrls(photos.value[p.key]).length > 0)
+)
 const activePhase = ref('')
 const activeIdx   = ref(0)
 
-const activePhotos = computed(() => photos.value[activePhase.value] || [])
+const activePhotos = computed(() => goodUrls(photos.value[activePhase.value]))
 const prev = () => { activeIdx.value = (activeIdx.value - 1 + activePhotos.value.length) % activePhotos.value.length }
 const next = () => { activeIdx.value = (activeIdx.value + 1) % activePhotos.value.length }
 
@@ -335,6 +353,10 @@ onUnmounted(() => {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             Ensayos Lab.
           </button>
+          <button class="main-tab" :class="{ 'is-active': mainTab === 'hitos' }" @click="setMainTab('hitos')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Campo
+          </button>
         </nav>
 
         <!-- ── CRONOGRAMA FULL WIDTH ── -->
@@ -360,6 +382,11 @@ onUnmounted(() => {
         <!-- ── ENSAYOS DE LABORATORIO ── -->
         <div v-if="isInternal && mainTab === 'ensayos'" class="cronograma-full">
           <component :is="EnsayosView" :circuito="circuito" />
+        </div>
+
+        <!-- ── HITOS / SEGUIMIENTO DE CAMPO ── -->
+        <div v-if="isInternal && mainTab === 'hitos'" class="cronograma-full">
+          <component :is="HitosView" :circuito="circuito" />
         </div>
 
         <!-- ── TWO COLUMNS ── -->
@@ -473,6 +500,7 @@ onUnmounted(() => {
                           :alt="`${activePhase} ${activeIdx + 1}`"
                           class="photo-img"
                           decoding="async"
+                          @error="onImgError"
                         />
                       </Transition>
                       <button v-if="activePhotos.length > 1" class="pnav pnav--l" @click="prev" aria-label="Anterior">
@@ -494,7 +522,7 @@ onUnmounted(() => {
                     :class="{ 'is-active': i === activeIdx }"
                     @click="activeIdx = i"
                   >
-                    <img :src="src" :alt="`miniatura ${i + 1}`" loading="lazy" decoding="async" />
+                    <img :src="src" :alt="`miniatura ${i + 1}`" loading="lazy" decoding="async" @error="onImgError" />
                   </button>
                 </div>
               </template>

@@ -1,0 +1,495 @@
+{
+  "La Ye - Yondó": [
+    {
+      "id": "mp2zrtwz",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [],
+      "pendientes": [],
+      "obs": "No hay frentes activos"
+    }
+  ],
+  "Remedios - La Y De La Virgen - Puerto Berrío": [
+    {
+      "id": "mp2zpnxb",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Campaña de exploracion",
+          "desc": ""
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Obras Hidraulicas",
+          "desc": "Tubería en sítio"
+        },
+        {
+          "nombre": "Topografia",
+          "desc": "Se ejecutaron y se entregaron 15 km"
+        }
+      ],
+      "pendientes": [],
+      "obs": "Se realizaron observaciones del TPD por parte del contratista /\nSe reportan 148 obras transversales existentes en el inventario"
+    }
+  ],
+  "Cáceres - La Chilona": [
+    {
+      "id": "mp3001bo",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Completa"
+        },
+        {
+          "nombre": "Topografia",
+          "desc": "Completa"
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Diseño de doble riego",
+          "desc": "Se entrego el diseño para 5 km"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Pista de prueba",
+          "desc": "Se realizará pista de prueba de 750m el dia 19 de mayo"
+        }
+      ],
+      "obs": ""
+    }
+  ],
+  "Andes - San José - Pueblo Rico": [
+    {
+      "id": "mp30ha0y",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Topografia",
+          "desc": "Completa"
+        },
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Completa"
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Diseño de formula de trabajo",
+          "desc": "Se entregaron los primeros 5 km desde andes y desde Pueblorrico"
+        },
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Se han ejecutado 17 de 229"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Conformación de calzada",
+          "desc": ""
+        },
+        {
+          "nombre": "Rosería",
+          "desc": ""
+        },
+        {
+          "nombre": "Pista de prueba",
+          "desc": ""
+        }
+      ],
+      "obs": "Se liberó para ejecución de pista de prueba de 2.0 km"
+    }
+  ],
+  "Valparaíso - Támesis": [
+    {
+      "id": "mp30o69r",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Completa"
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Mantenimiento de obras transversales",
+          "desc": "Ejecutadas 74 de 230"
+        },
+        {
+          "nombre": "Topografía",
+          "desc": ""
+        },
+        {
+          "nombre": "Rosería",
+          "desc": ""
+        },
+        {
+          "nombre": "Inventario de obras transversales",
+          "desc": "Se ejecutaron 59 de 115"
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    }
+  ],
+  "Salgar - La Quiebra - Concordia": [
+    {
+      "id": "mp30sij6",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Completa"
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Topografia",
+          "desc": ""
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Socializacion",
+          "desc": "Sabado 16/05/2026"
+        }
+      ],
+      "obs": ""
+    }
+  ],
+  "Titiribi - Armenia": [
+    {
+      "id": "mp30t2x3",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": ""
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    }
+  ],
+  "Abejorral - Santa Barbara": [
+    {
+      "id": "mp30u2bg",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": ""
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    }
+  ],
+  "Mutata - Pavarando": [
+    {
+      "id": "mp316jx1",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Completa"
+        },
+        {
+          "nombre": "Topografía",
+          "desc": "Completa"
+        }
+      ],
+      "en_ejecucion": [],
+      "pendientes": [
+        {
+          "nombre": "Conformación de via",
+          "desc": "Se inicia el 15 de mayo"
+        },
+        {
+          "nombre": "Actividades de estabilización",
+          "desc": "Inicia el 01 de junio"
+        }
+      ],
+      "obs": ""
+    }
+  ],
+  "San Pedro de Urabá - Necoclí": [
+    {
+      "id": "mp31bru2",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Ejecución de 10 km"
+        },
+        {
+          "nombre": "Limpieza de Obras transversales",
+          "desc": "65 obras de 350 aprox"
+        },
+        {
+          "nombre": "Contrucción de obras transversales",
+          "desc": "Construcción de 20 obras de 65"
+        },
+        {
+          "nombre": "Actividades de bacheo",
+          "desc": ""
+        },
+        {
+          "nombre": "Topografía",
+          "desc": "Topografía"
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    }
+  ],
+  "San Pedro - El Tres - Turbo": [
+    {
+      "id": "mp31h7kp",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Ejecutados 5.0 km"
+        },
+        {
+          "nombre": "Topografía",
+          "desc": "Levantados 5.0 km"
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    }
+  ],
+  "Caramanta - Cristales - San Roque": [
+    {
+      "id": "mp31n66p",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Diseño de estructura",
+          "desc": "Tiene observaciones"
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Topografia",
+          "desc": "Ejecutados 13.6 km"
+        },
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Se ejecutaron 40 de 83 apiques"
+        },
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Ejecutadas 46 obras de 115"
+        }
+      ],
+      "pendientes": [],
+      "obs": "Se presento diseño de estructura, se tienen observaciones"
+    }
+  ],
+  "Amalfi - Portachuelos - Santa Isabel": [
+    {
+      "id": "mp31paq4",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [],
+      "pendientes": [],
+      "obs": "No se ha iniciado con obras en el tramo, se encuentran en actividades administrativas"
+    }
+  ],
+  "San Rafael - San Roque - Santo Domingo - Alejandría": [
+    {
+      "id": "mp31t8wx",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Se ejecutaron 48 de 93 apiques"
+        },
+        {
+          "nombre": "Topografia",
+          "desc": "Se ejecutaron 12.86 km"
+        },
+        {
+          "nombre": "Inventario de obras transversales",
+          "desc": "Para limpieza, remplazo o permisos"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Solicitud de permiso",
+          "desc": "Solicitar permiso de uso de vias para transporte de material"
+        }
+      ],
+      "obs": "Solicitar permiso de uso de vias para transporte de material"
+    }
+  ],
+  "Sopetrán - Horizontes - Belmira": [
+    {
+      "id": "mp31xv7b",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Completa"
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Recuperacion de calzada",
+          "desc": ""
+        },
+        {
+          "nombre": "Topografia",
+          "desc": ""
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    }
+  ],
+  "Frontino - Nutibara": [
+    {
+      "id": "mp322kz1",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Contruccion de obras transvesales",
+          "desc": "Se ejecutaron 10 obras"
+        },
+        {
+          "nombre": "Topografia",
+          "desc": ""
+        },
+        {
+          "nombre": "Ampliacion y conformacion de via",
+          "desc": "Inicia"
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    }
+  ],
+  "Ebejico - Miserenga": [
+    {
+      "id": "mp324t04",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": ""
+        },
+        {
+          "nombre": "Topografía",
+          "desc": "Se inicio"
+        },
+        {
+          "nombre": "Ampliación y conformación de via",
+          "desc": "Se inicio"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Revision de formula de trabajo",
+          "desc": "El contratista entregó formula de trabajo"
+        }
+      ],
+      "obs": ""
+    }
+  ],
+  "Entrerríos - Labores - San José de la Montana": [
+    {
+      "id": "mp326vw9",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Se ejecutaron 28 de 40 obras"
+        },
+        {
+          "nombre": "Bacheo",
+          "desc": "Se ejecuta para puntos criticos"
+        }
+      ],
+      "pendientes": [
+        {
+          "nombre": "Formula de trabajo",
+          "desc": "Esta pendiente de revisión por parte del especialista de la gobernación"
+        }
+      ],
+      "obs": ""
+    }
+  ],
+  "Santa Rosa - Carolina del Príncipe": [
+    {
+      "id": "mp32an1r",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Topografia",
+          "desc": "Completa"
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": ""
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    }
+  ],
+  "Ebéjico - Heliconia - Medellin": [
+    {
+      "id": "mp333y2m",
+      "fecha": "2026-05-12",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": ""
+        },
+        {
+          "nombre": "Conformacion y amplaicion de vias",
+          "desc": ""
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    }
+  ]
+}
