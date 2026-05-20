@@ -1,6 +1,5 @@
 <script setup>
-import { ref, computed, watch, defineAsyncComponent, onMounted, onUnmounted, nextTick } from 'vue'
-import maplibregl from 'maplibre-gl'
+import { ref, computed, watch, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
 import { useCircuitoPhotos } from '../../composables/useCircuitoPhotos.js'
 import { parseAvancePct, getBarColor, getStatusLabel, getStatusClass } from '../../utils/via.js'
 
@@ -72,7 +71,6 @@ const PHASES = [
   { key: 'despues', label: 'Después' },
 ]
 
-// URLs que fallaron al cargar (404 u otro error)
 const brokenUrls = ref(new Set())
 watch(circuito, () => { brokenUrls.value = new Set() })
 
@@ -85,30 +83,38 @@ function goodUrls(list) {
   return (list || []).filter(u => !brokenUrls.value.has(u))
 }
 
-const availablePhases = computed(() =>
-  PHASES.filter(p => goodUrls(photos.value[p.key]).length > 0)
-)
-const activePhase = ref('')
-const activeIdx   = ref(0)
+// Lista plana: todas las fotos de las tres etapas con su etiqueta
+const allPhotos = computed(() => {
+  const result = []
+  for (const ph of PHASES) {
+    for (const url of goodUrls(photos.value[ph.key])) {
+      result.push({ url, key: ph.key, label: ph.label })
+    }
+  }
+  return result
+})
 
-const activePhotos = computed(() => goodUrls(photos.value[activePhase.value]))
-const prev = () => { activeIdx.value = (activeIdx.value - 1 + activePhotos.value.length) % activePhotos.value.length }
-const next = () => { activeIdx.value = (activeIdx.value + 1) % activePhotos.value.length }
+const hasPhotos = computed(() => allPhotos.value.length > 0)
+const activeIdx = ref(0)
 
-// ── Slide entre fases (dirección) ─────────────────────────────────────────────
-const PHASE_ORDER = { antes: 0, durante: 1, despues: 2 }
-const phaseDir    = ref('next')
-const slideTransition = computed(() => 'phase-' + phaseDir.value)
+let _autoTimer = null
 
-function setPhase(key) {
-  const from = PHASE_ORDER[activePhase.value] ?? 0
-  const to   = PHASE_ORDER[key] ?? 0
-  phaseDir.value    = to >= from ? 'next' : 'prev'
-  activePhase.value = key
-  activeIdx.value   = 0
+function resetAuto() {
+  if (_autoTimer) { clearInterval(_autoTimer); _autoTimer = null }
+  if (allPhotos.value.length > 1) {
+    _autoTimer = setInterval(() => {
+      activeIdx.value = (activeIdx.value + 1) % allPhotos.value.length
+    }, 2000)
+  }
 }
 
-const hasPhotos = computed(() => availablePhases.value.length > 0)
+watch(allPhotos, () => { activeIdx.value = 0; resetAuto() })
+
+function pauseAuto() { if (_autoTimer) { clearInterval(_autoTimer); _autoTimer = null } }
+function resumeAuto() { resetAuto() }
+
+const prev = () => { activeIdx.value = (activeIdx.value - 1 + allPhotos.value.length) % allPhotos.value.length; resetAuto() }
+const next = () => { activeIdx.value = (activeIdx.value + 1) % allPhotos.value.length; resetAuto() }
 
 // ── Animación barra avance + count-up % ──────────────────────────────────────
 const barVisible  = ref(false)
@@ -127,164 +133,25 @@ function countUpPct(target) {
 
 // ── Main tabs: detalle | cronograma ─────────────────────────────────────────
 const mainTab = ref('detalle')
-function setMainTab(tab) {
-  if (activeTab.value === 'recorrido') cleanupRoute()
-  mainTab.value = tab
-}
+function setMainTab(tab) { mainTab.value = tab }
 
-// ── Right tabs: fotos | recorrido ────────────────────────────────────────────
-const activeTab = ref('fotos')
-const showRoute = computed(() => activeTab.value === 'recorrido')
-// ── Route animation ───────────────────────────────────────────────────────────
-const routeMapEl  = ref(null)
-const routePlaying = ref(false)
-let _routeMap  = null
-let _animTimer = null
-
-function cleanupRoute() {
-  if (_animTimer) { clearInterval(_animTimer); _animTimer = null }
-  if (_routeMap)  { _routeMap.remove(); _routeMap = null }
-  routePlaying.value = false
-}
-
-async function setTab(tab) {
-  if (activeTab.value === 'recorrido' && tab !== 'recorrido') cleanupRoute()
-  activeTab.value = tab
-  if (tab === 'recorrido') {
-    await nextTick()
-    startRouteMap()
-  }
-}
-
-function startRouteMap() {
-  const geometry = props.via.geometry
-  if (!geometry || !routeMapEl.value) return
-
-  // Normalizar siempre a array de segmentos (MultiLineString)
-  const segments = geometry.type === 'LineString'
-    ? [geometry.coordinates]
-    : geometry.type === 'MultiLineString'
-    ? geometry.coordinates
-    : []
-  if (!segments.length || !segments[0].length) return
-
-  const firstPt   = segments[0][0]
-  const totalPts  = segments.reduce((s, seg) => s + seg.length, 0)
-
-  _routeMap = new maplibregl.Map({
-    container: routeMapEl.value,
-    style: {
-      version: 8,
-      sources: {
-        osm: {
-          type: 'raster',
-          tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'],
-          tileSize: 256,
-          attribution: '© OpenStreetMap © CARTO',
-        },
-      },
-      layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
-    },
-    center: firstPt,
-    zoom: 13,
-    pitch: 30,
-    attributionControl: false,
-  })
-
-  _routeMap.on('load', () => {
-    // La geometría animada sigue la misma estructura (MultiLineString)
-    // para no unir segmentos discontinuos con líneas falsas
-    const animCoords = [[firstPt]]
-    const geojson = {
-      type: 'FeatureCollection',
-      features: [{ type: 'Feature', geometry: { type: 'MultiLineString', coordinates: animCoords } }],
-    }
-
-    _routeMap.addSource('trace', { type: 'geojson', data: geojson })
-    _routeMap.addLayer({
-      id: 'trace-casing',
-      type: 'line', source: 'trace',
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#ffffff', 'line-width': 8, 'line-opacity': 0.6 },
-    })
-    _routeMap.addLayer({
-      id: 'trace',
-      type: 'line', source: 'trace',
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#ffaa00', 'line-width': 5, 'line-opacity': 0.95 },
-    })
-
-    _routeMap.jumpTo({ center: firstPt, zoom: 14 })
-    routePlaying.value = true
-
-    // ~40 segundos de animación progresiva punto a punto
-    const INTERVAL = 80
-    const BATCH    = Math.max(1, Math.ceil(totalPts / 500))
-
-    let segIdx = 0
-    let ptIdx  = 1   // primer punto ya está en animCoords[0]
-
-    _animTimer = setInterval(() => {
-      let added  = 0
-      let lastPt = null
-
-      while (added < BATCH && segIdx < segments.length) {
-        const seg = segments[segIdx]
-        if (ptIdx < seg.length) {
-          animCoords[segIdx].push(seg[ptIdx])
-          lastPt = seg[ptIdx]
-          ptIdx++
-          added++
-        } else {
-          // Pasar al siguiente segmento, sin unirlo al anterior
-          segIdx++
-          ptIdx = 0
-          if (segIdx < segments.length) {
-            animCoords[segIdx] = [segments[segIdx][0]]
-            lastPt = segments[segIdx][0]
-            ptIdx  = 1
-            added++
-          }
-        }
-      }
-
-      _routeMap.getSource('trace').setData(geojson)
-      if (lastPt) {
-        const px     = _routeMap.project(lastPt)
-        const canvas = _routeMap.getCanvas()
-        const padX   = canvas.width  * 0.3
-        const padY   = canvas.height * 0.3
-        const nearEdge = px.x < padX || px.x > canvas.width  - padX
-                      || px.y < padY || px.y > canvas.height - padY
-        if (nearEdge) _routeMap.easeTo({ center: lastPt, duration: 600 })
-      }
-
-      if (segIdx >= segments.length) {
-        clearInterval(_animTimer)
-        _animTimer = null
-        routePlaying.value = false
-      }
-    }, INTERVAL)
-  })
-}
-
-function replayRoute() {
-  cleanupRoute()
-  startRouteMap()
-}
+// ── Lightbox ─────────────────────────────────────────────────────────────────
+const lightboxOpen = ref(false)
+function openLightbox()  { lightboxOpen.value = true;  pauseAuto() }
+function closeLightbox() { lightboxOpen.value = false; resumeAuto() }
 
 // ── Keyboard / scroll lock ────────────────────────────────────────────────────
 const onKey = (e) => {
-  if (e.key === 'Escape')     requestClose()
+  if (e.key === 'Escape') {
+    if (lightboxOpen.value) { closeLightbox(); return }
+    requestClose()
+  }
   if (e.key === 'ArrowLeft')  prev()
   if (e.key === 'ArrowRight') next()
 }
 onMounted(() => {
   document.addEventListener('keydown', onKey)
   document.body.style.overflow = 'hidden'
-  const first = availablePhases.value[0]
-  if (first) activePhase.value = first.key
-  // Barra y % arrancan después de la animación de entrada del modal (~260ms)
   barTimer = setTimeout(() => {
     barVisible.value = true
     countUpPct(avancePct.value)
@@ -293,8 +160,8 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('keydown', onKey)
   document.body.style.overflow = ''
-  cleanupRoute()
   clearTimeout(barTimer)
+  if (_autoTimer) clearInterval(_autoTimer)
 })
 </script>
 
@@ -435,104 +302,59 @@ onUnmounted(() => {
 
           </div>
 
-          <!-- RIGHT: fotos / ruta -->
+          <!-- RIGHT: fotos -->
           <div class="col-right">
             <div class="block block--full">
-
-              <!-- Tab bar: Fotos / Recorrido -->
-              <div class="right-tabs">
-                <button class="right-tab" :class="{ 'is-active': activeTab === 'fotos' }" @click="setTab('fotos')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  Fotos
-                </button>
-                <button class="right-tab" :class="{ 'is-active': activeTab === 'recorrido' }" @click="setTab('recorrido')" :disabled="!via.geometry">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
-                  Recorrido
-                </button>
-              </div>
-
-              <!-- Route mini-map -->
-              <template v-if="showRoute">
-                <div class="route-wrap">
-                  <div ref="routeMapEl" class="route-map" />
-                  <div class="route-status">
-                    <span v-if="routePlaying" class="route-playing">
-                      <span class="route-dot" />
-                      Animando recorrido…
-                    </span>
-                    <span v-else class="route-done">Recorrido completo</span>
-                    <button class="btn-replay" @click="replayRoute" title="Repetir animación">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-5"/></svg>
-                    </button>
-                  </div>
-                </div>
-              </template>
-
-              <!-- Photos -->
-              <template v-else-if="activeTab === 'fotos'">
               <p class="block-label">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 Registro fotográfico
               </p>
 
-              <!-- Phase tabs -->
-              <div v-if="hasPhotos" class="phase-tabs">
-                <button
-                  v-for="ph in availablePhases" :key="ph.key"
-                  class="phase-tab"
-                  :class="{ 'is-active': activePhase === ph.key }"
-                  @click="setPhase(ph.key)"
-                >
-                  {{ ph.label }}
-                  <span class="phase-count">{{ photos[ph.key].length }}</span>
-                </button>
-              </div>
-
-              <!-- Photo viewer -->
-              <template v-if="hasPhotos && activePhotos.length">
-                <div class="phase-wrap">
-                  <Transition :name="slideTransition" mode="out-in">
-                    <div class="photo-stage" :key="activePhase">
-                      <Transition name="photo-cross" mode="out-in">
-                        <img
-                          :key="activeIdx"
-                          :src="activePhotos[activeIdx]"
-                          :alt="`${activePhase} ${activeIdx + 1}`"
-                          class="photo-img"
-                          decoding="async"
-                          @error="onImgError"
-                        />
-                      </Transition>
-                      <button v-if="activePhotos.length > 1" class="pnav pnav--l" @click="prev" aria-label="Anterior">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-                      </button>
-                      <button v-if="activePhotos.length > 1" class="pnav pnav--r" @click="next" aria-label="Siguiente">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                      </button>
-                      <span class="photo-ctr">{{ activeIdx + 1 }} / {{ activePhotos.length }}</span>
-                    </div>
-                  </Transition>
+              <template v-if="hasPhotos">
+                <div class="phase-wrap" @mouseenter="pauseAuto" @mouseleave="resumeAuto">
+                  <div class="photo-stage" @click="openLightbox">
+                    <Transition name="photo-cross" mode="out-in">
+                      <img
+                        :key="activeIdx"
+                        :src="allPhotos[activeIdx].url"
+                        :alt="`${allPhotos[activeIdx].label} ${activeIdx + 1}`"
+                        class="photo-img"
+                        decoding="async"
+                        @error="onImgError"
+                      />
+                    </Transition>
+                    <span class="photo-watermark" :data-phase="allPhotos[activeIdx].key">
+                      {{ allPhotos[activeIdx].label }}
+                    </span>
+                    <button v-if="allPhotos.length > 1" class="pnav pnav--l" @click.stop="prev" aria-label="Anterior">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <button v-if="allPhotos.length > 1" class="pnav pnav--r" @click.stop="next" aria-label="Siguiente">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <span class="photo-ctr">{{ activeIdx + 1 }} / {{ allPhotos.length }}</span>
+                    <button class="photo-expand-btn" @click.stop="openLightbox" aria-label="Ampliar">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                    </button>
+                  </div>
                 </div>
 
-                <!-- Thumbnails -->
-                <div v-if="activePhotos.length > 1" class="thumbs">
+                <div v-if="allPhotos.length > 1" class="thumbs">
                   <button
-                    v-for="(src, i) in activePhotos" :key="i"
+                    v-for="(photo, i) in allPhotos" :key="i"
                     class="thumb"
                     :class="{ 'is-active': i === activeIdx }"
-                    @click="activeIdx = i"
+                    @click="activeIdx = i; resetAuto()"
                   >
-                    <img :src="src" :alt="`miniatura ${i + 1}`" loading="lazy" decoding="async" @error="onImgError" />
+                    <img :src="photo.url" :alt="`miniatura ${i + 1}`" loading="lazy" decoding="async" @error="onImgError" />
                   </button>
                 </div>
               </template>
 
-              <!-- Empty state -->
               <div v-else class="no-photos">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <p>Sin registro fotográfico</p>
               </div>
-              </template>
             </div>
           </div>
 
@@ -546,6 +368,34 @@ onUnmounted(() => {
 
       </div>
     </div>
+    </Transition>
+
+    <!-- ── LIGHTBOX ── -->
+    <Transition name="lb-anim">
+      <div v-if="lightboxOpen" class="lb-backdrop" @click.self="closeLightbox">
+        <div class="lb-wrap">
+          <Transition name="lb-photo" mode="out-in">
+            <img
+              :key="activeIdx"
+              :src="allPhotos[activeIdx].url"
+              :alt="`${allPhotos[activeIdx].label} ${activeIdx + 1}`"
+              class="lb-img"
+              @error="onImgError"
+            />
+          </Transition>
+          <span class="lb-watermark" :data-phase="allPhotos[activeIdx].key">
+            {{ allPhotos[activeIdx].label }}
+          </span>
+          <button v-if="allPhotos.length > 1" class="lb-nav lb-nav--l" @click="prev" aria-label="Anterior">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button v-if="allPhotos.length > 1" class="lb-nav lb-nav--r" @click="next" aria-label="Siguiente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <span class="lb-ctr">{{ activeIdx + 1 }} / {{ allPhotos.length }}</span>
+          <button class="lb-close" @click="closeLightbox" aria-label="Cerrar">✕</button>
+        </div>
+      </div>
     </Transition>
   </Teleport>
 </template>
@@ -766,13 +616,11 @@ onUnmounted(() => {
 
 /* ── Right column ── */
 .col-right {
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #e5e7eb transparent;
+  overflow: hidden;
   background: #fafafa;
+  display: flex;
+  flex-direction: column;
 }
-.col-right::-webkit-scrollbar       { width: 4px; }
-.col-right::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 99px; }
 
 /* ── Block ── */
 .block {
@@ -886,40 +734,26 @@ onUnmounted(() => {
 }
 .td-val--bold { color: #0b5640; font-weight: 800; font-size: 13px; }
 
-/* ── Phase tabs ── */
-.phase-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.phase-tab {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 13px;
-  border-radius: 7px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
+/* ── Marca de agua de etapa ── */
+.photo-watermark {
+  position: absolute;
+  top: 10px; right: 10px;
+  padding: 3px 11px;
+  border-radius: 20px;
   font-family: 'Prompt', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  cursor: pointer;
-  transition: background .14s ease-out, border-color .14s ease-out, color .14s ease-out, transform .1s ease-out;
-}
-.phase-tab:active { transform: scale(0.96); }
-@media (hover: hover) and (pointer: fine) {
-  .phase-tab:hover { border-color: #0b5640; color: #0b5640; }
-}
-.phase-tab.is-active { background: #0b5640; color: #fff; border-color: #0b5640; }
-.phase-count {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 99px;
-  background: rgba(255,255,255,.25);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: #fff;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+  transition: background .25s ease-out;
 }
-.phase-tab:not(.is-active) .phase-count { background: #f3f4f6; color: #9ca3af; }
+.photo-watermark[data-phase="antes"]   { background: rgba(59,130,246,.82); }
+.photo-watermark[data-phase="durante"] { background: rgba(245,158,11,.82); }
+.photo-watermark[data-phase="despues"] { background: rgba(16,185,129,.82); }
 
 /* ── Bar fill animación ── */
 .bar-fill {
@@ -935,11 +769,11 @@ onUnmounted(() => {
   animation: rowSlideIn 0.22s ease-out both;
 }
 
-/* ── Photo wrapper (mantiene espacio durante transiciones) ── */
+/* ── Photo wrapper — ocupa el espacio disponible ── */
 .phase-wrap {
   position: relative;
-  aspect-ratio: 4 / 3;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
   border-radius: 10px;
   overflow: hidden;
 }
@@ -948,36 +782,50 @@ onUnmounted(() => {
 .photo-stage {
   position: absolute;
   inset: 0;
-  background: #111;
+  background: #0d0d0d;
   overflow: hidden;
+  cursor: zoom-in;
 }
 .photo-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
-/* ── Crossfade entre fotos (flechas / miniaturas) ── */
-.photo-cross-enter-active { transition: opacity 0.18s ease-out; }
-.photo-cross-leave-active { position: absolute; inset: 0; transition: opacity 0.13s ease-out; }
-.photo-cross-enter-from,
-.photo-cross-leave-to     { opacity: 0; }
+/* ── Botón ampliar (aparece al hover) ── */
+.photo-expand-btn {
+  position: absolute;
+  bottom: 8px; left: 10px;
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(0,0,0,.5);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity .18s ease-out, background .14s ease-out;
+}
+.photo-expand-btn svg { width: 13px; height: 13px; }
+.photo-stage:hover .photo-expand-btn { opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .photo-expand-btn:hover { background: rgba(0,0,0,.75); }
+}
 
-/* ── Slide entre fases (Antes / Durante / Después) ── */
-.phase-next-enter-active,
-.phase-prev-enter-active  {
-  transition: opacity 0.22s ease-out, transform 0.22s cubic-bezier(0.23, 1, 0.32, 1);
+/* ── Transición zoom+fade entre fotos ── */
+.photo-cross-enter-active {
+  transition: opacity 0.38s ease-out, transform 0.38s cubic-bezier(0.23, 1, 0.32, 1);
 }
-.phase-next-leave-active,
-.phase-prev-leave-active  {
-  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+.photo-cross-leave-active {
   position: absolute; inset: 0;
+  transition: opacity 0.22s ease-out, transform 0.22s ease-in;
 }
-.phase-next-enter-from { opacity: 0; transform: translateX(14px); }
-.phase-next-leave-to   { opacity: 0; transform: translateX(-14px); }
-.phase-prev-enter-from { opacity: 0; transform: translateX(-14px); }
-.phase-prev-leave-to   { opacity: 0; transform: translateX(14px); }
+.photo-cross-enter-from { opacity: 0; transform: scale(1.045); }
+.photo-cross-leave-to   { opacity: 0; transform: scale(0.96); }
+
+
 .pnav {
   position: absolute;
   top: 50%; transform: translateY(-50%);
@@ -1062,100 +910,115 @@ onUnmounted(() => {
   color: #c4c9d2;
 }
 
-/* ── Right tabs (Fotos / Recorrido) ── */
-.right-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 14px;
-  flex-shrink: 0;
-}
-.right-tab {
+/* ── Lightbox ── */
+.lb-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0,0,0,.92);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
-  font-family: 'Prompt', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  cursor: pointer;
-  transition: background .14s ease-out, border-color .14s ease-out, color .14s ease-out, transform .1s ease-out;
+  justify-content: center;
+  padding: 20px;
 }
-.right-tab svg { width: 13px; height: 13px; flex-shrink: 0; }
-.right-tab:focus { outline: none; }
-.right-tab:active:not(:disabled) { transform: scale(0.96); }
-@media (hover: hover) and (pointer: fine) {
-  .right-tab:hover:not(:disabled) { border-color: #0b5640; color: #0b5640; }
-}
-.right-tab.is-active { background: #0b5640; color: #fff; border-color: #0b5640; }
-.right-tab:disabled  { opacity: .4; cursor: not-allowed; }
-
-/* ── Route mini-map ── */
-.route-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
-}
-.route-map {
-  flex: 1;
-  border-radius: 10px;
-  overflow: hidden;
-  min-height: 260px;
-  border: 1px solid #e5e7eb;
-}
-.route-status {
+.lb-wrap {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 2px;
-  flex-shrink: 0;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: 1400px;
 }
-.route-playing {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-family: 'Prompt', sans-serif;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #0b5640;
-}
-.route-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: #0b5640;
-  animation: routePulse 1s ease-in-out infinite;
-}
-@keyframes routePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: .4; transform: scale(.7); }
-}
-.route-done {
-  font-family: 'Prompt', sans-serif;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #9ca3af;
-}
-.btn-replay {
-  display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px;
+.lb-img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
   border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  display: block;
+  user-select: none;
+}
+.lb-watermark {
+  position: absolute;
+  top: 16px; right: 56px;
+  padding: 4px 13px;
+  border-radius: 20px;
+  font-family: 'Prompt', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: #fff;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+.lb-watermark[data-phase="antes"]   { background: rgba(59,130,246,.85); }
+.lb-watermark[data-phase="durante"] { background: rgba(245,158,11,.85); }
+.lb-watermark[data-phase="despues"] { background: rgba(16,185,129,.85); }
+.lb-nav {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  color: #6b7280;
-  transition: background .13s ease-out, color .13s ease-out, border-color .13s ease-out, transform .1s ease-out;
-  flex-shrink: 0;
+  backdrop-filter: blur(6px);
+  transition: background .14s ease-out, transform .1s ease-out;
 }
-.btn-replay svg { width: 14px; height: 14px; }
-.btn-replay:active { transform: scale(0.96); }
+.lb-nav:active { transform: translateY(-50%) scale(0.94); }
 @media (hover: hover) and (pointer: fine) {
-  .btn-replay:hover { background: #f0fdf4; color: #0b5640; border-color: #0b5640; }
+  .lb-nav:hover { background: rgba(255,255,255,.25); }
 }
+.lb-nav svg  { width: 18px; height: 18px; }
+.lb-nav--l   { left: 12px; }
+.lb-nav--r   { right: 12px; }
+.lb-ctr {
+  position: absolute;
+  bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  font-family: 'Prompt', sans-serif;
+  font-size: 12px; font-weight: 600;
+  padding: 3px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+.lb-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.4);
+  color: rgba(255,255,255,.8);
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background .14s ease-out, color .14s ease-out;
+}
+@media (hover: hover) and (pointer: fine) {
+  .lb-close:hover { background: rgba(255,255,255,.15); color: #fff; }
+}
+
+/* ── Transiciones lightbox ── */
+.lb-anim-enter-active { transition: opacity 0.2s ease-out; }
+.lb-anim-leave-active { transition: opacity 0.15s ease-out; }
+.lb-anim-enter-from, .lb-anim-leave-to { opacity: 0; }
+.lb-photo-enter-active {
+  transition: opacity 0.32s ease-out, transform 0.32s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.lb-photo-leave-active {
+  position: absolute;
+  transition: opacity 0.18s ease-out;
+}
+.lb-photo-enter-from { opacity: 0; transform: scale(0.96); }
+.lb-photo-leave-to   { opacity: 0; }
 
 /* ── Footer ── */
 .mfoot {
@@ -1194,20 +1057,16 @@ onUnmounted(() => {
   .modal-anim-enter-active .modal,
   .modal-anim-leave-active .modal { transition: none; }
   .btn-x:active,
-  .btn-cerrar:active,
-  .btn-replay:active,
-  .phase-tab:active,
-  .right-tab:active { transform: none; }
+  .btn-cerrar:active { transform: none; }
   .pnav:active { transform: translateY(-50%); }
   .bar-fill { transition: none; }
   .info-tbl tr { animation: none; }
   .photo-cross-enter-active,
   .photo-cross-leave-active,
-  .phase-next-enter-active,
-  .phase-next-leave-active,
-  .phase-prev-enter-active,
-  .phase-prev-leave-active { transition: none; }
-  @keyframes routePulse { from { opacity: 1; transform: scale(1); } }
-  @keyframes rowSlideIn  { from { opacity: 1; transform: none; } }
+  .lb-anim-enter-active,
+  .lb-anim-leave-active,
+  .lb-photo-enter-active,
+  .lb-photo-leave-active { transition: none; }
+  @keyframes rowSlideIn { from { opacity: 1; transform: none; } }
 }
 </style>

@@ -50,6 +50,21 @@ export function useCircuitoPhotos(circuitoRef) {
     }
   }
 
+  async function loadFromLocalApi(circuito) {
+    loading.value = true
+    error.value   = null
+    try {
+      const res = await fetch(`/api/circuito-photos/${encodeURIComponent(circuito)}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      photos.value = await res.json()
+    } catch (err) {
+      error.value  = err.message
+      photos.value = { antes: [], durante: [], despues: [] }
+    } finally {
+      loading.value = false
+    }
+  }
+
   function fetchPhotos(circuito) {
     if (!circuito) {
       photos.value = { antes: [], durante: [], despues: [] }
@@ -57,6 +72,8 @@ export function useCircuitoPhotos(circuitoRef) {
     }
     if (API_PHOTOS) {
       loadFromApi(circuito)
+    } else if (import.meta.env.DEV) {
+      loadFromLocalApi(circuito)
     } else {
       buildAzurePhotos(circuito)
     }

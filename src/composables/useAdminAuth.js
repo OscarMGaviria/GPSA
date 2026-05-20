@@ -25,6 +25,8 @@ async function getMsal() {
     },
   })
   await _msal.initialize()
+  // Limpia estado de interacción pendiente (popup cerrado, página recargada mid-auth)
+  await _msal.handleRedirectPromise().catch(() => {})
   return _msal
 }
 
