@@ -69,51 +69,39 @@ function cronogramasApiPlugin() {
 }
 
 function photosApiPlugin() {
-  const baseDir = path.resolve('./public/images/circuitos')
-  const TIPOS   = ['antes', 'durante', 'despues']
+  const baseDir  = path.resolve('./public/images/circuitos')
+  const TIPOS    = ['antes', 'durante', 'despues']
+  const IMG_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif'])
+
+  function scanTipo(circuito, tipo) {
+    const dir = path.join(baseDir, circuito, tipo)
+    if (!fs.existsSync(dir)) return []
+    return fs.readdirSync(dir)
+      .filter(f => IMG_EXTS.has(path.extname(f).toLowerCase()))
+      .sort()
+      .map(f => `/images/circuitos/${encodeURIComponent(circuito)}/${tipo}/${encodeURIComponent(f)}`)
+  }
+
   return {
     name: 'photos-api',
     configureServer(server) {
       server.middlewares.use('/api/circuito-photos', (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
         res.setHeader('Content-Type', 'application/json')
         if (req.method === 'OPTIONS') { res.statusCode = 204; res.end(); return }
 
-        const parts    = req.url.split('/').filter(Boolean).map(s => decodeURIComponent(s))
-        const circuito = parts[0]
-        const tipo     = parts[1]
+        const circuito = decodeURIComponent(req.url.split('?')[0].replace(/^\//, ''))
+        if (!circuito) { res.statusCode = 400; return res.end(JSON.stringify({ error: 'Missing circuito' })) }
 
-        if (req.method === 'GET' && circuito && !tipo) {
-          const dir    = path.join(baseDir, circuito)
+        if (req.method === 'GET') {
           const result = {}
-          for (const t of TIPOS) result[t] = fs.existsSync(path.join(dir, t + '.jpg'))
+          for (const t of TIPOS) result[t] = scanTipo(circuito, t)
           return res.end(JSON.stringify(result))
         }
 
-        if (req.method === 'POST' && circuito && tipo) {
-          if (!TIPOS.includes(tipo)) { res.statusCode = 400; return res.end(JSON.stringify({ error: 'Invalid tipo' })) }
-          const dir = path.join(baseDir, circuito)
-          fs.mkdirSync(dir, { recursive: true })
-          const chunks = []
-          req.on('data', c => chunks.push(c))
-          req.on('end', () => {
-            try { fs.writeFileSync(path.join(dir, tipo + '.jpg'), Buffer.concat(chunks)); res.end(JSON.stringify({ ok: true })) }
-            catch (e) { res.statusCode = 500; res.end(JSON.stringify({ error: e.message })) }
-          })
-          return
-        }
-
-        if (req.method === 'DELETE' && circuito && tipo) {
-          try {
-            const fp = path.join(baseDir, circuito, tipo + '.jpg')
-            if (fs.existsSync(fp)) fs.unlinkSync(fp)
-            return res.end(JSON.stringify({ ok: true }))
-          } catch (e) { res.statusCode = 500; return res.end(JSON.stringify({ error: e.message })) }
-        }
-
-        res.statusCode = 400; res.end(JSON.stringify({ error: 'Invalid request' }))
+        res.statusCode = 405; res.end(JSON.stringify({ error: 'Method not allowed' }))
       })
     }
   }
@@ -261,7 +249,7 @@ export default defineConfig(({ mode }) => {
   const isInternal = env.VITE_INTERNAL === 'true'
 
   return {
-  plugins: [vue(), cronogramasApiPlugin(), compromisosApiPlugin(), localizacionApiPlugin(), hitosApiPlugin(), actividadFotoPlugin(), stubInternalModulesPlugin(isInternal)].filter(Boolean),
+  plugins: [vue(), cronogramasApiPlugin(), compromisosApiPlugin(), localizacionApiPlugin(), hitosApiPlugin(), actividadFotoPlugin(), photosApiPlugin(), stubInternalModulesPlugin(isInternal)].filter(Boolean),
   test: {
     environment: 'jsdom',
     globals: true,

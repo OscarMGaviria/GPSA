@@ -31,13 +31,30 @@ const modalVal = ref(0)
 // Login Microsoft
 const loginErr = ref('')
 
+const MSAL_MSGS = {
+  user_cancelled:                  null,
+  interaction_in_progress:         'Hay un inicio de sesión en curso. Recarga la página e intenta de nuevo.',
+  timed_out:                       'El inicio de sesión tardó demasiado. Intenta de nuevo.',
+  popup_window_error:              'No se pudo abrir la ventana de Microsoft. Verifica que los popups no estén bloqueados.',
+  empty_window_error:              'La ventana de Microsoft se cerró inesperadamente. Intenta de nuevo.',
+  monitor_window_timeout:          'La ventana de Microsoft tardó demasiado. Intenta de nuevo.',
+  block_iframes_and_nested_popups: 'Los popups están bloqueados por el navegador. Permítelos e intenta de nuevo.',
+}
+
+function authErrMsg(e) {
+  const code = e?.errorCode ?? ''
+  if (code in MSAL_MSGS) return MSAL_MSGS[code]
+  return 'No se pudo iniciar sesión. Si el problema persiste, contacta al administrador.'
+}
+
 async function doLogin() {
   loginErr.value = ''
   try {
     await login()
     load()
   } catch (e) {
-    if (e?.errorCode !== 'user_cancelled') loginErr.value = e?.message ?? 'Error al iniciar sesión'
+    const msg = authErrMsg(e)
+    if (msg) loginErr.value = msg
   }
 }
 
@@ -58,7 +75,7 @@ async function load() {
       await loadLocal()
     }
   } catch (e) {
-    toast('Error cargando datos: ' + e.message, 'err')
+    toast('Error al cargar los datos. Si el problema persiste, contacta al administrador.', 'err')
   }
   loading.value = false
 }
@@ -169,7 +186,7 @@ async function save() {
     } else {
       await saveLocal()
     }
-  } catch (e) { toast('Error: ' + e.message, 'err') }
+  } catch (e) { toast('Error al guardar. Si el problema persiste, contacta al administrador.', 'err') }
   saving.value = false
 }
 
