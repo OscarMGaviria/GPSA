@@ -37,3 +37,11 @@ public/data/localizacion - copia.geojson
 # Archivos temporales y comprimidos
 *.zip
 skills-lock.json
+
+# Python (scripts locales, no parte del frontend)
+__pycache__/
+*.py
+*.pyc
+
+# Fotos de actividades de campo (módulo interno, se generan localmente)
+public/images/actividades/

@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import fs from 'node:fs'
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 
 function compromisosApiPlugin() {
   const filePath = path.resolve('./src/data/compromisos.json')
@@ -118,6 +119,58 @@ function photosApiPlugin() {
   }
 }
 
+function actividadFotoPlugin() {
+  const saveDir = path.resolve('./public/images/actividades')
+  const EXT_MAP = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/avif': '.avif' }
+
+  return {
+    name: 'actividad-foto-api',
+    configureServer(server) {
+      server.middlewares.use('/api/actividad-foto', (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+        res.setHeader('Content-Type', 'application/json')
+        if (req.method === 'OPTIONS') { res.statusCode = 204; res.end(); return }
+
+        // POST → recibe imagen como raw buffer, devuelve { ok, url }
+        if (req.method === 'POST') {
+          fs.mkdirSync(saveDir, { recursive: true })
+          const mime = (req.headers['content-type'] ?? 'image/jpeg').split(';')[0].trim()
+          const ext  = EXT_MAP[mime] ?? '.jpg'
+          const fname = randomUUID() + ext
+          const chunks = []
+          req.on('data', c => chunks.push(c))
+          req.on('end', () => {
+            try {
+              fs.writeFileSync(path.join(saveDir, fname), Buffer.concat(chunks))
+              res.end(JSON.stringify({ ok: true, url: `/images/actividades/${fname}` }))
+            } catch (e) { res.statusCode = 500; res.end(JSON.stringify({ error: e.message })) }
+          })
+          return
+        }
+
+        // DELETE ?filename=uuid.jpg → elimina el archivo
+        if (req.method === 'DELETE') {
+          const qs   = new URLSearchParams(req.url.split('?')[1] ?? '')
+          const fname = qs.get('filename')
+          if (!fname || fname.includes('/') || fname.includes('..')) {
+            res.statusCode = 400; return res.end(JSON.stringify({ error: 'Invalid filename' }))
+          }
+          try {
+            const fp = path.join(saveDir, fname)
+            if (fs.existsSync(fp)) fs.unlinkSync(fp)
+            res.end(JSON.stringify({ ok: true }))
+          } catch (e) { res.statusCode = 500; res.end(JSON.stringify({ error: e.message })) }
+          return
+        }
+
+        res.statusCode = 405; res.end(JSON.stringify({ error: 'Method not allowed' }))
+      })
+    }
+  }
+}
+
 function hitosApiPlugin() {
   const filePath = path.resolve('./src/data/hitos.json')
   return {
@@ -208,7 +261,7 @@ export default defineConfig(({ mode }) => {
   const isInternal = env.VITE_INTERNAL === 'true'
 
   return {
-  plugins: [vue(), cronogramasApiPlugin(), compromisosApiPlugin(), localizacionApiPlugin(), hitosApiPlugin(), stubInternalModulesPlugin(isInternal)].filter(Boolean),
+  plugins: [vue(), cronogramasApiPlugin(), compromisosApiPlugin(), localizacionApiPlugin(), hitosApiPlugin(), actividadFotoPlugin(), stubInternalModulesPlugin(isInternal)].filter(Boolean),
   test: {
     environment: 'jsdom',
     globals: true,
