@@ -10,7 +10,8 @@ const { isAuthed, userName, userEmail, loading: authLoading, initAuth, login, lo
 // En local, queda vacío y se usan los Vite plugins.
 const ADMIN_API  = import.meta.env.VITE_ADMIN_API ?? ''
 const isProd     = !!ADMIN_API
-const LOCAL_API  = '/api/localizacion'
+const LOCAL_API  = '/api/localizacion'          // POST (Vite dev server only)
+const GEO_FILE   = import.meta.env.VITE_API_LOCALIZACIONES ?? '/data/localizacion.geojson'
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 const rawGeoJson = ref(null)
@@ -81,7 +82,7 @@ async function load() {
 }
 
 async function loadLocal() {
-  const r = await fetch(LOCAL_API)
+  const r = await fetch(GEO_FILE)
   if (!r.ok) throw new Error(`HTTP ${r.status}`)
   rawGeoJson.value = await r.json()
   features.value = rawGeoJson.value.features.map((f, i) => ({
@@ -203,6 +204,10 @@ async function saveLocal() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(gj),
   })
+  const ct = r.headers.get('content-type') ?? ''
+  if (!ct.includes('application/json')) {
+    throw new Error('El servidor de escritura no está disponible. Configura VITE_ADMIN_API para guardar en este entorno.')
+  }
   const j = await r.json()
   if (!j.ok) throw new Error(j.error)
   rawGeoJson.value = gj
