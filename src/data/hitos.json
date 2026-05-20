@@ -8,6 +8,15 @@
       "en_ejecucion": [],
       "pendientes": [],
       "obs": "No hay frentes activos"
+    },
+    {
+      "id": "mpcmgk7g",
+      "fecha": "2026-05-19",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [],
+      "pendientes": [],
+      "obs": "Sin Frentes activos"
     }
   ],
   "Remedios - La Y De La Virgen - Puerto Berrío": [
@@ -33,6 +42,30 @@
       ],
       "pendientes": [],
       "obs": "Se realizaron observaciones del TPD por parte del contratista /\nSe reportan 148 obras transversales existentes en el inventario"
+    },
+    {
+      "id": "mpcmfekr",
+      "fecha": "2026-05-19",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Levantamiento topográfico",
+          "desc": "Se ejecutaron actividades de nivelación y contra nivelación de poligonales",
+          "fotos": [
+            "/images/actividades/31083f1a-8e30-474a-9be7-d8ac336be7e8.jpg"
+          ]
+        },
+        {
+          "nombre": "Inspección de obras transversales",
+          "desc": "Evaluación del estado actual de las obras",
+          "fotos": [
+            "/images/actividades/d413984c-04ca-4356-a4bc-c0413c58640a.jpg"
+          ]
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Cáceres - La Chilona": [
@@ -62,6 +95,31 @@
           "desc": "Se realizará pista de prueba de 750m el dia 19 de mayo"
         }
       ],
+      "obs": ""
+    },
+    {
+      "id": "mpec3x5k",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Limpieza de alcantarillas",
+          "desc": "Actividad completada",
+          "fotos": [
+            "/images/actividades/d731bd52-2f1d-46d7-bfea-d78ee1fba05b.jpg"
+          ]
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Construcción de filtros",
+          "desc": "K21+000",
+          "fotos": [
+            "/images/actividades/236eceee-5f9a-421b-98e4-69aad70a3c25.jpg"
+          ]
+        }
+      ],
+      "pendientes": [],
       "obs": ""
     }
   ],
@@ -105,6 +163,31 @@
         }
       ],
       "obs": "Se liberó para ejecución de pista de prueba de 2.0 km"
+    },
+    {
+      "id": "mpef9fbi",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Se continúa con estas la limpieza de obras",
+          "fotos": []
+        },
+        {
+          "nombre": "Atención a punto crítico",
+          "desc": "Pueblorrico San José k20+500 actividades de rosería",
+          "fotos": []
+        },
+        {
+          "nombre": "Instalación de Valla Institucional",
+          "desc": "Visita en compañia de secretaria de tránsito Andes para verificar punto de instalación",
+          "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Valparaíso - Támesis": [
@@ -138,6 +221,36 @@
       ],
       "pendientes": [],
       "obs": ""
+    },
+    {
+      "id": "mpefg204",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Levantamiento Topográfico",
+          "desc": "Se continua con marcación de abscisas cada 50 m",
+          "fotos": []
+        },
+        {
+          "nombre": "Levantamiento Topográfico",
+          "desc": "Se realiza la localización de las obras hidraulicas entre k12+000 a k17+300",
+          "fotos": []
+        },
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "A la fecha se han intervenido 77 obras de 230",
+          "fotos": []
+        },
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "A la fecha se han intervenido 77 obras de 230 y Rocería para obras de encole entre k1+100 a k13+000",
+          "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Salgar - La Quiebra - Concordia": [
@@ -164,6 +277,31 @@
         }
       ],
       "obs": ""
+    },
+    {
+      "id": "mpefe2ke",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Inventario de obras transversales",
+          "desc": "Se inicio con recorrido de inspección",
+          "fotos": []
+        },
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Se dio inicio a esta actividad el 14 de mayo de 2026",
+          "fotos": []
+        },
+        {
+          "nombre": "Levantamiento Topográfico",
+          "desc": "Desde el k0+000 hasta el k10+000",
+          "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Titiribi - Armenia": [
@@ -180,6 +318,15 @@
       ],
       "pendientes": [],
       "obs": ""
+    },
+    {
+      "id": "mpee0cdx",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [],
+      "pendientes": [],
+      "obs": "Frente sin reportes"
     }
   ],
   "Abejorral - Santa Barbara": [
@@ -225,6 +372,23 @@
         }
       ],
       "obs": ""
+    },
+    {
+      "id": "mpclymxi",
+      "fecha": "2026-05-19",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Preparación para logística e ingreso de personal",
+          "desc": "",
+          "fotos": [
+            "/images/actividades/104633e4-8208-4d46-83b2-4509810edf89.jpg"
+          ]
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "San Pedro de Urabá - Necoclí": [
@@ -257,6 +421,44 @@
       ],
       "pendientes": [],
       "obs": ""
+    },
+    {
+      "id": "mpckjiyl",
+      "fecha": "2026-05-19",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Actividades de bacheo",
+          "desc": "En una longitud de 105m",
+          "fotos": [
+            "/images/actividades/02f293ef-0497-4964-b4b0-0f1c676fd8b6.jpg"
+          ]
+        },
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "70 obras de 350 aprox - Se limpiaron 5 alcantarillas",
+          "fotos": [
+            "/images/actividades/708ba8dc-6837-47b9-b33c-d742b7171e6e.jpg"
+          ]
+        },
+        {
+          "nombre": "Construcción de obras transversales",
+          "desc": "Se están ejecutando tres (3) obras - Instalación de tubería",
+          "fotos": [
+            "/images/actividades/d8bb7762-b177-4ca6-b4c4-4db46455a8d5.jpg"
+          ]
+        },
+        {
+          "nombre": "Levantamiento topografico",
+          "desc": "Se realiza el replanteo del eje vial entre las abscisas 1.0 km",
+          "fotos": [
+            "/images/actividades/19bb4a89-18bd-4c9a-8b2e-62c9b882fd62.jpg"
+          ]
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "San Pedro - El Tres - Turbo": [
@@ -273,6 +475,23 @@
         {
           "nombre": "Topografía",
           "desc": "Levantados 5.0 km"
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    },
+    {
+      "id": "mpcm458s",
+      "fecha": "2026-05-19",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Se inició con la actividad",
+          "fotos": [
+            "/images/actividades/bee4f257-56d5-4014-b370-6022efe57e6b.jpg"
+          ]
         }
       ],
       "pendientes": [],
@@ -306,6 +525,33 @@
       ],
       "pendientes": [],
       "obs": "Se presento diseño de estructura, se tienen observaciones"
+    },
+    {
+      "id": "mpcmpolu",
+      "fecha": "2026-05-19",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Topografia",
+          "desc": "Sin avances, se mantienen 13.6 km",
+          "fotos": []
+        },
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Ejecutadas 52 obras de 115",
+          "fotos": [
+            "/images/actividades/ec4276bc-3499-411a-be55-33be9f7a159b.jpg"
+          ]
+        },
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Sin avances, se mantienen 40 de 83 apiques",
+          "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Amalfi - Portachuelos - Santa Isabel": [
@@ -317,6 +563,15 @@
       "en_ejecucion": [],
       "pendientes": [],
       "obs": "No se ha iniciado con obras en el tramo, se encuentran en actividades administrativas"
+    },
+    {
+      "id": "mpcngfwq",
+      "fecha": "2026-05-19",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [],
+      "pendientes": [],
+      "obs": "No se ha iniciado con obras en el tramo"
     }
   ],
   "San Rafael - San Roque - Santo Domingo - Alejandría": [
@@ -346,6 +601,31 @@
         }
       ],
       "obs": "Solicitar permiso de uso de vias para transporte de material"
+    },
+    {
+      "id": "mpcneuzt",
+      "fecha": "2026-05-19",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Se mantiene - ejecutaron 48 de 91 apiques",
+          "fotos": []
+        },
+        {
+          "nombre": "Topografia",
+          "desc": "Se mantiene - Se ejecutaron 12.86 km de 20.64",
+          "fotos": []
+        },
+        {
+          "nombre": "Inventario de obras transversales",
+          "desc": "Se continua con el inventario durante la presente semana",
+          "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Sopetrán - Horizontes - Belmira": [
@@ -371,6 +651,38 @@
       ],
       "pendientes": [],
       "obs": ""
+    },
+    {
+      "id": "mpecsw0y",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Conformación de vía",
+          "desc": "Ampliación y conformación de vía entre k28+000 a k31+800",
+          "fotos": [
+            "/images/actividades/e00700b4-cce2-4b74-9c86-a5668b6257cb.jpg"
+          ]
+        },
+        {
+          "nombre": "Levantamiento Topográfico",
+          "desc": "Se continúa con esta actividad",
+          "fotos": []
+        },
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Se continúa con la ejecución de apoques a partir del k3+000",
+          "fotos": []
+        },
+        {
+          "nombre": "Implementación de PMT",
+          "desc": "Se tiene la implementación del PMT en obra",
+          "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Frontino - Nutibara": [
@@ -391,6 +703,38 @@
         {
           "nombre": "Ampliacion y conformacion de via",
           "desc": "Inicia"
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    },
+    {
+      "id": "mpecjxdu",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Instalación de PMT",
+          "desc": "Entre el k5+100 y k6+300",
+          "fotos": [
+            "/images/actividades/a46acddd-60cc-4b18-ab63-404b92b8560f.jpg"
+          ]
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Levantamiento topografico",
+          "desc": "Se avanza en el abscisado hasta el km7+200",
+          "fotos": [
+            "/images/actividades/810d69e0-4b83-4e78-b28e-824cb584c82c.jpg"
+          ]
+        },
+        {
+          "nombre": "Reposición de obras transversales",
+          "desc": "Se avanza en el proceso constructivo de 18 obras hidráulicas transversales",
+          "fotos": [
+            "/images/actividades/6204c6a3-19b9-44a5-abf5-b42c42a59ba9.jpg"
+          ]
         }
       ],
       "pendientes": [],
@@ -449,6 +793,26 @@
         }
       ],
       "obs": ""
+    },
+    {
+      "id": "mpef2bhb",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Entre k8+200 a k20+000",
+          "fotos": []
+        },
+        {
+          "nombre": "Demolicion de estructuras existentes",
+          "desc": "k8+200",
+          "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Santa Rosa - Carolina del Príncipe": [
@@ -466,6 +830,21 @@
         {
           "nombre": "Limpieza de obras transversales",
           "desc": ""
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    },
+    {
+      "id": "mpef4t0y",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Entre el k1+056 a k3+410",
+          "fotos": []
         }
       ],
       "pendientes": [],
@@ -490,6 +869,55 @@
       ],
       "pendientes": [],
       "obs": ""
+    },
+    {
+      "id": "mpedxqeq",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Conformación de calzada",
+          "desc": "Se continua con la recuperación de la seccion vial",
+          "fotos": [
+            "/images/actividades/76cd0606-a515-477b-a8e5-9ae8eb646e4c.jpg"
+          ]
+        },
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Se continúa con la limpieza de las obras transversales",
+          "fotos": []
+        },
+        {
+          "nombre": "Levantamiento Topográfico",
+          "desc": "Se continúa con el levantamiento por parte del contratista",
+          "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    }
+  ],
+  "El Guayabo - El Salto - Partidas a Guadalupe": [
+    {
+      "id": "mpef6a7a",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [],
+      "pendientes": [],
+      "obs": "Sin reportes de actividades"
+    }
+  ],
+  "Carolina del Príncipe - Angostura": [
+    {
+      "id": "mpef6lbo",
+      "fecha": "2026-05-20",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [],
+      "pendientes": [],
+      "obs": "Sin reporte de actividades"
     }
   ]
 }
