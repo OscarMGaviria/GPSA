@@ -4,7 +4,7 @@ import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/ms
 const CLIENT_ID  = import.meta.env.VITE_MSAL_CLIENT_ID  ?? ''
 const TENANT_ID  = import.meta.env.VITE_MSAL_TENANT_ID  ?? ''
 // Scope del API backend. Típicamente 'api://<client-id>/.default' o la URL del APIM.
-const API_SCOPE  = import.meta.env.VITE_MSAL_API_SCOPE  ?? `api://${CLIENT_ID}/.default`
+const API_SCOPE  = import.meta.env.VITE_MSAL_API_SCOPE || `${CLIENT_ID}/.default`
 
 export const MSAL_ENABLED = !!(CLIENT_ID && TENANT_ID)
 
