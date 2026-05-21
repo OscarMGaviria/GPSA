@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAdminAuth } from '../composables/useAdminAuth.js'
 
 const logoSrc  = '/images/escudo.png'
-const { isAuthed, userName, userEmail, loading: authLoading, initAuth, login, logout, authHeaders } = useAdminAuth()
+const { isAuthed, userName, userEmail, authErr, loading: authLoading, initAuth, login, logout, authHeaders } = useAdminAuth()
 
 // ── Entorno ───────────────────────────────────────────────────────────────────
 // En producción, VITE_ADMIN_API apunta a https://apim-simeva-qa.azure-api.net/administracion
@@ -33,13 +33,8 @@ const modalVal = ref(0)
 const loginErr = ref('')
 
 const MSAL_MSGS = {
-  user_cancelled:                  null,
-  interaction_in_progress:         'Hay un inicio de sesión en curso. Recarga la página e intenta de nuevo.',
-  timed_out:                       'El inicio de sesión tardó demasiado. Intenta de nuevo.',
-  popup_window_error:              'No se pudo abrir la ventana de Microsoft. Verifica que los popups no estén bloqueados.',
-  empty_window_error:              'La ventana de Microsoft se cerró inesperadamente. Intenta de nuevo.',
-  monitor_window_timeout:          'La ventana de Microsoft tardó demasiado. Intenta de nuevo.',
-  block_iframes_and_nested_popups: 'Los popups están bloqueados por el navegador. Permítelos e intenta de nuevo.',
+  user_cancelled:          null,
+  interaction_in_progress: 'Hay un inicio de sesión en curso. Recarga la página e intenta de nuevo.',
 }
 
 function authErrMsg(e) {
@@ -52,7 +47,8 @@ async function doLogin() {
   loginErr.value = ''
   try {
     await login()
-    load()
+    // login() redirige a Microsoft — el código después no se ejecuta.
+    // Al regresar, initAuth() en onMounted procesará la sesión y llamará load().
   } catch (e) {
     const msg = authErrMsg(e)
     if (msg) loginErr.value = msg
@@ -288,6 +284,7 @@ function toast(msg, type = 'ok') {
           {{ authLoading ? 'Iniciando sesión…' : 'Continuar con Microsoft' }}
         </button>
         <p v-if="loginErr" class="login-err">{{ loginErr }}</p>
+        <p v-if="authErr" class="login-err" style="margin-top: 10px; color: #fca5a5;">Depuración MSAL: {{ authErr }}</p>
       </div>
     </div>
 
