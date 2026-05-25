@@ -2037,10 +2037,34 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
     ? [...registros].sort((a, b) => (b.fecha ?? '').localeCompare(a.fecha ?? ''))[0]
     : null
 
+  const carouselId = 'carrusel_' + norm(circuito).replace(/[\W_]+/g, '')
+  const actModalId = 'act_modal_' + norm(circuito).replace(/[\W_]+/g, '')
+
   function actividadCard(act, color, bgColor) {
-    return `<div style="background:${bgColor};border-left:3px solid ${color};border-radius:6px;padding:8px 10px;margin-bottom:6px">
-      <div style="font-size:11px;font-weight:700;color:#111827">${esc(act.nombre ?? '—')}</div>
-      ${act.desc ? `<div style="font-size:10px;color:#6b7280;margin-top:2px">${esc(act.desc)}</div>` : ''}
+    const safeName = esc(act.nombre ?? '—').replace(/'/g, "\\'").replace(/"/g, '&quot;')
+    const safeDesc = act.desc ? esc(act.desc).replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\\n/g, '<br>') : ''
+    const fotosArray = (act.fotos || []).map(u => u.replace('/public/', '/'))
+    
+    const fotosStr = fotosArray.map(url => `<img src=\\'${url}\\' style=\\'width:100%;height:140px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid rgba(0,0,0,0.05)\\' onclick=\\'const mx=document.getElementById("modal_${carouselId}");const ix=document.getElementById("img_modal_${carouselId}");if(mx&&ix){ix.src="${url}";mx.style.display="flex";}\\'/>`).join('')
+
+    const onclickStr = `const m = document.getElementById('${actModalId}');if(m){document.getElementById('${actModalId}_title').innerHTML = '${safeName}';document.getElementById('${actModalId}_desc').innerHTML = '${safeDesc}';document.getElementById('${actModalId}_fotos').innerHTML = '${fotosStr}';m.style.display = 'flex';}`
+    const safeOnclick = onclickStr.replace(/"/g, '&quot;')
+
+    let miniFotos = ''
+    if (fotosArray.length > 0) {
+      miniFotos = `<div style="display:flex;gap:4px;margin-top:8px">` +
+        fotosArray.slice(0, 5).map(url => `<div style="width:26px;height:26px;border-radius:4px;background-image:url('${url}');background-size:cover;background-position:center;border:1px solid rgba(0,0,0,0.1)"></div>`).join('') +
+        (fotosArray.length > 5 ? `<div style="font-size:10px;font-weight:700;color:#6b7280;display:flex;align-items:center;margin-left:4px">+${fotosArray.length-5}</div>` : '') +
+        `</div>`
+    }
+
+    return `<div onclick="${safeOnclick}" style="background:${bgColor};border:1px solid rgba(0,0,0,0.03);border-left:4px solid ${color};border-radius:8px;padding:12px 14px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,0.02);cursor:pointer;transition:transform 0.15s,box-shadow 0.15s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.05)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.02)'">
+      <div style="font-size:12px;font-weight:800;color:#1f2937;letter-spacing:0.02em;line-height:1.2;display:flex;justify-content:space-between;align-items:flex-start">
+        <span style="flex:1">${esc(act.nombre ?? '—')}</span>
+        <svg style="width:14px;height:14px;color:#9ca3af;flex-shrink:0;margin-left:8px" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+      </div>
+      ${act.desc ? `<div style="font-size:10.5px;color:#6b7280;margin-top:4px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(act.desc)}</div>` : ''}
+      ${miniFotos}
     </div>`
   }
 
@@ -2061,27 +2085,32 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
   const todasEjecutadas = Array.from(ejecutadasMap.values())
   const ejecutadasHtml = todasEjecutadas.length 
     ? todasEjecutadas.map(a => actividadCard(a, '#16a34a', '#f0fdf4')).join('')
-    : `<div style="color:#9ca3af;font-size:12px;padding:8px 0">No hay actividades ejecutadas históricas</div>`
+    : ''
 
   // En ejecución (Último corte)
   const enEjecucionHtml = lastReg?.en_ejecucion?.length
     ? lastReg.en_ejecucion.map(a => actividadCard(a, '#d97706', '#fffbeb')).join('')
     : `<div style="color:#9ca3af;font-size:12px;padding:8px 0">No hay actividades en ejecución</div>`
 
-  // Fotos de ejecución (durante)
-  const duranteUrls = Object.keys(allLocalPhotos)
-    .filter(path => {
-      const parts = path.split('/')
-      return norm(parts[4]) === norm(circuito) && norm(parts[5]) === 'durante'
-    })
-    .map(path => allLocalPhotos[path])
-    
-  let durantePhotosHtml = ''
-  if (duranteUrls.length > 0) {
-    durantePhotosHtml = `<div style="display:flex;gap:10px;margin-top:12px;overflow-x:auto;padding-bottom:8px">` +
-      duranteUrls.map(url => `<img src="${url.replace('/public/', '/')}" style="height:90px;border-radius:6px;object-fit:cover;box-shadow:0 4px 6px rgba(0,0,0,0.1)"/>`).join('') +
-      `</div>`
+  const gridStyle = ejecutadasHtml ? "display:grid;grid-template-columns:1fr 1fr;gap:24px" : "display:grid;grid-template-columns:1fr;gap:24px"
+
+  let columnsHtml = ''
+  if (ejecutadasHtml) {
+    columnsHtml += `
+        <div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#16a34a;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block"></span>Ejecutadas (Histórico)
+          </div>
+          ${ejecutadasHtml}
+        </div>`
   }
+  columnsHtml += `
+        <div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#d97706;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#d97706;display:inline-block"></span>En Ejecución (Último corte)
+          </div>
+          ${enEjecucionHtml}
+        </div>`
 
   const btnActsId = 'btn-acts-' + norm(circuito).replace(/[\W_]+/g, '')
   const btnInfoId = 'btn-info-' + norm(circuito).replace(/[\W_]+/g, '')
@@ -2109,22 +2138,8 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
         <button id="${btnInfoId}" onclick="document.getElementById('${tabId}_col2').style.display='none';document.getElementById('${tabId}_col1').style.display='block';document.getElementById('${btnActsId}').classList.remove('active');" style="background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.2s">Volver a Info</button>
       </div>
       
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
-        <!-- Ejecutadas -->
-        <div>
-          <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#16a34a;margin-bottom:12px;display:flex;align-items:center;gap:6px">
-            <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block"></span>Ejecutadas (Histórico)
-          </div>
-          ${ejecutadasHtml}
-        </div>
-        <!-- En ejecucion -->
-        <div>
-          <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#d97706;margin-bottom:12px;display:flex;align-items:center;gap:6px">
-            <span style="width:8px;height:8px;border-radius:50%;background:#d97706;display:inline-block"></span>En Ejecución (Último corte)
-          </div>
-          ${enEjecucionHtml}
-          ${durantePhotosHtml}
-        </div>
+      <div style="${gridStyle}">
+        ${columnsHtml}
       </div>
     </div>`
 
@@ -2138,7 +2153,6 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
     })
     .map(path => allLocalPhotos[path])
 
-  const carouselId = 'carrusel_' + norm(circuito).replace(/[\W_]+/g, '')
   let photoStrip = ''
 
   if (localUrls.length === 0) {
@@ -2195,6 +2209,21 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
 
   // ── TAB BAR REMOVIDO ──
 
+  const actModalFullHtml = `
+    <div id="${actModalId}" style="display:none;position:absolute;inset:0;z-index:99998;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:40px" onclick="if(event.target===this)this.style.display='none'">
+      <div style="background:#fff;border-radius:16px;width:500px;max-width:100%;max-height:100%;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.5);overflow:hidden;animation:ppt-slide-next-enter-from 0.3s cubic-bezier(0.2,0.8,0.2,1) forwards">
+        <div style="padding:16px 24px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;background:#f9fafb">
+          <div id="${actModalId}_title" style="font-size:15px;font-weight:800;color:#111827;line-height:1.2;margin-right:16px"></div>
+          <button onclick="document.getElementById('${actModalId}').style.display='none'" style="background:rgba(0,0,0,0.05);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;color:#6b7280;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(0,0,0,0.1)';this.style.color='#111827'" onmouseout="this.style.background='rgba(0,0,0,0.05)';this.style.color='#6b7280'">&times;</button>
+        </div>
+        <div style="padding:24px;overflow-y:auto;flex:1;background:#fff">
+          <div id="${actModalId}_desc" style="font-size:12px;color:#4b5563;line-height:1.6;margin-bottom:20px;white-space:pre-wrap"></div>
+          <div id="${actModalId}_fotos" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+        </div>
+      </div>
+    </div>
+  `
+
   return `
   ${pulseStyle}
   <div class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
@@ -2213,6 +2242,7 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
         <div style="font-family:'Prompt',sans-serif;text-transform:uppercase;color:#ff751f;font-size:20px;font-weight:700;margin-top:2px">${lotePref}${esc(subregion)}</div>
       </div>
     </div>
+    ${actModalFullHtml}
     ${modalHtml}
   </div>`
 }
