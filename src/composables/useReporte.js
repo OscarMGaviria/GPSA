@@ -2030,7 +2030,7 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
     </div>` : `
     <div style="position:absolute;left:36px;top:103px;bottom:40px;width:400px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px">Sin datos geográficos</div>`
 
-  // ── RIGHT COLUMN TOP: INFO & EJECUCION TABS ──
+  // ── RIGHT COLUMN TOP: INFO & EJECUCION TOGGLE ──
   const formatMoney = v => v ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v) : '—'
   
   const lastReg = registros?.length
@@ -2044,50 +2044,86 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
     </div>`
   }
 
-  const ejecutadasHtml = lastReg?.ejecutadas?.length
-    ? lastReg.ejecutadas.map(a => actividadCard(a, '#16a34a', '#f0fdf4')).join('')
-    : ''
+  // Ejecutadas (Histórico completo)
+  const ejecutadasMap = new Map()
+  if (registros && registros.length) {
+    const sortedReg = [...registros].sort((a, b) => (a.fecha ?? '').localeCompare(b.fecha ?? ''))
+    sortedReg.forEach(r => {
+      if (r.ejecutadas && r.ejecutadas.length) {
+        r.ejecutadas.forEach(act => {
+          if (!ejecutadasMap.has(act.nombre)) {
+            ejecutadasMap.set(act.nombre, act)
+          }
+        })
+      }
+    })
+  }
+  const todasEjecutadas = Array.from(ejecutadasMap.values())
+  const ejecutadasHtml = todasEjecutadas.length 
+    ? todasEjecutadas.map(a => actividadCard(a, '#16a34a', '#f0fdf4')).join('')
+    : `<div style="color:#9ca3af;font-size:12px;padding:8px 0">No hay actividades ejecutadas históricas</div>`
+
+  // En ejecución (Último corte)
   const enEjecucionHtml = lastReg?.en_ejecucion?.length
     ? lastReg.en_ejecucion.map(a => actividadCard(a, '#d97706', '#fffbeb')).join('')
-    : ''
+    : `<div style="color:#9ca3af;font-size:12px;padding:8px 0">No hay actividades en ejecución</div>`
 
-  let actividadesContent = ''
-  if (!ejecutadasHtml && !enEjecucionHtml) {
-    actividadesContent = `<div style="color:#9ca3af;font-size:12px;padding:20px 0;text-align:center">Sin actividades registradas</div>`
-  } else {
-    if (ejecutadasHtml) actividadesContent += `<div style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#16a34a;margin-bottom:6px;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#16a34a;display:inline-block"></span>Ejecutadas</div>${ejecutadasHtml}`
-    if (enEjecucionHtml) actividadesContent += `<div style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#d97706;margin:10px 0 6px;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#d97706;display:inline-block"></span>En Ejecución</div>${enEjecucionHtml}`
+  // Fotos de ejecución (durante)
+  const duranteUrls = Object.keys(allLocalPhotos)
+    .filter(path => {
+      const parts = path.split('/')
+      return norm(parts[4]) === norm(circuito) && norm(parts[5]) === 'durante'
+    })
+    .map(path => allLocalPhotos[path])
+    
+  let durantePhotosHtml = ''
+  if (duranteUrls.length > 0) {
+    durantePhotosHtml = `<div style="display:flex;gap:10px;margin-top:12px;overflow-x:auto;padding-bottom:8px">` +
+      duranteUrls.map(url => `<img src="${url.replace('/public/', '/')}" style="height:90px;border-radius:6px;object-fit:cover;box-shadow:0 4px 6px rgba(0,0,0,0.1)"/>`).join('') +
+      `</div>`
   }
 
-  const infoPanelId = 'info_' + norm(circuito).replace(/[\W_]+/g, '')
+  const btnActsId = 'btn-acts-' + norm(circuito).replace(/[\W_]+/g, '')
+  const btnInfoId = 'btn-info-' + norm(circuito).replace(/[\W_]+/g, '')
   
   const infoPanel = `
-    <div style="position:absolute;left:470px;top:178px;right:36px;height:220px;background:#f9fafb;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.05);display:flex;flex-direction:column;overflow:hidden">
-      <!-- Mini Tabs Header -->
-      <div style="display:flex;background:#e5e7eb;border-bottom:1px solid #d1d5db;padding:4px 4px 0 4px;gap:4px;flex-shrink:0">
-        <button id="${infoPanelId}_tab1" onclick="document.getElementById('${infoPanelId}_c1').style.display='block';document.getElementById('${infoPanelId}_c2').style.display='none';this.style.background='#f9fafb';this.style.color='#0b5640';this.style.borderBottomColor='#f9fafb';document.getElementById('${infoPanelId}_tab2').style.background='transparent';document.getElementById('${infoPanelId}_tab2').style.color='#6b7280';document.getElementById('${infoPanelId}_tab2').style.borderBottomColor='#d1d5db'" style="flex:1;border:1px solid #d1d5db;border-bottom-color:#f9fafb;background:#f9fafb;color:#0b5640;padding:6px 0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;border-radius:6px 6px 0 0;transition:all .2s;margin-bottom:-1px">
-          Datos Técnicos
-        </button>
-        <button id="${infoPanelId}_tab2" onclick="document.getElementById('${infoPanelId}_c2').style.display='block';document.getElementById('${infoPanelId}_c1').style.display='none';this.style.background='#f9fafb';this.style.color='#0b5640';this.style.borderBottomColor='#f9fafb';document.getElementById('${infoPanelId}_tab1').style.background='transparent';document.getElementById('${infoPanelId}_tab1').style.color='#6b7280';document.getElementById('${infoPanelId}_tab1').style.borderBottomColor='#d1d5db'" style="flex:1;border:1px solid #d1d5db;border-bottom-color:#d1d5db;background:transparent;color:#6b7280;padding:6px 0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;border-radius:6px 6px 0 0;transition:all .2s;margin-bottom:-1px">
-          Actividades
-        </button>
+    <div style="position:absolute;left:470px;top:178px;right:36px;height:220px;background:#f9fafb;border-radius:12px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,0.05)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:2px solid #e5e7eb;padding-bottom:6px">
+        <div style="font-size:13px;font-weight:800;color:#0b5640;letter-spacing:.04em;text-transform:uppercase">Información del Circuito</div>
+        <button id="${btnActsId}" onclick="document.getElementById('${tabId}_col1').style.display='none';document.getElementById('${tabId}_col2').style.display='block';this.classList.add('active');" style="background:#0b5640;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;transition:background 0.2s;font-family:'Prompt',sans-serif">Ver Ejecución ➔</button>
       </div>
-      <!-- Tab Content Area -->
-      <div style="flex:1;position:relative;overflow:hidden">
-        <!-- Content 1: Datos Técnicos -->
-        <div id="${infoPanelId}_c1" style="position:absolute;inset:0;padding:16px;display:block;overflow-y:auto">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;color:#4b5563">
-            <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Municipio(s)</strong>${esc(mpios)}</div>
-            <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Longitud</strong>${totalKm ? totalKm.toFixed(2) + ' km' : '—'}</div>
-            <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Contratista</strong><span style="font-size:12px">${esc(fFirst.CONTRATIST ?? '—')}</span></div>
-            <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Interventoría</strong><span style="font-size:12px">${esc(fFirst.INTERV ?? '—')}</span></div>
-            <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Valor Contrato</strong><span style="font-size:11px">${formatMoney(fFirst.VALOR_CTO)}</span></div>
-            <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Plazo</strong>${fFirst.PLAZO_MESE ? fFirst.PLAZO_MESE + ' meses' : '—'}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;color:#4b5563">
+        <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Municipio(s)</strong>${esc(mpios)}</div>
+        <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Longitud</strong>${totalKm ? totalKm.toFixed(2) + ' km' : '—'}</div>
+        <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Contratista</strong><span style="font-size:12px">${esc(fFirst.CONTRATIST ?? '—')}</span></div>
+        <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Interventoría</strong><span style="font-size:12px">${esc(fFirst.INTERV ?? '—')}</span></div>
+        <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Valor Contrato</strong><span style="font-size:11px">${formatMoney(fFirst.VALOR_CTO)}</span></div>
+        <div><strong style="color:#111827;font-size:11px;display:block;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Plazo</strong>${fFirst.PLAZO_MESE ? fFirst.PLAZO_MESE + ' meses' : '—'}</div>
+      </div>
+    </div>`
+
+  const execPanel = `
+    <div id="${tabId}_col2" style="display:none;position:absolute;left:470px;top:178px;right:36px;bottom:46px;background:#f9fafb;border-radius:12px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,0.05);overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:2px solid #e5e7eb;padding-bottom:6px;position:sticky;top:-20px;background:#f9fafb;z-index:10;margin-top:-20px;padding-top:20px">
+        <div style="font-size:13px;font-weight:800;color:#0b5640;text-transform:uppercase;letter-spacing:0.06em">Avance de Ejecución</div>
+        <button id="${btnInfoId}" onclick="document.getElementById('${tabId}_col2').style.display='none';document.getElementById('${tabId}_col1').style.display='block';document.getElementById('${btnActsId}').classList.remove('active');" style="background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.2s">Volver a Info</button>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <!-- Ejecutadas -->
+        <div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#16a34a;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block"></span>Ejecutadas (Histórico)
           </div>
+          ${ejecutadasHtml}
         </div>
-        <!-- Content 2: Actividades -->
-        <div id="${infoPanelId}_c2" style="position:absolute;inset:0;padding:12px 16px;display:none;overflow-y:auto;background:#f9fafb">
-          ${actividadesContent}
+        <!-- En ejecucion -->
+        <div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#d97706;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#d97706;display:inline-block"></span>En Ejecución (Último corte)
+          </div>
+          ${enEjecucionHtml}
+          ${durantePhotosHtml}
         </div>
       </div>
     </div>`
@@ -2163,10 +2199,13 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
   ${pulseStyle}
   <div class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
     <img src="/images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
-    <div id="${tabId}_p1" style="position:absolute;inset:0">
+    <div style="position:absolute;inset:0">
       ${mapPanel}
-      ${infoPanel}
-      ${photosPanel}
+      <div id="${tabId}_col1">
+        ${infoPanel}
+        ${photosPanel}
+      </div>
+      ${execPanel}
     </div>
     <div style="position:absolute;inset:0;pointer-events:none;padding:22px 36px 18px">
       <div class="seg-header-left" style="max-width:80%">
