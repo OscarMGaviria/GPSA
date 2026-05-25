@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 
 const props = defineProps({ circuito: { type: String, default: '' } })
 
@@ -71,9 +71,9 @@ function startEdit(c) {
   form.value = {
     fecha:        c.fecha,
     frentes:      [...(c.frentes ?? [])],
-    ejecutadas:   (c.ejecutadas   ?? []).map(a => typeof a === 'string' ? { nombre: a, desc: '' } : { ...a }),
-    en_ejecucion: (c.en_ejecucion ?? []).map(a => typeof a === 'string' ? { nombre: a, desc: '' } : { ...a }),
-    pendientes:   (c.pendientes   ?? []).map(a => typeof a === 'string' ? { nombre: a, desc: '' } : { ...a }),
+    ejecutadas:   (c.ejecutadas   ?? []).map(a => typeof a === 'string' ? { nombre: a, desc: '', fotos: [] } : { ...a, fotos: [...(a.fotos ?? [])] }),
+    en_ejecucion: (c.en_ejecucion ?? []).map(a => typeof a === 'string' ? { nombre: a, desc: '', fotos: [] } : { ...a, fotos: [...(a.fotos ?? [])] }),
+    pendientes:   (c.pendientes   ?? []).map(a => typeof a === 'string' ? { nombre: a, desc: '', fotos: [] } : { ...a, fotos: [...(a.fotos ?? [])] }),
     obs:          c.obs ?? '',
   }
   showForm.value = true
@@ -97,7 +97,7 @@ function addFrente() {
 function addAct(list) {
   const { nombre, desc } = inp.value[list]
   if (!nombre.trim()) return
-  form.value[list].push({ nombre: nombre.trim(), desc: desc.trim() })
+  form.value[list].push({ nombre: nombre.trim(), desc: desc.trim(), fotos: [] })
   inp.value[list] = { nombre: '', desc: '' }
 }
 
@@ -154,6 +154,77 @@ function fmtFecha(iso) {
   const M = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
   return `${+d} ${M[+m - 1]} ${y}`
 }
+
+// ── Fotos por actividad ───────────────────────────────────────────────────────
+const uploading = ref(false)
+
+async function uploadFoto(file) {
+  const res = await fetch('/api/actividad-foto', {
+    method: 'POST',
+    headers: { 'Content-Type': file.type || 'image/jpeg' },
+    body: file,
+  })
+  const data = await res.json()
+  if (!data.ok) throw new Error(data.error)
+  return data.url   // '/images/actividades/uuid.jpg'
+}
+
+async function addFotoToAct(list, idx, event) {
+  const files = [...event.target.files]
+  event.target.value = ''
+  if (!files.length) return
+  uploading.value = true
+  try {
+    for (const file of files) {
+      const url = await uploadFoto(file)
+      if (!form.value[list][idx].fotos) form.value[list][idx].fotos = []
+      form.value[list][idx].fotos.push(url)
+    }
+  } catch (e) {
+    showToast('Error subiendo foto: ' + e.message, false)
+  } finally {
+    uploading.value = false
+  }
+}
+
+function removeFotoFromAct(list, actIdx, fotoIdx) {
+  form.value[list][actIdx].fotos.splice(fotoIdx, 1)
+}
+
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+const lbFotos      = ref([])
+const lbNombre     = ref('')
+const lbIdx        = ref(0)
+const lbTransition = ref('lb-slide-right')
+const lbZoom       = ref(false)
+const lbOverlayEl  = ref(null)
+const lbZoomEl     = ref(null)
+
+function openLb(nombre, fotos, startIdx = 0) {
+  lbNombre.value = nombre
+  lbFotos.value  = fotos ?? []
+  lbIdx.value    = startIdx
+  lbZoom.value   = false
+  nextTick(() => lbOverlayEl.value?.focus())
+}
+function closeLb() {
+  lbZoom.value   = false
+  lbNombre.value = ''
+  lbFotos.value  = []
+}
+function lbGoTo(i) {
+  if (i === lbIdx.value || !lbFotos.value.length) return
+  lbTransition.value = i > lbIdx.value ? 'lb-slide-right' : 'lb-slide-left'
+  lbIdx.value = i
+}
+function prevLb() { lbGoTo((lbIdx.value - 1 + lbFotos.value.length) % lbFotos.value.length) }
+function nextLb() { lbGoTo((lbIdx.value + 1) % lbFotos.value.length) }
+function onLbKey(e) {
+  if (e.key === 'Escape')     { e.stopPropagation(); lbZoom.value ? (lbZoom.value = false) : closeLb() }
+  if (e.key === 'ArrowLeft')  { e.stopPropagation(); prevLb() }
+  if (e.key === 'ArrowRight') { e.stopPropagation(); nextLb() }
+}
+watch(lbZoom, async (val) => { if (val) { await nextTick(); lbZoomEl.value?.focus() } })
 </script>
 
 <template>
@@ -241,8 +312,20 @@ function fmtFecha(iso) {
               <div class="hv-act-texts">
                 <span class="hv-act-nombre">{{ a.nombre }}</span>
                 <span v-if="a.desc" class="hv-act-desc">{{ a.desc }}</span>
+                <div v-if="a.fotos?.length" class="hv-act-foto-row">
+                  <div v-for="(url, fi) in a.fotos" :key="fi" class="hv-act-foto-wrap">
+                    <img :src="url" class="hv-act-foto-thumb" :alt="`Foto ${fi+1}`" @click="openLb(a.nombre, a.fotos, fi)" />
+                    <button class="hv-act-foto-rm" @click.stop="removeFotoFromAct('ejecutadas', i, fi)" title="Quitar foto">×</button>
+                  </div>
+                </div>
               </div>
-              <button class="hv-act-del" @click="removeAct('ejecutadas', i)">×</button>
+              <div class="hv-act-side">
+                <label class="hv-act-cam" :class="{ 'hv-act-cam--busy': uploading }" title="Agregar foto">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <input type="file" accept="image/*" multiple class="hv-file-hidden" @change="addFotoToAct('ejecutadas', i, $event)" :disabled="uploading" />
+                </label>
+                <button class="hv-act-del" @click="removeAct('ejecutadas', i)">×</button>
+              </div>
             </div>
           </div>
           <div class="hv-act-inputs">
@@ -266,8 +349,20 @@ function fmtFecha(iso) {
               <div class="hv-act-texts">
                 <span class="hv-act-nombre">{{ a.nombre }}</span>
                 <span v-if="a.desc" class="hv-act-desc">{{ a.desc }}</span>
+                <div v-if="a.fotos?.length" class="hv-act-foto-row">
+                  <div v-for="(url, fi) in a.fotos" :key="fi" class="hv-act-foto-wrap">
+                    <img :src="url" class="hv-act-foto-thumb" :alt="`Foto ${fi+1}`" @click="openLb(a.nombre, a.fotos, fi)" />
+                    <button class="hv-act-foto-rm" @click.stop="removeFotoFromAct('en_ejecucion', i, fi)" title="Quitar foto">×</button>
+                  </div>
+                </div>
               </div>
-              <button class="hv-act-del" @click="removeAct('en_ejecucion', i)">×</button>
+              <div class="hv-act-side">
+                <label class="hv-act-cam" :class="{ 'hv-act-cam--busy': uploading }" title="Agregar foto">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <input type="file" accept="image/*" multiple class="hv-file-hidden" @change="addFotoToAct('en_ejecucion', i, $event)" :disabled="uploading" />
+                </label>
+                <button class="hv-act-del" @click="removeAct('en_ejecucion', i)">×</button>
+              </div>
             </div>
           </div>
           <div class="hv-act-inputs">
@@ -291,8 +386,20 @@ function fmtFecha(iso) {
               <div class="hv-act-texts">
                 <span class="hv-act-nombre">{{ a.nombre }}</span>
                 <span v-if="a.desc" class="hv-act-desc">{{ a.desc }}</span>
+                <div v-if="a.fotos?.length" class="hv-act-foto-row">
+                  <div v-for="(url, fi) in a.fotos" :key="fi" class="hv-act-foto-wrap">
+                    <img :src="url" class="hv-act-foto-thumb" :alt="`Foto ${fi+1}`" @click="openLb(a.nombre, a.fotos, fi)" />
+                    <button class="hv-act-foto-rm" @click.stop="removeFotoFromAct('pendientes', i, fi)" title="Quitar foto">×</button>
+                  </div>
+                </div>
               </div>
-              <button class="hv-act-del" @click="removeAct('pendientes', i)">×</button>
+              <div class="hv-act-side">
+                <label class="hv-act-cam" :class="{ 'hv-act-cam--busy': uploading }" title="Agregar foto">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <input type="file" accept="image/*" multiple class="hv-file-hidden" @change="addFotoToAct('pendientes', i, $event)" :disabled="uploading" />
+                </label>
+                <button class="hv-act-del" @click="removeAct('pendientes', i)">×</button>
+              </div>
             </div>
           </div>
           <div class="hv-act-inputs">
@@ -357,9 +464,15 @@ function fmtFecha(iso) {
               Ejecutado
             </p>
             <ul v-if="c.ejecutadas?.length">
-              <li v-for="(a, i) in c.ejecutadas" :key="i">
-                <span class="li-nombre">{{ actNombre(a) }}</span>
-                <span v-if="actDesc(a)" class="li-desc">{{ actDesc(a) }}</span>
+              <li v-for="(a, i) in c.ejecutadas" :key="i" class="hv-li-row">
+                <div class="hv-li-text">
+                  <span class="li-nombre">{{ actNombre(a) }}</span>
+                  <span v-if="actDesc(a)" class="li-desc">{{ actDesc(a) }}</span>
+                </div>
+                <button v-if="a.fotos?.length" class="hv-photo-btn" @click.stop="openLb(actNombre(a), a.fotos)" title="Ver fotos">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span class="hv-photo-count">{{ a.fotos.length }}</span>
+                </button>
               </li>
             </ul>
             <span v-else class="hv-col-empty">Sin actividades registradas</span>
@@ -371,9 +484,15 @@ function fmtFecha(iso) {
               En ejecución
             </p>
             <ul v-if="c.en_ejecucion?.length">
-              <li v-for="(a, i) in c.en_ejecucion" :key="i">
-                <span class="li-nombre">{{ actNombre(a) }}</span>
-                <span v-if="actDesc(a)" class="li-desc">{{ actDesc(a) }}</span>
+              <li v-for="(a, i) in c.en_ejecucion" :key="i" class="hv-li-row">
+                <div class="hv-li-text">
+                  <span class="li-nombre">{{ actNombre(a) }}</span>
+                  <span v-if="actDesc(a)" class="li-desc">{{ actDesc(a) }}</span>
+                </div>
+                <button v-if="a.fotos?.length" class="hv-photo-btn" @click.stop="openLb(actNombre(a), a.fotos)" title="Ver fotos">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span class="hv-photo-count">{{ a.fotos.length }}</span>
+                </button>
               </li>
             </ul>
             <span v-else class="hv-col-empty">Sin actividades registradas</span>
@@ -385,9 +504,15 @@ function fmtFecha(iso) {
               Pendiente / Planeado
             </p>
             <ul v-if="c.pendientes?.length">
-              <li v-for="(a, i) in c.pendientes" :key="i">
-                <span class="li-nombre">{{ actNombre(a) }}</span>
-                <span v-if="actDesc(a)" class="li-desc">{{ actDesc(a) }}</span>
+              <li v-for="(a, i) in c.pendientes" :key="i" class="hv-li-row">
+                <div class="hv-li-text">
+                  <span class="li-nombre">{{ actNombre(a) }}</span>
+                  <span v-if="actDesc(a)" class="li-desc">{{ actDesc(a) }}</span>
+                </div>
+                <button v-if="a.fotos?.length" class="hv-photo-btn" @click.stop="openLb(actNombre(a), a.fotos)" title="Ver fotos">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span class="hv-photo-count">{{ a.fotos.length }}</span>
+                </button>
               </li>
             </ul>
             <span v-else class="hv-col-empty">Sin actividades registradas</span>
@@ -405,6 +530,106 @@ function fmtFecha(iso) {
     </div>
 
   </div>
+
+  <!-- ── Lightbox de fotos de actividad ── -->
+  <Teleport to="body">
+
+    <div
+      v-if="lbNombre"
+      ref="lbOverlayEl"
+      class="hv-lb-overlay"
+      tabindex="-1"
+      @click.self="closeLb"
+      @keydown="onLbKey"
+    >
+      <div class="hv-lb-box">
+
+        <!-- Header: título + controles + cierre -->
+        <div class="hv-lb-header">
+          <div class="hv-lb-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span class="hv-lb-title-text">{{ lbNombre }}</span>
+          </div>
+          <div class="hv-lb-header-controls">
+            <span class="hv-lb-counter">{{ lbIdx + 1 }} / {{ lbFotos.length }}</span>
+            <button class="hv-lb-ctrl" @click="prevLb" :disabled="lbFotos.length <= 1" title="Anterior (←)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button class="hv-lb-ctrl" @click="nextLb" :disabled="lbFotos.length <= 1" title="Siguiente (→)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="hv-lb-close" @click="closeLb" title="Cerrar (Esc)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Área de foto — dimensiones fijas, foto ajustada en altura -->
+        <div class="hv-lb-photo-area">
+          <Transition :name="lbTransition">
+            <img
+              :key="lbIdx"
+              :src="lbFotos[lbIdx]"
+              class="hv-lb-img"
+              :alt="`Foto ${lbIdx + 1}`"
+              @click="lbZoom = true"
+              title="Clic para ampliar"
+            />
+          </Transition>
+
+          <!-- Flechas sobre la foto -->
+          <button v-if="lbFotos.length > 1" class="hv-lb-nav hv-lb-nav--prev" @click="prevLb">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button v-if="lbFotos.length > 1" class="hv-lb-nav hv-lb-nav--next" @click="nextLb">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
+          <!-- Indicador de zoom -->
+          <div class="hv-lb-zoom-hint" title="Clic para ampliar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Miniaturas -->
+        <div v-if="lbFotos.length > 1" class="hv-lb-thumbs">
+          <img
+            v-for="(url, i) in lbFotos"
+            :key="url"
+            :src="url"
+            class="hv-lb-thumb"
+            :class="{ 'hv-lb-thumb--active': i === lbIdx }"
+            @click="lbGoTo(i)"
+            :alt="`Foto ${i + 1}`"
+          />
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Zoom fullscreen -->
+    <div
+      v-if="lbZoom && lbNombre"
+      ref="lbZoomEl"
+      class="hv-lb-zoom"
+      tabindex="-1"
+      @click="lbZoom = false"
+      @keydown.esc.stop="lbZoom = false"
+    >
+      <img :src="lbFotos[lbIdx]" class="hv-lb-zoom-img" @click.stop :alt="lbNombre" />
+      <button class="hv-lb-zoom-close" @click.stop="lbZoom = false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+  </Teleport>
+
 </template>
 
 <style scoped>
@@ -968,4 +1193,352 @@ function fmtFecha(iso) {
   .hv-act-inputs { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
   .hv-act-inputs .hv-btn-add { grid-column: 1; grid-row: 3; width: 100%; }
 }
+
+/* ── Fila de actividad con botón de fotos (timeline) ── */
+.hv-li-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.hv-li-text { flex: 1; min-width: 0; }
+.hv-photo-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 2px 5px 2px 3px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  transition: color .15s, background .15s;
+  margin-top: 1px;
+  border: 1px solid transparent;
+}
+.hv-photo-btn:hover { color: #0a4d38; background: #e6f4ee; border-color: #a7d4c0; }
+.hv-photo-btn svg { width: 12px; height: 12px; }
+.hv-photo-count { color: inherit; }
+
+/* ── Botón cámara + miniaturas en formulario ── */
+.hv-act-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f9fafb;
+  border: 1px solid #f0f0f0;
+}
+.hv-act-texts { flex: 1; min-width: 0; }
+.hv-act-side {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.hv-act-cam {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #9ca3af;
+  background: none;
+  transition: color .15s, background .15s;
+}
+.hv-act-cam:hover { color: #0a4d38; background: #e6f4ee; }
+.hv-act-cam--busy { opacity: .5; pointer-events: none; }
+.hv-act-cam svg { width: 14px; height: 14px; display: block; }
+.hv-file-hidden { display: none; }
+
+/* Miniaturas de fotos adjuntas (formulario) */
+.hv-act-foto-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+.hv-act-foto-wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+.hv-act-foto-thumb {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  transition: opacity .15s;
+}
+.hv-act-foto-thumb:hover { opacity: .85; }
+.hv-act-foto-rm {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+
+/* ══════════════════════════════════════════
+   LIGHTBOX — visor de fotos
+══════════════════════════════════════════ */
+.hv-lb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 20, 12, 0.78);
+  backdrop-filter: blur(6px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  outline: none;
+}
+
+/* Caja con dimensiones fijas */
+.hv-lb-box {
+  background: #fff;
+  border-radius: 16px;
+  width: min(840px, calc(100vw - 32px));
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,.55);
+  display: flex;
+  flex-direction: column;
+  border-top: 3px solid #0a4d38;
+}
+
+/* Header */
+.hv-lb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px 11px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  background: #fff;
+}
+.hv-lb-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0a4d38;
+  min-width: 0;
+  flex: 1;
+}
+.hv-lb-title svg { width: 15px; height: 15px; flex-shrink: 0; }
+.hv-lb-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hv-lb-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.hv-lb-counter {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+.hv-lb-ctrl {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 7px;
+  background: #f3f4f6;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s;
+  padding: 0;
+}
+.hv-lb-ctrl:hover:not(:disabled) { background: #e5e7eb; }
+.hv-lb-ctrl:disabled { opacity: .3; cursor: default; }
+.hv-lb-ctrl svg { width: 15px; height: 15px; }
+.hv-lb-close {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s, color .12s;
+  padding: 0;
+  margin-left: 4px;
+}
+.hv-lb-close:hover { background: #fef2f2; color: #ef4444; }
+.hv-lb-close svg { width: 16px; height: 16px; }
+
+/* ── Área de foto — altura fija, foto ajusta ── */
+.hv-lb-photo-area {
+  position: relative;
+  height: 440px;
+  background: #0c0c0c;
+  overflow: hidden;
+  cursor: zoom-in;
+  flex-shrink: 0;
+}
+
+/* Imagen con posición absoluta para que las transiciones se superpongan */
+.hv-lb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  cursor: zoom-in;
+}
+
+/* Flechas de navegación sobre la foto */
+.hv-lb-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,.12);
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  padding: 14px 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  transition: background .15s;
+  backdrop-filter: blur(6px);
+  z-index: 2;
+}
+.hv-lb-nav:hover { background: rgba(255,255,255,.28); }
+.hv-lb-nav svg { width: 20px; height: 20px; }
+.hv-lb-nav--prev { left: 12px; }
+.hv-lb-nav--next { right: 12px; }
+
+/* Hint de zoom (esquina inf. derecha) */
+.hv-lb-zoom-hint {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  z-index: 2;
+  background: rgba(255,255,255,.12);
+  backdrop-filter: blur(4px);
+  border-radius: 6px;
+  padding: 5px;
+  color: rgba(255,255,255,.55);
+  display: flex;
+  pointer-events: none;
+}
+.hv-lb-zoom-hint svg { width: 14px; height: 14px; }
+
+/* ── Transiciones de deslizamiento ── */
+.lb-slide-right-enter-active,
+.lb-slide-right-leave-active,
+.lb-slide-left-enter-active,
+.lb-slide-left-leave-active {
+  transition: transform .24s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity .24s ease;
+}
+
+.lb-slide-right-enter-from { transform: translateX(100%); opacity: 0; }
+.lb-slide-right-leave-to   { transform: translateX(-100%); opacity: 0; }
+.lb-slide-left-enter-from  { transform: translateX(-100%); opacity: 0; }
+.lb-slide-left-leave-to    { transform: translateX(100%); opacity: 0; }
+
+/* ── Miniaturas ── */
+.hv-lb-thumbs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px 10px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+.hv-lb-thumb {
+  width: 58px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 2.5px solid transparent;
+  flex-shrink: 0;
+  transition: border-color .15s, opacity .15s, transform .12s;
+  opacity: .55;
+}
+.hv-lb-thumb:hover { opacity: .85; transform: scale(1.04); }
+.hv-lb-thumb--active { border-color: #0a4d38; opacity: 1; transform: none; }
+
+/* ── Zoom fullscreen ── */
+.hv-lb-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  background: rgba(0,0,0,.93);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  outline: none;
+}
+.hv-lb-zoom-img {
+  max-width: 96vw;
+  max-height: 96vh;
+  object-fit: contain;
+  display: block;
+  cursor: default;
+  border-radius: 4px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  pointer-events: none;
+}
+.hv-lb-zoom-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,.14);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+  pointer-events: all;
+}
+.hv-lb-zoom-close:hover { background: rgba(255,255,255,.25); }
+.hv-lb-zoom-close svg { width: 17px; height: 17px; }
 </style>

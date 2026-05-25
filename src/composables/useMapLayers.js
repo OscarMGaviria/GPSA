@@ -1,6 +1,10 @@
 import { ref, onUnmounted } from 'vue'
 import { getLocalizaciones, getMunicipios } from '../services/api.js'
 import { pctTiempoTranscurrido } from '../utils/stats.js'
+import hitosData from '../data/hitos.json'
+
+const normStr = s => (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+const _circuitosConSeguimiento = new Set(Object.keys(hitosData).map(normStr))
 
 function sentenceCase(str) {
   if (!str) return str
@@ -228,7 +232,17 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     // ── Capa vías ─────────────────────────────────────────────────────────────
     if (geoVias) {
       try {
-        map.addSource('vias', { type: 'geojson', data: geoVias, generateId: true })
+        const geoViasTagged = {
+          ...geoVias,
+          features: geoVias.features.map(f => ({
+            ...f,
+            properties: {
+              ...f.properties,
+              _hasReport: _circuitosConSeguimiento.has(normStr(f.properties.CIRCUITO ?? '')) ? 1 : 0,
+            },
+          })),
+        }
+        map.addSource('vias', { type: 'geojson', data: geoViasTagged, generateId: true })
 
         // 1. Casing base (siempre visible)
         map.addLayer({
@@ -254,7 +268,10 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           source: 'vias',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           filter: ['==', ['get', 'NOMBRE_VIA'], ''],
-          paint: { 'line-color': '#4ade80', 'line-width': 16, 'line-opacity': 0.28, 'line-blur': 8 },
+          paint: {
+            'line-color': ['case', ['==', ['get', '_hasReport'], 0], '#fca5a5', '#4ade80'],
+            'line-width': 16, 'line-opacity': 0.28, 'line-blur': 8,
+          },
         })
         // 4. Línea principal (siempre visible)
         map.addLayer({
@@ -263,7 +280,11 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           source: 'vias',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: {
-            'line-color':   ['coalesce', ['get', 'stroke'], '#ffaa00'],
+            'line-color': [
+              'case',
+              ['==', ['get', '_hasReport'], 0], '#ef4444',
+              ['coalesce', ['get', 'stroke'], '#ffaa00'],
+            ],
             'line-width':   5,
             'line-opacity': 1,
           },
@@ -278,8 +299,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           paint: { 'line-color': '#ffffff', 'line-width': 7.5, 'line-opacity': 0.45 },
         })
 
-        const HOVER_FILTER_ON  = (name) => ['==', ['get', 'NOMBRE_VIA'], name]
-        const HOVER_FILTER_OFF = ['==', ['get', 'NOMBRE_VIA'], '']
+        const HOVER_FILTER_ON  = (circuito) => ['==', ['get', 'CIRCUITO'], circuito]
+        const HOVER_FILTER_OFF = ['==', ['get', 'CIRCUITO'], '']
 
         function startHover(nombreVia) {
           const f = HOVER_FILTER_ON(nombreVia)
@@ -294,47 +315,59 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           map.setFilter('vias-hover-line', HOVER_FILTER_OFF)
         }
 
-        // Mapa NOMBRE_VIA → { km, avance } para el tooltip
-        const viaDataMap = {}
-        for (const v of viasDetalle) viaDataMap[v.nombre] = { km: v.km, avance: v.avance }
+        // Mapa CIRCUITO → { km, avance } agregado para el tooltip
+        const circuitDataMap = {}
+        for (const f of geoVias.features) {
+          const circ = f.properties.CIRCUITO ?? ''
+          if (!circuitDataMap[circ]) circuitDataMap[circ] = { km: 0, avanceKm: 0 }
+          const km = parseFloat(f.properties.Long_km) || 0
+          circuitDataMap[circ].km      += km
+          circuitDataMap[circ].avanceKm += (parseFloat(f.properties.AV_FISICO) || 0) * km
+        }
+        for (const c of Object.values(circuitDataMap)) {
+          c.avance = c.km > 0 ? Math.round((c.avanceKm / c.km) * 100) : 0
+          c.km     = Math.round(c.km * 100) / 100
+        }
 
         let hoveredVia = null
 
         map.on('click', 'vias-line', (e) => {
-          const p    = e.features[0].properties
-          const feat = cachedVias.value?.features.find(f => f.properties.NOMBRE_VIA === p.NOMBRE_VIA)
+          const p        = e.features[0].properties
+          const circuito = p.CIRCUITO ?? ''
+          const circuitFeats = cachedVias.value?.features.filter(f => f.properties.CIRCUITO === circuito) ?? []
+          const first    = circuitFeats[0]?.properties ?? p
+          const municipios = [...new Set(circuitFeats.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))]
+          const data     = circuitDataMap[circuito] ?? {}
+
           selectedMpio.value = null
           selectedVia.value = {
-            name:        p.NOMBRE_VIA ?? 'Vía',
+            name: circuito || 'Circuito sin nombre',
             description: {
-              Municipio:               sentenceCase(p.MPIO_NOMBR ?? ''),
-              Subregión:               canonicalSub(p.SUBREGION),
-              Circuito:                p.CIRCUITO   ?? '',
-              'Código de vía':         p.CODIGO_VIA ?? '',
-              Contrato:                p.CTO        ?? '',
-              Contratista:             p.CONTRATIST ?? '',
-              Interventoría:           p.INTERV     ?? '',
-              'Longitud (km)':         parseFloat(p.Long_km) || '',
-              'Avance físico':         p.AV_FISICO != null ? `${Math.round(p.AV_FISICO * 100)}%` : '',
-              'Fecha de inicio':       p.FECHA_INI  ?? '',
-              'Plazo (meses)':         p.PLAZO_MESE ?? '',
-              'Duración transcurrida': p.FECHA_INI && p.PLAZO_MESE
-                ? `${pctTiempoTranscurrido(p.FECHA_INI, p.PLAZO_MESE)}%` : '',
+              Subregión:               canonicalSub(first.SUBREGION),
+              Municipio:               municipios.join(', '),
+              Circuito:                circuito,
+              Contrato:                first.CTO        ?? '',
+              Contratista:             first.CONTRATIST ?? '',
+              Interventoría:           first.INTERV     ?? '',
+              'Longitud (km)':         data.km ?? '',
+              'Avance físico':         `${data.avance ?? 0}%`,
+              'Fecha de inicio':       first.FECHA_INI  ?? '',
+              'Plazo (meses)':         first.PLAZO_MESE ?? '',
+              'Duración transcurrida': first.FECHA_INI && first.PLAZO_MESE
+                ? `${pctTiempoTranscurrido(first.FECHA_INI, first.PLAZO_MESE)}%` : '',
             },
-            photos:   [],
-            geometry: feat?.geometry ?? null,
           }
         })
 
         map.on('mousemove', 'vias-line', (e) => {
           map.getCanvas().style.cursor = 'pointer'
-          const name = e.features[0].properties.NOMBRE_VIA ?? ''
-          if (name !== hoveredVia) {
-            startHover(name)
-            hoveredVia = name
+          const circuito = e.features[0].properties.CIRCUITO ?? ''
+          if (circuito !== hoveredVia) {
+            startHover(circuito)
+            hoveredVia = circuito
           }
-          const data = viaDataMap[name] ?? {}
-          viaHoverLabel.value = { name, km: data.km ?? null, avance: data.avance ?? null, x: e.point.x, y: e.point.y, visible: true }
+          const data = circuitDataMap[circuito] ?? {}
+          viaHoverLabel.value = { name: circuito, km: data.km ?? null, avance: data.avance ?? null, x: e.point.x, y: e.point.y, visible: true }
         })
         map.on('mouseleave', 'vias-line', () => {
           map.getCanvas().style.cursor = ''

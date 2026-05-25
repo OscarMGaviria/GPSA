@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { Layers, Mountain } from 'lucide-vue-next'
 import { BASEMAPS } from '../../composables/useMapInit.js'
 import { useMapOrchestrator } from '../../composables/useMapOrchestrator.js'
@@ -17,9 +17,92 @@ const {
   noResults,
   openVia,
   flyToVia,
+  flyToCoords,
 } = useMapOrchestrator(mapContainer, () => store.activeFilters)
 
 defineExpose({ openVia, flyToVia })
+
+// ── Coordinate Search ────────────────────────────────────────────────────────
+const searchOpen  = ref(false)
+const searchQuery = ref('')
+const searchError = ref('')
+const searchInput = ref(null)
+
+function _parseCoords(raw) {
+  const s = raw.trim()
+
+  // DMS con símbolo de grado: 6°14'39"N 75°34'52"W  (segundos opcionales)
+  const dmsRe = /(\d+)\s*°\s*(\d+)\s*['’]\s*([0-9.]*)\s*["”]?\s*([NSns])\s*[,\s]+\s*(\d+)\s*°\s*(\d+)\s*['’]\s*([0-9.]*)\s*["”]?\s*([EWew])/
+  const m = s.match(dmsRe)
+  if (m) {
+    const toD = (d, mn, sec, h) => {
+      const v = +d + +mn / 60 + (+sec || 0) / 3600
+      return /[SW]/i.test(h) ? -v : v
+    }
+    return { lat: toD(m[1], m[2], m[3], m[4]), lng: toD(m[5], m[6], m[7], m[8]) }
+  }
+
+  // DMS sin símbolo pero con N/S/E/W: 6 14 39.1 N 75 34 52 W
+  const dmsLoose = /(\d+)\s+(\d+)\s+([0-9.]+)\s*([NSns])\s*[,\s]+\s*(\d+)\s+(\d+)\s+([0-9.]+)\s*([EWew])/
+  const m2 = s.match(dmsLoose)
+  if (m2) {
+    const toD = (d, mn, sec, h) => {
+      const v = +d + +mn / 60 + (+sec || 0) / 3600
+      return /[SW]/i.test(h) ? -v : v
+    }
+    return { lat: toD(m2[1], m2[2], m2[3], m2[4]), lng: toD(m2[5], m2[6], m2[7], m2[8]) }
+  }
+
+  // Grados decimales: "6.2442, -75.5812" o "-75.5812 6.2442"
+  const parts = s.replace(/[,;]+/g, ' ').split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    const a = parseFloat(parts[0])
+    const b = parseFloat(parts[1])
+    if (!isNaN(a) && !isNaN(b)) {
+      // Heurística: longitud Colombia ~-79 a -66, latitud ~-5 a 15
+      if (b < -30 && a > -20 && a < 25) return { lat: a, lng: b }
+      if (a < -30 && b > -20 && b < 25) return { lat: b, lng: a }
+      return { lat: a, lng: b }
+    }
+  }
+
+  return null
+}
+
+function doSearch() {
+  if (!searchQuery.value.trim()) return
+  const coords = _parseCoords(searchQuery.value)
+  if (!coords) {
+    searchError.value = 'Formato no reconocido'
+    return
+  }
+  searchError.value = ''
+  flyToCoords(coords.lat, coords.lng)
+  searchOpen.value = false
+  searchQuery.value = ''
+}
+
+function openSearch() {
+  searchOpen.value = true
+  searchError.value = ''
+  nextTick(() => searchInput.value?.focus())
+}
+
+function closeSearch() {
+  searchOpen.value = false
+  searchQuery.value = ''
+  searchError.value = ''
+}
+
+function _onGlobalKey(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+    e.preventDefault()
+    searchOpen.value ? closeSearch() : openSearch()
+  }
+}
+
+onMounted(()  => window.addEventListener('keydown', _onGlobalKey))
+onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
 </script>
 
 <template>
@@ -120,6 +203,46 @@ defineExpose({ openVia, flyToVia })
           <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
         </svg>
         No se encontraron vías con ese criterio
+      </div>
+    </Transition>
+
+    <!-- Barra de búsqueda de coordenadas (Ctrl+B) -->
+    <Transition name="coord-search">
+      <div v-if="searchOpen" class="cs-wrap" @keydown.esc.stop="closeSearch">
+        <div class="cs-box">
+          <div class="cs-row">
+            <svg class="cs-pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+              <circle cx="12" cy="9" r="2.5"/>
+            </svg>
+            <input
+              ref="searchInput"
+              v-model="searchQuery"
+              class="cs-input"
+              placeholder="6.2442, -75.5812  ·  6°14'39&quot;N 75°34'52&quot;W"
+              spellcheck="false"
+              autocomplete="off"
+              @keydown.enter.prevent="doSearch"
+              @keydown.esc.stop="closeSearch"
+              @input="searchError = ''"
+            />
+            <button class="cs-go" @click="doSearch" :disabled="!searchQuery.trim()" title="Ir a coordenadas">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+            <button class="cs-close" @click="closeSearch" title="Cerrar (Esc)">✕</button>
+          </div>
+          <div v-if="searchError" class="cs-error">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+            {{ searchError }}
+          </div>
+          <div v-else class="cs-hints">
+            <span>Decimales: <code>6.2442, -75.5812</code></span>
+            <span class="cs-sep">·</span>
+            <span>GMS: <code>6°14'39"N 75°34'52"W</code></span>
+          </div>
+        </div>
       </div>
     </Transition>
 
@@ -768,6 +891,149 @@ defineExpose({ openVia, flyToVia })
   .error-retry:active { transform: none; }
   .subreg-enter-active .subreg-text,
   .subreg-leave-active .subreg-text { animation: none; opacity: 1; }
+}
+
+/* ── Coordinate Search Bar ─────────────────────────────────────────────────── */
+.cs-wrap {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  pointer-events: none;
+}
+
+.cs-box {
+  pointer-events: all;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(11, 86, 64, 0.18);
+  border-radius: 14px;
+  box-shadow:
+    0 8px 32px rgba(11, 86, 64, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 10px 12px 8px;
+  min-width: 440px;
+  font-family: 'Prompt', sans-serif;
+}
+
+.cs-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cs-pin-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #0b5640;
+  stroke-width: 2;
+}
+
+.cs-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: 'Prompt', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+  background: transparent;
+  padding: 2px 4px;
+  min-width: 0;
+}
+
+.cs-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.cs-go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: #0b5640;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  padding: 0;
+}
+
+.cs-go:hover { background: #0d6b4f; }
+.cs-go:active { transform: scale(0.93); }
+.cs-go:disabled { background: #d1d5db; cursor: default; }
+
+.cs-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.12s, color 0.12s;
+  padding: 0;
+}
+
+.cs-close:hover { background: #fef2f2; color: #ef4444; }
+
+.cs-hints {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-left: 24px;
+  font-size: 10.5px;
+  color: #9ca3af;
+}
+
+.cs-sep { color: #d1d5db; }
+
+.cs-hints code {
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  background: #f3f4f6;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #374151;
+}
+
+.cs-error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding-left: 24px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+/* Transition */
+.coord-search-enter-active {
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.34, 1.10, 0.64, 1);
+}
+.coord-search-leave-active {
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+.coord-search-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px) scale(0.97);
+}
+.coord-search-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-6px);
 }
 
 </style>
