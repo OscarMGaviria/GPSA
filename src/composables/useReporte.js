@@ -1937,7 +1937,7 @@ function buildPptCircuitoSlide(logoUrl, subregion, circuito, vias) {
   }).join('')
 
   const loteMap = {
-    'oriente': 'LOTE 1', 'occidente': 'LOTE 2', 'uraba': 'LOTE 3', 'magdalena medio': 'LOTE 4',
+    'oriente': 'LOTE 1', 'occidente': 'LOTE 2', 'urabá': 'LOTE 3', 'magdalena medio': 'LOTE 4',
     'suroeste': 'LOTE 5', 'nordeste': 'LOTE 6', 'bajo cauca': 'LOTE 7', 'norte': 'LOTE 8'
   }
   const lotePref = loteMap[norm(subregion)] ? `${loteMap[norm(subregion)]}: ` : ''
@@ -2006,7 +2006,7 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
   // ── Pulse animation (injected once per slide) ──
   const pulseStyle = `<style>
     @keyframes vial-pulse{0%,100%{opacity:.55}50%{opacity:.05}}
-    #${tabId}_p1 .circuit-buffer{animation:vial-pulse 1.4s ease-in-out infinite}
+    #${tabId} .circuit-buffer{animation:vial-pulse 1.4s ease-in-out infinite}
   </style>`
 
   // ── MAP (panel 1) ──
@@ -2028,7 +2028,7 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
       <div style="position:absolute;top:0;left:0;right:0;bottom:${totalKm > 0 ? '72px' : '0'}">${mapSvg}</div>
       ${kmLabel}
     </div>` : `
-    <div style="position:absolute;left:36px;top:103px;bottom:40px;width:400px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px">Sin datos geográficos</div>`
+    <div style="position:absolute;left:36px;top:103px;bottom:40px;width:400px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px">Sin Datos Geográficos</div>`
 
   // ── RIGHT COLUMN TOP: INFO & EJECUCION TOGGLE ──
   const formatMoney = v => v ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v) : '—'
@@ -2169,7 +2169,7 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
            onmouseleave="window['pause_${carouselId}']=false;this.style.transform='scale(1)';this.style.opacity='0.65';"
            onclick="const m=document.getElementById('modal_${carouselId}');const i=document.getElementById('img_modal_${carouselId}');if(m&&i){i.src='${url.replace('/public/', '/')}';m.style.display='flex';}">
         <img src="${url.replace('/public/', '/')}" alt="foto" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.style.display='none'" />
-        <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;text-transform:uppercase;padding:5px;text-align:center;font-weight:700;letter-spacing:1px">Estado inicial</div>
+        <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;text-transform:uppercase;padding:5px;text-align:center;font-weight:700;letter-spacing:1px">Estado Inicial</div>
       </div>`).join('')
     if (!isScroll && localUrls.length < 3)
       photoStrip += Array.from({ length: 3 - localUrls.length }).map(() => `<div style="flex:1;min-width:0"></div>`).join('')
@@ -2200,10 +2200,10 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
       <div id="${carouselId}" style="display:flex;gap:14px;height:100%;opacity:0;transition:opacity .3s;will-change:transform">${photoStrip}</div>
     </div>`
 
-  const modalHtml = localUrls.length > 0 ? `
+  const modalHtml = `
     <div id="modal_${carouselId}" onclick="this.style.display='none'" style="display:none;position:absolute;z-index:99999;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.82);backdrop-filter:blur(4px);align-items:center;justify-content:center;cursor:zoom-out">
       <img id="img_modal_${carouselId}" src="" style="max-width:85%;max-height:85%;border-radius:16px;box-shadow:0 25px 50px rgba(0,0,0,1);object-fit:contain;border:4px solid rgba(255,255,255,0.9)" />
-    </div>` : ''
+    </div>`
 
   // ── EJECUCION TAB CONTENIDO MOVIDO AL PANEL DE INFO ──
 
@@ -2232,7 +2232,7 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
 
   return `
   ${pulseStyle}
-  <div class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
+  <div id="${tabId}" class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
     <img src="/images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
     <div style="position:absolute;inset:0">
       ${mapPanel}

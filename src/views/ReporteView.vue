@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { PageFlip } from 'page-flip'
 import { useMapStore } from '../stores/useMapStore.js'
 import { buildReportePages, buildPresentacionSlides, CSS, useReporte } from '../composables/useReporte.js'
+import { exportarPresentacion } from '../composables/useExportPresentacion.js'
 
 const router  = useRouter()
 const store   = useMapStore()
@@ -286,6 +287,22 @@ const pageLabel = computed(() => {
 const isFirst = computed(() => currentPg.value === 0)
 const isLast  = computed(() => currentPg.value >= totalPgs.value - 1)
 const dotPages = computed(() => pages.value.slice(1))
+
+// ── Exportar presentación como ZIP ──────────────────────────────────────────
+const exportando   = ref(false)
+const exportPct    = ref(0)
+
+async function descargarPresentacion() {
+  if (exportando.value) return
+  exportando.value = true
+  exportPct.value  = 0
+  try {
+    await exportarPresentacion(pptSlides.value, pct => { exportPct.value = pct })
+  } finally {
+    exportando.value = false
+    exportPct.value  = 0
+  }
+}
 </script>
 
 <template>
@@ -321,6 +338,12 @@ const dotPages = computed(() => pages.value.slice(1))
       <button class="rv-btn rv-btn--ppt" :class="{ active: pptMode }" @click="togglePptMode">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="16" height="11" rx="2"/><path d="M8 15v2M12 15v2M6 17h8"/></svg>
         {{ pptMode ? 'Revista' : 'Presentación' }}
+      </button>
+
+      <button class="rv-btn rv-btn--export" @click="descargarPresentacion" :disabled="exportando">
+        <svg v-if="!exportando" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3v10M6 9l4 4 4-4M4 15v1a1 1 0 001 1h10a1 1 0 001-1v-1"/></svg>
+        <svg v-else viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="animation:spin .9s linear infinite"><path d="M10 2a8 8 0 018 8"/></svg>
+        {{ exportando ? exportPct + '%' : 'Descargar ZIP' }}
       </button>
 
       <button class="rv-btn rv-btn--print" @click="generarReporte(filteredStats, activeFilters, geoFeatures)">
@@ -502,6 +525,10 @@ const dotPages = computed(() => pages.value.slice(1))
 .rv-btn--ppt { background:rgba(29,78,216,.18); border-color:rgba(96,165,250,.3); color:#60a5fa }
 .rv-btn--ppt:hover { background:rgba(29,78,216,.35); color:#93c5fd }
 .rv-btn--ppt.active { background:rgba(29,78,216,.45); border-color:#60a5fa; color:#93c5fd }
+.rv-btn--export { background:rgba(124,58,237,.18); border-color:rgba(167,139,250,.3); color:#a78bfa }
+.rv-btn--export:hover:not(:disabled) { background:rgba(124,58,237,.35); color:#c4b5fd }
+.rv-btn--export:disabled { opacity:.6; cursor:default }
+@keyframes spin { to { transform:rotate(360deg) } }
 
 /* ── Stage ── */
 .rv-stage {

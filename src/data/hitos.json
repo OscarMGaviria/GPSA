@@ -47,7 +47,7 @@
           "fotos": []
         },
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": "Se ejecutaron y se entregaron 15 km",
           "fotos": []
         }
@@ -96,7 +96,7 @@
           "desc": "Completa"
         },
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": "Completa"
         }
       ],
@@ -147,7 +147,7 @@
       "frentes": [],
       "ejecutadas": [
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": "Completa"
         },
         {
@@ -187,7 +187,7 @@
       "frentes": [],
       "ejecutadas": [
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": "Completa",
           "fotos": [
             "/images/actividades/1907f052-96db-4220-80bf-dd9ee6487d5d.jpg",
@@ -307,7 +307,7 @@
       ],
       "en_ejecucion": [
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": ""
         }
       ],
@@ -589,7 +589,7 @@
       ],
       "en_ejecucion": [
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": "Ejecutados 13.6 km"
         },
         {
@@ -611,7 +611,7 @@
       "ejecutadas": [],
       "en_ejecucion": [
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": "Sin avances, se mantienen 13.6 km",
           "fotos": [
             "/images/actividades/87b6f98a-3cff-422f-afbe-cc47f5168b8e.jpg",
@@ -671,7 +671,7 @@
           "desc": "Se ejecutaron 48 de 93 apiques"
         },
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": "Se ejecutaron 12.86 km"
         },
         {
@@ -682,10 +682,10 @@
       "pendientes": [
         {
           "nombre": "Solicitud de permiso",
-          "desc": "Solicitar permiso de uso de vias para transporte de material"
+          "desc": "Solicitar permiso de uso de vías para transporte de material"
         }
       ],
-      "obs": "Solicitar permiso de uso de vias para transporte de material"
+      "obs": "Solicitar permiso de uso de vías para transporte de material"
     },
     {
       "id": "mpcneuzt",
@@ -699,7 +699,7 @@
           "fotos": []
         },
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": "Se mantiene - Se ejecutaron 12.86 km de 20.64",
           "fotos": [
             "/images/actividades/4a25f0c6-32bd-412b-acd5-a74bd3761647.jpg",
@@ -736,7 +736,7 @@
           "desc": ""
         },
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": ""
         }
       ],
@@ -812,7 +812,7 @@
           "desc": "Se ejecutaron 10 obras"
         },
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": ""
         },
         {
@@ -952,7 +952,7 @@
       "frentes": [],
       "ejecutadas": [
         {
-          "nombre": "Topografia",
+          "nombre": "Topografía",
           "desc": "Completa"
         }
       ],
@@ -993,7 +993,7 @@
           "desc": ""
         },
         {
-          "nombre": "Conformacion y amplaicion de vias",
+          "nombre": "Conformacion y amplaicion de vías",
           "desc": ""
         }
       ],
