@@ -2038,14 +2038,14 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
     : null
 
   const carouselId = 'carrusel_' + norm(circuito).replace(/[\W_]+/g, '')
-  const actModalId = 'act_modal_' + norm(circuito).replace(/[\W_]+/g, '')
+  const actModalId = 'modal_act_' + norm(circuito).replace(/[\W_]+/g, '')
 
   function actividadCard(act, color, bgColor) {
-    const safeName = esc(act.nombre ?? '—').replace(/'/g, "\\'").replace(/"/g, '&quot;')
-    const safeDesc = act.desc ? esc(act.desc).replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\\n/g, '<br>') : ''
+    const safeName = esc(act.nombre ?? '—').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/[\r\n]+/g, ' ')
+    const safeDesc = act.desc ? esc(act.desc).replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/[\r\n]+/g, '<br>') : ''
     const fotosArray = (act.fotos || []).map(u => u.replace('/public/', '/'))
     
-    const fotosStr = fotosArray.map(url => `<img src=\\'${url}\\' style=\\'width:100%;height:140px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid rgba(0,0,0,0.05)\\' onclick=\\'const mx=document.getElementById("modal_${carouselId}");const ix=document.getElementById("img_modal_${carouselId}");if(mx&&ix){ix.src="${url}";mx.style.display="flex";}\\'/>`).join('')
+    const fotosStr = fotosArray.map(url => `<img src=\\'${url}\\' style=\\'width:100%;height:180px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid rgba(0,0,0,0.05)\\' onclick=\\'const mx=document.getElementById("modal_${carouselId}");const ix=document.getElementById("img_modal_${carouselId}");if(mx&&ix){ix.src="${url}";mx.style.display="flex";}\\'/>`).join('')
 
     const onclickStr = `const m = document.getElementById('${actModalId}');if(m){document.getElementById('${actModalId}_title').innerHTML = '${safeName}';document.getElementById('${actModalId}_desc').innerHTML = '${safeDesc}';document.getElementById('${actModalId}_fotos').innerHTML = '${fotosStr}';m.style.display = 'flex';}`
     const safeOnclick = onclickStr.replace(/"/g, '&quot;')
@@ -2059,11 +2059,11 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
     }
 
     return `<div onclick="${safeOnclick}" style="background:${bgColor};border:1px solid rgba(0,0,0,0.03);border-left:4px solid ${color};border-radius:8px;padding:12px 14px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,0.02);cursor:pointer;transition:transform 0.15s,box-shadow 0.15s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.05)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.02)'">
-      <div style="font-size:12px;font-weight:800;color:#1f2937;letter-spacing:0.02em;line-height:1.2;display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="font-size:14px;font-weight:800;color:#1f2937;letter-spacing:0.02em;line-height:1.25;display:flex;justify-content:space-between;align-items:flex-start">
         <span style="flex:1">${esc(act.nombre ?? '—')}</span>
-        <svg style="width:14px;height:14px;color:#9ca3af;flex-shrink:0;margin-left:8px" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+        <svg style="width:16px;height:16px;color:#9ca3af;flex-shrink:0;margin-left:8px;margin-top:2px" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
       </div>
-      ${act.desc ? `<div style="font-size:10.5px;color:#6b7280;margin-top:4px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(act.desc)}</div>` : ''}
+      ${act.desc ? `<div style="font-size:12px;color:#6b7280;margin-top:6px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${esc(act.desc)}</div>` : ''}
       ${miniFotos}
     </div>`
   }
@@ -2132,7 +2132,7 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
     </div>`
 
   const execPanel = `
-    <div id="${tabId}_col2" style="display:none;position:absolute;left:470px;top:178px;right:36px;bottom:46px;background:#f9fafb;border-radius:12px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,0.05);overflow-y:auto">
+    <div id="${tabId}_col2" class="custom-scroll" style="display:none;position:absolute;left:470px;top:178px;right:36px;bottom:82px;background:#f9fafb;border-radius:12px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,0.05);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.2) transparent;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:2px solid #e5e7eb;padding-bottom:6px;position:sticky;top:-20px;background:#f9fafb;z-index:10;margin-top:-20px;padding-top:20px">
         <div style="font-size:13px;font-weight:800;color:#0b5640;text-transform:uppercase;letter-spacing:0.06em">Avance de Ejecución</div>
         <button id="${btnInfoId}" onclick="document.getElementById('${tabId}_col2').style.display='none';document.getElementById('${tabId}_col1').style.display='block';document.getElementById('${btnActsId}').classList.remove('active');" style="background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.2s">Volver a Info</button>
@@ -2210,15 +2210,21 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
   // ── TAB BAR REMOVIDO ──
 
   const actModalFullHtml = `
+    <style>
+      .custom-scroll::-webkit-scrollbar { width: 6px; }
+      .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+      .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+      .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+    </style>
     <div id="${actModalId}" style="display:none;position:absolute;inset:0;z-index:99998;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:40px" onclick="if(event.target===this)this.style.display='none'">
-      <div style="background:#fff;border-radius:16px;width:500px;max-width:100%;max-height:100%;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.5);overflow:hidden;animation:ppt-slide-next-enter-from 0.3s cubic-bezier(0.2,0.8,0.2,1) forwards">
-        <div style="padding:16px 24px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;background:#f9fafb">
-          <div id="${actModalId}_title" style="font-size:15px;font-weight:800;color:#111827;line-height:1.2;margin-right:16px"></div>
+      <div style="background:#fff;border-radius:16px;width:800px;height:550px;max-width:100%;max-height:100%;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.5);overflow:hidden;animation:ppt-slide-next-enter-from 0.3s cubic-bezier(0.2,0.8,0.2,1) forwards">
+        <div style="padding:18px 24px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;background:#f9fafb">
+          <div id="${actModalId}_title" style="font-size:16px;font-weight:800;color:#111827;line-height:1.2;margin-right:16px"></div>
           <button onclick="document.getElementById('${actModalId}').style.display='none'" style="background:rgba(0,0,0,0.05);border:none;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;color:#6b7280;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(0,0,0,0.1)';this.style.color='#111827'" onmouseout="this.style.background='rgba(0,0,0,0.05)';this.style.color='#6b7280'">&times;</button>
         </div>
-        <div style="padding:24px;overflow-y:auto;flex:1;background:#fff">
-          <div id="${actModalId}_desc" style="font-size:12px;color:#4b5563;line-height:1.6;margin-bottom:20px;white-space:pre-wrap"></div>
-          <div id="${actModalId}_fotos" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+        <div class="custom-scroll" style="padding:24px;overflow-y:auto;flex:1;background:#fff;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.2) transparent;">
+          <div id="${actModalId}_desc" style="font-size:13px;color:#4b5563;line-height:1.6;margin-bottom:20px;white-space:pre-wrap"></div>
+          <div id="${actModalId}_fotos" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:16px"></div>
         </div>
       </div>
     </div>
