@@ -355,7 +355,7 @@ const dotPages = computed(() => pages.value.slice(1))
         <!-- Fila: flecha ← | slide | flecha → -->
         <div class="ppt-row">
           <button class="rv-arrow" @click="pptPrev" :disabled="pptFirst" aria-label="Anterior">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="15,4 5,12 15,20"/></svg>
           </button>
 
           <!-- Host: tamaño de pantalla, overflow hidden para la transición -->
@@ -382,7 +382,7 @@ const dotPages = computed(() => pages.value.slice(1))
           </div>
 
           <button class="rv-arrow" @click="pptNext" :disabled="pptLast" aria-label="Siguiente">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="9,4 19,12 9,20"/></svg>
           </button>
         </div>
 
@@ -407,7 +407,7 @@ const dotPages = computed(() => pages.value.slice(1))
 
       <!-- Prev arrow -->
       <button class="rv-arrow" @click="prev" :disabled="isFirst || !ready" aria-label="Página anterior">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="15,4 5,12 15,20"/></svg>
       </button>
 
       <!-- Book con zoom + pan -->
@@ -439,7 +439,7 @@ const dotPages = computed(() => pages.value.slice(1))
 
       <!-- Next arrow -->
       <button class="rv-arrow" @click="next" :disabled="isLast || !ready" aria-label="Página siguiente">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="9,4 19,12 9,20"/></svg>
       </button>
 
     </div>
@@ -536,14 +536,23 @@ const dotPages = computed(() => pages.value.slice(1))
 
 /* ── Arrows ── */
 .rv-arrow {
-  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
-  display:flex; align-items:center; justify-content:center;
-  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
-  color:rgba(255,255,255,.55); cursor:pointer; transition:all .18s; outline:none;
+  width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(145deg, #0f7a4a, #0b5640);
+  border: 1.5px solid rgba(63,173,114,.5);
+  color: #ffffff; cursor: pointer; outline: none;
+  transition: all .18s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,.12);
 }
-.rv-arrow svg { width:22px; height:22px }
-.rv-arrow:hover:not(:disabled) { background:rgba(255,255,255,.16); color:#fff; border-color:rgba(255,255,255,.3) }
-.rv-arrow:disabled { opacity:.18; cursor:default }
+.rv-arrow svg { width: 48px; height: 48px; fill: #ffffff; stroke: none; }
+.rv-arrow:hover:not(:disabled) {
+  background: linear-gradient(145deg, #14a060, #0d6b4e);
+  border-color: rgba(63,173,114,.8);
+  transform: scale(1.08) translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 2px 6px rgba(11,86,64,0.6), inset 0 1px 0 rgba(255,255,255,.18);
+}
+.rv-arrow:active:not(:disabled) { transform: scale(0.94); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+.rv-arrow:disabled { opacity: .2; cursor: default; transform: none; box-shadow: none; }
 
 /* ── Footer ── */
 .rv-footer {
