@@ -31,15 +31,16 @@ const dEst         = ref(0)
 const loginErr     = ref('')
 
 // ── Estado imágenes ───────────────────────────────────────────────────────────
+const AZURE_PHOTOS_BASE = 'https://stsimevaqa.blob.core.windows.net/images/circuitos'
 const TIPOS_FOTO   = ['antes', 'durante', 'despues']
 const TIPO_LABEL   = { antes: 'Antes', durante: 'Durante', despues: 'Después' }
-const imageModal   = ref(null)   // { feat }
+const imageModal   = ref(null)
 const imagesTipo   = ref('antes')
-const photosData   = ref({})     // cir → { antes:[], durante:[], despues:[] }
-const selectedFiles = ref([])
+const selectedFile = ref(null)
 const uploading    = ref(false)
 const previewUrl   = ref(null)
 const fileInputRef = ref(null)
+const photoTs      = ref({})  // { "cir/tipo": timestamp } para cache bust
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const MSAL_MSGS = {
@@ -267,7 +268,7 @@ async function saveProd() {
   if (!toSave.length) { toast('Sin cambios válidos para guardar', 'err'); return }
   let errors = 0
   await Promise.all(toSave.map(async f => {
-    const r = await fetch(`${ADMIN_API}/circuits/${encodeURIComponent(f.name)}/progress`, {
+    const r = await fetch(`${ADMIN_API}/circuits/${encodeURIComponent(f.id)}/progress`, {
       method: 'PUT',
       headers: await authHeaders(),
       body: JSON.stringify({ progressPhysical: f.fis, progressFinancial: f.fin, kmStabilized: f.est }),
@@ -287,89 +288,68 @@ async function saveProd() {
 }
 
 // ── Módulo de imágenes ────────────────────────────────────────────────────────
-async function openImageModal(f) {
-  imageModal.value = f
-  imagesTipo.value = 'antes'
-  selectedFiles.value = []
-  previewUrl.value = null
-  if (!isProd) await loadPhotos(f.cir)
-}
-function closeImageModal() { imageModal.value = null; selectedFiles.value = []; previewUrl.value = null }
-
-async function loadPhotos(cir) {
-  try {
-    const r = await fetch(`/api/circuito-photos/${encodeURIComponent(cir)}`)
-    if (r.ok) photosData.value = { ...(photosData.value ?? {}), [cir]: await r.json() }
-  } catch {}
+function photoUrl(cir, tipo) {
+  if (!cir) return null
+  const ts = photoTs.value[`${cir}/${tipo}`] ? `?t=${photoTs.value[`${cir}/${tipo}`]}` : ''
+  return isProd
+    ? `${AZURE_PHOTOS_BASE}/${encodeURIComponent(cir)}/${tipo}.jpg${ts}`
+    : `/images/circuitos/${encodeURIComponent(cir)}/${tipo}.jpg${ts}`
 }
 
-const photosForTipo = computed(() => {
-  if (!imageModal.value) return []
-  return photosData.value[imageModal.value.cir]?.[imagesTipo.value] ?? []
-})
+function openImageModal(f) {
+  imageModal.value  = f
+  imagesTipo.value  = 'antes'
+  selectedFile.value = null
+  previewUrl.value  = null
+}
+function closeImageModal() {
+  imageModal.value  = null
+  selectedFile.value = null
+  previewUrl.value  = null
+}
 
-function onFileChange(e) { selectedFiles.value = [...e.target.files] }
-function handleDrop(e)   { selectedFiles.value = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/')) }
-function removeFile(i)   { selectedFiles.value = selectedFiles.value.filter((_, j) => j !== i) }
+function onFileChange(e) { selectedFile.value = e.target.files[0] ?? null }
 
 async function doUpload() {
-  if (!imageModal.value || !selectedFiles.value.length) return
+  if (!imageModal.value || !selectedFile.value) return
   uploading.value = true
   try {
+    const { cir } = imageModal.value
+    const tipo    = imagesTipo.value
     if (isProd) {
-      await uploadProd(imageModal.value.cir, imagesTipo.value, selectedFiles.value)
+      await uploadProd(cir, tipo, selectedFile.value)
     } else {
-      await uploadLocal(imageModal.value.cir, imagesTipo.value, selectedFiles.value)
-      await loadPhotos(imageModal.value.cir)
+      await uploadLocal(cir, tipo, selectedFile.value)
     }
-    toast(`${selectedFiles.value.length} imagen(es) subida(s) ✓`, 'ok')
-    selectedFiles.value = []
+    photoTs.value[`${cir}/${tipo}`] = Date.now()
+    selectedFile.value = null
     if (fileInputRef.value) fileInputRef.value.value = ''
-  } catch { toast('Error al subir imágenes', 'err') }
+    toast('Foto actualizada ✓', 'ok')
+  } catch { toast('Error al subir la foto', 'err') }
   uploading.value = false
 }
 
-async function uploadLocal(cir, tipo, files) {
-  await Promise.all([...files].map(async file => {
-    const r = await fetch(
-      `/api/circuit-photo-upload?circuito=${encodeURIComponent(cir)}&tipo=${encodeURIComponent(tipo)}&filename=${encodeURIComponent(file.name)}`,
-      { method: 'POST', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file }
-    )
-    const j = await r.json()
-    if (!j.ok) throw new Error(j.error)
-  }))
+async function uploadLocal(cir, tipo, file) {
+  const r = await fetch(
+    `/api/circuit-photo-upload?circuito=${encodeURIComponent(cir)}&tipo=${encodeURIComponent(tipo)}&filename=${tipo}.jpg`,
+    { method: 'POST', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file }
+  )
+  const j = await r.json()
+  if (!j.ok) throw new Error(j.error)
 }
 
-async function uploadProd(cir, tipo, files) {
+async function uploadProd(cir, tipo, file) {
   const r = await fetch(`${ADMIN_API}/images/sas-token`, { method: 'POST', headers: await authHeaders() })
   if (!r.ok) throw new Error('No se pudo obtener token SAS')
   const { sasUrl } = await r.json()
-  const u    = new URL(sasUrl)
-  const base = `${u.origin}${u.pathname}`
-  const sas  = u.search
-  await Promise.all([...files].map(async file => {
-    const blobPath  = `circuitos/${encodeURIComponent(cir)}/${tipo}/${encodeURIComponent(file.name)}`
-    const uploadUrl = `${base}/${blobPath}${sas}`
-    const res = await fetch(uploadUrl, {
-      method:  'PUT',
-      headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': file.type || 'application/octet-stream' },
-      body: file,
-    })
-    if (!res.ok) throw new Error(`Upload ${res.status}`)
-  }))
-}
-
-async function deletePhoto(url) {
-  const parts    = url.split('/images/circuitos/')[1]
-  if (!parts) return
-  const [cirEnc, tipo, filename] = parts.split('/')
-  const cir = decodeURIComponent(cirEnc)
-  try {
-    await fetch(`/api/circuit-photo-upload?circuito=${encodeURIComponent(cir)}&tipo=${encodeURIComponent(tipo)}&filename=${encodeURIComponent(filename)}`, { method: 'DELETE' })
-    await loadPhotos(cir)
-    if (previewUrl.value === url) previewUrl.value = null
-    toast('Foto eliminada', 'ok')
-  } catch { toast('Error al eliminar', 'err') }
+  const u          = new URL(sasUrl)
+  const uploadUrl  = `${u.origin}${u.pathname}/circuitos/${encodeURIComponent(cir)}/${tipo}.jpg${u.search}`
+  const res = await fetch(uploadUrl, {
+    method:  'PUT',
+    headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': file.type || 'image/jpeg' },
+    body: file,
+  })
+  if (!res.ok) throw new Error(`Upload ${res.status}`)
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
@@ -726,57 +706,47 @@ function fmtSize(bytes) {
               <button
                 v-for="t in TIPOS_FOTO" :key="t"
                 class="img-tab" :class="{ 'img-tab--active': imagesTipo === t }"
-                @click="imagesTipo = t"
-              >
-                {{ TIPO_LABEL[t] }}
-                <span v-if="!isProd" class="img-tab-count">{{ photosData[imageModal.cir]?.[t]?.length ?? 0 }}</span>
-              </button>
+                @click="imagesTipo = t; selectedFile = null; if(fileInputRef) fileInputRef.value = ''"
+              >{{ TIPO_LABEL[t] }}</button>
             </div>
 
-            <!-- Grid de fotos (solo modo local) -->
-            <div class="img-grid-wrap">
-              <template v-if="!isProd">
-                <div v-if="photosForTipo.length" class="img-grid">
-                  <div v-for="url in photosForTipo" :key="url" class="img-thumb" @click="previewUrl = url">
-                    <img :src="url" alt="" loading="lazy" />
-                    <button class="img-del" @click.stop="deletePhoto(url)" title="Eliminar">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
-                </div>
-                <div v-else class="img-empty">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36" style="color:#b0c4b8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                  <span>Sin fotos de etapa "{{ TIPO_LABEL[imagesTipo] }}"</span>
-                </div>
-              </template>
-              <div v-else class="img-empty">
+            <!-- Foto actual -->
+            <div class="img-current-wrap">
+              <img
+                :src="photoUrl(imageModal.cir, imagesTipo)"
+                :key="`${imageModal.cir}/${imagesTipo}/${photoTs[`${imageModal.cir}/${imagesTipo}`] || 0}`"
+                class="img-current"
+                alt="Foto actual"
+                @click="previewUrl = photoUrl(imageModal.cir, imagesTipo)"
+                @load="$event.target.style.display=''; $event.target.nextElementSibling.style.display='none'"
+                @error="$event.target.style.display='none'; $event.target.nextElementSibling.style.display='flex'"
+              />
+              <div class="img-empty" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36" style="color:#b0c4b8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                <span>Las fotos se almacenan en Azure Blob Storage.<br>Sube nuevas imágenes con el formulario de abajo.</span>
+                <span>Sin foto de "{{ TIPO_LABEL[imagesTipo] }}" — sube una abajo</span>
               </div>
             </div>
 
             <!-- Zona de subida -->
             <div
               class="img-upload-zone"
-              :class="{ 'img-upload-zone--has-files': selectedFiles.length }"
+              :class="{ 'img-upload-zone--has-files': selectedFile }"
               @dragover.prevent
-              @drop.prevent="handleDrop"
-              @click="!selectedFiles.length && fileInputRef?.click()"
+              @drop.prevent="e => { selectedFile = [...e.dataTransfer.files].find(f => f.type.startsWith('image/')) ?? null }"
+              @click="!selectedFile && fileInputRef?.click()"
             >
-              <input ref="fileInputRef" type="file" multiple accept="image/*" class="file-input" @change="onFileChange" />
-              <template v-if="!selectedFiles.length">
+              <input ref="fileInputRef" type="file" accept="image/*" class="file-input" @change="onFileChange" />
+              <template v-if="!selectedFile">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="color:#6b9e80"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                <p class="upload-prompt-text">Arrastra imágenes aquí o <strong>haz clic para seleccionar</strong></p>
-                <p class="upload-hint">JPG, PNG, WEBP · Etapa: {{ TIPO_LABEL[imagesTipo] }}</p>
+                <p class="upload-prompt-text">Arrastra una imagen o <strong>haz clic para seleccionar</strong></p>
+                <p class="upload-hint">JPG, PNG, WEBP · Reemplaza la foto de "{{ TIPO_LABEL[imagesTipo] }}"</p>
               </template>
               <template v-else>
-                <div class="sel-files-list">
-                  <div v-for="(file, i) in selectedFiles" :key="i" class="sel-file-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:#1a5c3a"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-                    <span class="sel-file-name">{{ file.name }}</span>
-                    <span class="sel-file-size">{{ fmtSize(file.size) }}</span>
-                    <button class="sel-file-del" @click.stop="removeFile(i)">✕</button>
-                  </div>
+                <div class="sel-file-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:#1a5c3a"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                  <span class="sel-file-name">{{ selectedFile.name }}</span>
+                  <span class="sel-file-size">{{ fmtSize(selectedFile.size) }}</span>
+                  <button class="sel-file-del" @click.stop="selectedFile = null; fileInputRef.value = ''">✕</button>
                 </div>
               </template>
             </div>
@@ -785,14 +755,14 @@ function fmtSize(bytes) {
             <div class="img-modal-foot">
               <button class="btn-cancel" @click="closeImageModal">Cerrar</button>
               <button
-                v-if="selectedFiles.length"
+                v-if="selectedFile"
                 class="btn-upload"
                 @click="doUpload"
                 :disabled="uploading"
               >
                 <svg v-if="!uploading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14" class="spin"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
-                {{ uploading ? 'Subiendo…' : `Subir ${selectedFiles.length} imagen${selectedFiles.length > 1 ? 'es' : ''}` }}
+                {{ uploading ? 'Subiendo…' : 'Subir foto' }}
               </button>
             </div>
           </div>
