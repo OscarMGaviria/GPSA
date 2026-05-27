@@ -265,30 +265,10 @@ async function saveProd() {
   if (!toSave.length) { toast('Sin cambios válidos para guardar', 'err'); return }
   let errors = 0
   await Promise.all(toSave.map(async f => {
-<<<<<<< HEAD
-    // La API identifica el circuito por NOMBRE_VIA (f.name), no por id numérico
-=======
-<<<<<<< Updated upstream
->>>>>>> feature/12856
-    const id = encodeURIComponent(f.name)
-    const r  = await fetch(`${ADMIN_API}/circuits/${id}/progress`, {
-      method: 'PUT',
-      headers: await authHeaders(),
-<<<<<<< HEAD
-      body: JSON.stringify({ progressPhysical: f.fis, progressFinancial: f.fin, kmStabilized: f.est }),
-=======
-      body: JSON.stringify({
-        progressPhysical:  f.fis,
-        progressFinancial: f.fin,
-        kmStabilized:      f.est,
-      }),
-=======
     const r = await fetch(`${ADMIN_API}/circuits/${f.id}/progress`, {
       method: 'PUT',
       headers: await authHeaders(),
       body: JSON.stringify({ progressPhysical: +(f.fis / 100).toFixed(6), progressFinancial: +(f.fin / 100).toFixed(6), kmStabilized: f.est }),
->>>>>>> Stashed changes
->>>>>>> feature/12856
     })
     if (!r.ok) {
       if (r.status === 401) { toast('Sesión expirada — vuelve a iniciar sesión', 'err'); logout() }
