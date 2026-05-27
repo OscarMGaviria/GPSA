@@ -114,24 +114,25 @@ async function loadProd() {
   const geoJson = await geoRes.json()
   const { circuits } = await circRes.json()
   const progIdx = {}
-  for (const c of (circuits ?? [])) progIdx[c.partitionKey] = c
+  for (const c of (circuits ?? [])) progIdx[String(c.partitionKey)] = c
 
   rawGeoJson.value = geoJson.data?.type === 'FeatureCollection' ? geoJson.data : geoJson
   features.value = rawGeoJson.value.features.map((f, i) => {
-    const name = f.properties.name ?? f.properties.NOMBRE_VIA ?? ''
-    const prog = progIdx[name]
+    const name   = f.properties.name ?? f.properties.NOMBRE_VIA ?? ''
+    const featId = f.properties.id   ?? (i + 1)
+    const prog   = progIdx[String(featId)]
     return {
       _i:   i,
-      id:   f.properties.id         ?? (i + 1),
+      id:   featId,
       name,
       cir:  f.properties.CIRCUITO   ?? '',
       via:  f.properties.NOMBRE_VIA ?? '',
       mpio: f.properties.MPIO_NOMBR ?? '',
       sub:  f.properties.SUBREGION  ?? '',
       lkm:  f.properties.Long_km    ?? 0,
-      fis:  prog ? +prog.AV_FISICO.toFixed(2)  : +(f.properties.AV_FISICO  * 100).toFixed(2),
-      fin:  prog ? +prog.AV_FINAN.toFixed(2)   : +(f.properties.AV_FINAN   * 100).toFixed(2),
-      est:  prog ? prog.ESTABILIZADO            : (f.properties.ESTABILIZADO ?? 0),
+      fis:  +(( prog ? prog.AV_FISICO : f.properties.AV_FISICO ) * 100).toFixed(2),
+      fin:  +(( prog ? prog.AV_FINAN  : f.properties.AV_FINAN  ) * 100).toFixed(2),
+      est:  prog ? prog.ESTABILIZADO : (f.properties.ESTABILIZADO ?? 0),
     }
   })
 }
@@ -264,12 +265,30 @@ async function saveProd() {
   if (!toSave.length) { toast('Sin cambios válidos para guardar', 'err'); return }
   let errors = 0
   await Promise.all(toSave.map(async f => {
+<<<<<<< HEAD
     // La API identifica el circuito por NOMBRE_VIA (f.name), no por id numérico
+=======
+<<<<<<< Updated upstream
+>>>>>>> feature/12856
     const id = encodeURIComponent(f.name)
     const r  = await fetch(`${ADMIN_API}/circuits/${id}/progress`, {
       method: 'PUT',
       headers: await authHeaders(),
+<<<<<<< HEAD
       body: JSON.stringify({ progressPhysical: f.fis, progressFinancial: f.fin, kmStabilized: f.est }),
+=======
+      body: JSON.stringify({
+        progressPhysical:  f.fis,
+        progressFinancial: f.fin,
+        kmStabilized:      f.est,
+      }),
+=======
+    const r = await fetch(`${ADMIN_API}/circuits/${f.id}/progress`, {
+      method: 'PUT',
+      headers: await authHeaders(),
+      body: JSON.stringify({ progressPhysical: +(f.fis / 100).toFixed(6), progressFinancial: +(f.fin / 100).toFixed(6), kmStabilized: f.est }),
+>>>>>>> Stashed changes
+>>>>>>> feature/12856
     })
     if (!r.ok) {
       if (r.status === 401) { toast('Sesión expirada — vuelve a iniciar sesión', 'err'); logout() }
