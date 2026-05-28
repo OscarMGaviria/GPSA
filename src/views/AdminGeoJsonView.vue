@@ -602,44 +602,126 @@ function fmtSize(bytes) {
       <Transition name="fade">
         <div v-if="editModal" class="overlay" @click.self="closeEditModal">
           <div class="edit-modal">
+
+            <!-- Header -->
             <div class="emodal-hdr">
               <div class="emodal-hdr-info">
-                <span class="emodal-id">#{{ editModal.id }}</span>
+                <div class="emodal-hdr-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                </div>
                 <div>
+                  <div class="emodal-id-row">
+                    <span class="emodal-id">#{{ editModal.id }}</span>
+                    <span class="emodal-lkm">{{ editModal.lkm }} km</span>
+                  </div>
                   <div class="emodal-title">{{ editModal.cir }}</div>
-                  <div class="emodal-sub">{{ editModal.via }} · {{ titleCase(editModal.mpio) }} · {{ editModal.lkm }} km</div>
+                  <div class="emodal-sub">{{ editModal.via }} · {{ titleCase(editModal.mpio) }}</div>
                 </div>
               </div>
               <button class="modal-close" @click="closeEditModal" title="Cerrar (ESC)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
+
+            <!-- Body -->
             <div class="emodal-body">
-              <div class="field-group">
-                <div class="field-label"><span>Avance Físico</span><span class="field-val" :class="{ 'fv-err': dFis < 0 || dFis > 100 }">{{ Number(dFis).toFixed(1) }}%</span></div>
-                <input type="range" min="0" max="100" step="0.1" v-model.number="dFis" class="slider slider-fis" />
+
+              <!-- Avance Físico -->
+              <div class="field-card field-card--fis">
+                <div class="field-card-top">
+                  <div class="field-card-label">
+                    <div class="field-icon field-icon--fis">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+                    </div>
+                    <span>Avance Físico</span>
+                  </div>
+                  <div class="field-card-right">
+                    <span class="field-orig">{{ originals[editModal._i]?.fis ?? editModal.fis }}%</span>
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"
+                      :class="dFis > (originals[editModal._i]?.fis ?? editModal.fis) ? 'arrow-up' : dFis < (originals[editModal._i]?.fis ?? editModal.fis) ? 'arrow-down' : 'arrow-same'">
+                      <path v-if="dFis !== (originals[editModal._i]?.fis ?? editModal.fis)" :d="dFis > (originals[editModal._i]?.fis ?? editModal.fis) ? 'M8 13V3M4 7l4-4 4 4' : 'M8 3v10M4 9l4 4 4-4'"/>
+                      <path v-else d="M3 8h10"/>
+                    </svg>
+                    <span class="field-val--fis" :class="{ 'fv-err': dFis < 0 || dFis > 100 }">{{ Number(dFis).toFixed(1) }}%</span>
+                  </div>
+                </div>
+                <div class="slider-track-wrap">
+                  <input type="range" min="0" max="100" step="0.1" v-model.number="dFis" class="slider slider-fis"
+                    :style="`background: linear-gradient(to right, #1a5c3a ${Math.min(100,dFis)}%, #e0ece4 ${Math.min(100,dFis)}%)`" />
+                </div>
                 <div class="slider-labels"><span>0%</span><span>50%</span><span>100%</span></div>
-                <input type="number" min="0" max="100" step="0.01" v-model.number="dFis" class="num-field" placeholder="0.00" />
+                <input type="number" min="0" max="100" step="0.01" v-model.number="dFis" class="num-field num-field--fis" placeholder="0.00" />
               </div>
-              <div class="field-group">
-                <div class="field-label"><span>Avance Financiero</span><span class="field-val fv-fin" :class="{ 'fv-err': dFin < 0 || dFin > 100 }">{{ Number(dFin).toFixed(1) }}%</span></div>
-                <input type="range" min="0" max="100" step="0.1" v-model.number="dFin" class="slider slider-fin" />
+
+              <!-- Avance Financiero -->
+              <div class="field-card field-card--fin">
+                <div class="field-card-top">
+                  <div class="field-card-label">
+                    <div class="field-icon field-icon--fin">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    </div>
+                    <span>Avance Financiero</span>
+                  </div>
+                  <div class="field-card-right">
+                    <span class="field-orig">{{ originals[editModal._i]?.fin ?? editModal.fin }}%</span>
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"
+                      :class="dFin > (originals[editModal._i]?.fin ?? editModal.fin) ? 'arrow-up--fin' : dFin < (originals[editModal._i]?.fin ?? editModal.fin) ? 'arrow-down' : 'arrow-same'">
+                      <path v-if="dFin !== (originals[editModal._i]?.fin ?? editModal.fin)" :d="dFin > (originals[editModal._i]?.fin ?? editModal.fin) ? 'M8 13V3M4 7l4-4 4 4' : 'M8 3v10M4 9l4 4 4-4'"/>
+                      <path v-else d="M3 8h10"/>
+                    </svg>
+                    <span class="field-val--fin" :class="{ 'fv-err': dFin < 0 || dFin > 100 }">{{ Number(dFin).toFixed(1) }}%</span>
+                  </div>
+                </div>
+                <div class="slider-track-wrap">
+                  <input type="range" min="0" max="100" step="0.1" v-model.number="dFin" class="slider slider-fin"
+                    :style="`background: linear-gradient(to right, #d97706 ${Math.min(100,dFin)}%, #fef3c7 ${Math.min(100,dFin)}%)`" />
+                </div>
                 <div class="slider-labels"><span>0%</span><span>50%</span><span>100%</span></div>
-                <input type="number" min="0" max="100" step="0.01" v-model.number="dFin" class="num-field" placeholder="0.00" />
+                <input type="number" min="0" max="100" step="0.01" v-model.number="dFin" class="num-field num-field--fin" placeholder="0.00" />
               </div>
-              <div class="field-group">
-                <div class="field-label"><span>Km Estabilizados</span><span class="field-val fv-est" :class="{ 'fv-err': editModal.lkm > 0 && dEst > editModal.lkm }">{{ Number(dEst).toFixed(2) }} km</span></div>
-                <input type="range" min="0" :max="editModal.lkm || 100" step="0.01" v-model.number="dEst" class="slider slider-est" />
+
+              <!-- Km Estabilizados -->
+              <div class="field-card field-card--est">
+                <div class="field-card-top">
+                  <div class="field-card-label">
+                    <div class="field-icon field-icon--est">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M3 17l4-8 4 5 3-3 4 6"/></svg>
+                    </div>
+                    <span>Km Estabilizados</span>
+                  </div>
+                  <div class="field-card-right">
+                    <span class="field-orig">{{ originals[editModal._i]?.est ?? editModal.est }} km</span>
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"
+                      :class="dEst > (originals[editModal._i]?.est ?? editModal.est) ? 'arrow-up--est' : dEst < (originals[editModal._i]?.est ?? editModal.est) ? 'arrow-down' : 'arrow-same'">
+                      <path v-if="dEst !== (originals[editModal._i]?.est ?? editModal.est)" :d="dEst > (originals[editModal._i]?.est ?? editModal.est) ? 'M8 13V3M4 7l4-4 4 4' : 'M8 3v10M4 9l4 4 4-4'"/>
+                      <path v-else d="M3 8h10"/>
+                    </svg>
+                    <span class="field-val--est" :class="{ 'fv-err': editModal.lkm > 0 && dEst > editModal.lkm }">{{ Number(dEst).toFixed(2) }} km</span>
+                  </div>
+                </div>
+                <div class="slider-track-wrap">
+                  <input type="range" min="0" :max="editModal.lkm || 100" step="0.01" v-model.number="dEst" class="slider slider-est"
+                    :style="`background: linear-gradient(to right, #2563eb ${Math.min(100, editModal.lkm ? dEst/editModal.lkm*100 : dEst)}%, #dbeafe ${Math.min(100, editModal.lkm ? dEst/editModal.lkm*100 : dEst)}%)`" />
+                </div>
                 <div class="slider-labels"><span>0</span><span>{{ ((editModal.lkm||100)/2).toFixed(0) }} km</span><span>{{ editModal.lkm || 100 }} km</span></div>
-                <input type="number" min="0" :max="editModal.lkm||999999" step="0.01" v-model.number="dEst" class="num-field" placeholder="0.00" />
+                <input type="number" min="0" :max="editModal.lkm||999999" step="0.01" v-model.number="dEst" class="num-field num-field--est" placeholder="0.00" />
               </div>
+
               <div v-if="editErrs.length" class="edit-errs">
                 <div v-for="e in editErrs" :key="e" class="edit-err-item">⚠ {{ e }}</div>
               </div>
             </div>
+
+            <!-- Footer -->
             <div class="emodal-foot">
-              <button class="btn-drawer-cancel" @click="closeEditModal">Cancelar</button>
-              <button class="btn-drawer-apply" @click="applyEdit" :disabled="editErrs.length > 0">Aplicar cambios</button>
+              <button class="btn-drawer-cancel" @click="closeEditModal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Cancelar
+              </button>
+              <button class="btn-drawer-apply" @click="applyEdit" :disabled="editErrs.length > 0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+                Aplicar cambios
+              </button>
             </div>
           </div>
         </div>
@@ -952,38 +1034,74 @@ function fmtSize(bytes) {
 .fade-enter-from, .fade-leave-to { opacity: 0 }
 
 /* ── Modal edición ── */
-.edit-modal { background: #fff; border-radius: 18px; overflow: hidden; width: 480px; max-width: 95vw; box-shadow: 0 24px 64px rgba(15,61,39,.28); display: flex; flex-direction: column }
-.emodal-hdr { display: flex; align-items: flex-start; justify-content: space-between; padding: 20px 24px; background: #0f3d27; flex-shrink: 0 }
-.emodal-hdr-info { display: flex; align-items: flex-start; gap: 12px }
-.emodal-id { font-size: 11px; font-weight: 700; color: #fff; background: rgba(255,255,255,.2); padding: 2px 10px; border-radius: 99px; white-space: nowrap; margin-top: 3px }
-.emodal-title { font-size: 15px; font-weight: 700; color: #fff; line-height: 1.3 }
-.emodal-sub   { font-size: 11px; color: rgba(255,255,255,.55); margin-top: 3px }
-.emodal-body { padding: 28px 24px; display: flex; flex-direction: column; gap: 26px }
-.field-group { display: flex; flex-direction: column; gap: 8px }
-.field-label { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; color: #2e6649 }
-.field-val { font-size: 18px; font-weight: 700; color: #1a5c3a }
-.fv-fin { color: #d97706 }
-.fv-est { color: #2563eb }
+.edit-modal { background: #f8fbf9; border-radius: 20px; overflow: hidden; width: 500px; max-width: 95vw; box-shadow: 0 32px 80px rgba(15,61,39,.3); display: flex; flex-direction: column }
+
+.emodal-hdr { display: flex; align-items: flex-start; justify-content: space-between; padding: 22px 24px; background: linear-gradient(135deg, #0a3520 0%, #1a5c3a 100%); flex-shrink: 0 }
+.emodal-hdr-info { display: flex; align-items: flex-start; gap: 14px }
+.emodal-hdr-icon { width: 38px; height: 38px; border-radius: 11px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; margin-top: 2px }
+.emodal-id-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px }
+.emodal-id { font-size: 10px; font-weight: 700; color: #fff; background: rgba(255,255,255,.2); padding: 2px 10px; border-radius: 99px }
+.emodal-lkm { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.6); background: rgba(255,255,255,.1); padding: 2px 10px; border-radius: 99px }
+.emodal-title { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.3 }
+.emodal-sub   { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 3px }
+
+.emodal-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 60vh }
+.emodal-body::-webkit-scrollbar { width: 4px }
+.emodal-body::-webkit-scrollbar-thumb { background: #b8d4c0; border-radius: 2px }
+
+/* ── Field cards ── */
+.field-card { background: #fff; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; border: 1.5px solid #e8f0eb; transition: border-color .2s }
+.field-card--fis:focus-within { border-color: #1a5c3a }
+.field-card--fin:focus-within { border-color: #d97706 }
+.field-card--est:focus-within { border-color: #2563eb }
+
+.field-card-top { display: flex; align-items: center; justify-content: space-between }
+.field-card-label { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #3d6b50 }
+.field-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
+.field-icon--fis { background: #dcfce7; color: #16a34a }
+.field-icon--fin { background: #fef3c7; color: #d97706 }
+.field-icon--est { background: #dbeafe; color: #2563eb }
+.field-card-right { display: flex; align-items: center; gap: 8px }
+.field-orig { font-size: 11px; color: #9ab5a3; font-weight: 500; text-decoration: line-through }
+.field-val--fis { font-size: 20px; font-weight: 800; color: #1a5c3a }
+.field-val--fin { font-size: 20px; font-weight: 800; color: #d97706 }
+.field-val--est { font-size: 20px; font-weight: 800; color: #2563eb }
 .fv-err { color: #991b1b !important }
+.arrow-up   { color: #16a34a }
+.arrow-up--fin { color: #d97706 }
+.arrow-up--est { color: #2563eb }
+.arrow-down { color: #991b1b }
+.arrow-same { color: #9ab5a3 }
+
+/* ── Slider with fill ── */
+.slider-track-wrap { padding: 4px 0 }
 .slider { width: 100%; height: 6px; appearance: none; border-radius: 3px; outline: none; cursor: pointer }
-.slider-fis { accent-color: #1a5c3a }
-.slider-fin { accent-color: #d97706 }
-.slider-est { accent-color: #2563eb }
-.slider::-webkit-slider-thumb { appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 2px solid currentColor; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.18) }
+.slider::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 2.5px solid currentColor; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.2); transition: transform .15s }
+.slider::-webkit-slider-thumb:hover { transform: scale(1.2) }
 .slider-fis::-webkit-slider-thumb { border-color: #1a5c3a }
 .slider-fin::-webkit-slider-thumb { border-color: #d97706 }
 .slider-est::-webkit-slider-thumb { border-color: #2563eb }
-.slider-labels { display: flex; justify-content: space-between; font-size: 9px; color: #b0c4b8; padding: 0 2px }
-.num-field { width: 100%; padding: 11px 14px; background: #f5f9f6; border: 1.5px solid #c2d9cb; border-radius: 9px; color: #1a2e20; font-family: 'Prompt', sans-serif; font-size: 17px; font-weight: 700; text-align: center; outline: none; transition: border-color .15s }
-.num-field:focus { border-color: #1a5c3a; box-shadow: 0 0 0 3px rgba(26,92,58,.1) }
-.num-field::-webkit-inner-spin-button { opacity: .4 }
+.slider-labels { display: flex; justify-content: space-between; font-size: 9px; color: #c4d4ca; padding: 0 2px; margin-top: -4px }
+
+/* ── Number input ── */
+.num-field { width: 100%; padding: 10px 14px; border-radius: 9px; font-family: 'Prompt', sans-serif; font-size: 18px; font-weight: 800; text-align: center; outline: none; transition: border-color .15s, box-shadow .15s; -moz-appearance: textfield }
+.num-field::-webkit-outer-spin-button,
+.num-field::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0 }
+.num-field--fis { background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #1a5c3a }
+.num-field--fis:focus { border-color: #1a5c3a; box-shadow: 0 0 0 3px rgba(26,92,58,.12) }
+.num-field--fin { background: #fffbeb; border: 1.5px solid #fde68a; color: #d97706 }
+.num-field--fin:focus { border-color: #d97706; box-shadow: 0 0 0 3px rgba(217,119,6,.12) }
+.num-field--est { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #2563eb }
+.num-field--est:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12) }
+
 .edit-errs { display: flex; flex-direction: column; gap: 6px }
-.edit-err-item { font-size: 11px; font-weight: 600; color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 7px; padding: 8px 12px }
-.emodal-foot { display: flex; gap: 12px; padding: 18px 24px; border-top: 1px solid #e8f0eb; flex-shrink: 0 }
-.btn-drawer-cancel { flex: 1; padding: 12px; border-radius: 9px; border: 1px solid #c2d9cb; background: #f5f9f6; color: #3d6b50; font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s }
-.btn-drawer-cancel:hover { background: #e8f0eb }
-.btn-drawer-apply { flex: 2; padding: 12px; border-radius: 9px; border: 1px solid #1a5c3a; background: #1a5c3a; color: #fff; font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s }
-.btn-drawer-apply:hover:not(:disabled) { background: #0f3d27 }
+.edit-err-item { font-size: 11px; font-weight: 600; color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 8px 14px }
+
+.emodal-foot { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid #e8f0eb; flex-shrink: 0; background: #fff }
+.btn-drawer-cancel { flex: 1; padding: 11px 16px; border-radius: 10px; border: 1.5px solid #c2d9cb; background: #fff; color: #3d6b50; font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; display: flex; align-items: center; justify-content: center; gap: 7px }
+.btn-drawer-cancel:hover { background: #f0f8f3 }
+.btn-drawer-apply { flex: 2; padding: 11px 16px; border-radius: 10px; border: none; background: linear-gradient(135deg, #1a5c3a, #0f3d27); color: #fff; font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .15s; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 14px rgba(26,92,58,.35) }
+.btn-drawer-apply:hover:not(:disabled) { opacity: .88 }
 .btn-drawer-apply:disabled { opacity: .4; cursor: not-allowed }
 
 /* ── Modal confirmación ── */
