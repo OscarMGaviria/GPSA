@@ -6,6 +6,11 @@ const allLocalPhotos = import.meta.glob('/public/images/circuitos/**/*.{jpg,jpeg
 
 // Base URL del despliegue: '/' en local, '/simeva/' en GitHub Pages
 const BASE = import.meta.env.BASE_URL
+// Convierte rutas de imagen al path correcto según el despliegue
+const fixUrl = u => {
+  const p = (u ?? '').replace('/public/', '/')
+  return p.startsWith('/images/') ? BASE + p.slice(1) : p
+}
 
 const norm = s => (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 const fmtP = v => v != null ? Number(v).toFixed(2) + '%' : '—'
@@ -2051,7 +2056,7 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
   function actividadCard(act, color, bgColor) {
     const safeName = esc(act.nombre ?? '—').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/[\r\n]+/g, ' ')
     const safeDesc = act.desc ? esc(act.desc).replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/[\r\n]+/g, '<br>') : ''
-    const fotosArray = (act.fotos || []).map(u => u.replace('/public/', '/'))
+    const fotosArray = (act.fotos || []).map(fixUrl)
     
     const fotosStr = fotosArray.map(url => `<img src=\\'${url}\\' style=\\'width:100%;height:180px;object-fit:cover;border-radius:8px;cursor:zoom-in;border:1px solid rgba(0,0,0,0.05)\\' onclick=\\'const mx=document.getElementById("modal_${carouselId}");const ix=document.getElementById("img_modal_${carouselId}");if(mx&&ix){ix.src="${url}";mx.style.display="flex";}\\'/>`).join('')
 
@@ -2171,14 +2176,14 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
   } else {
     const isScroll = localUrls.length > 3
     const photosToRender = isScroll ? [...localUrls, ...localUrls] : localUrls
-    photoStrip = photosToRender.map(url => `
+    photoStrip = photosToRender.map(url => { const fu = fixUrl(url); return `
       <div style="background:#e5e7eb;border-radius:10px;overflow:hidden;position:relative;min-width:0;flex:1;cursor:zoom-in;transition:all .3s ease;will-change:transform,opacity;opacity:0.65"
            onmouseenter="window['pause_${carouselId}']=true;this.style.transform='scale(1.05)';this.style.opacity='1';"
            onmouseleave="window['pause_${carouselId}']=false;this.style.transform='scale(1)';this.style.opacity='0.65';"
-           onclick="const m=document.getElementById('modal_${carouselId}');const i=document.getElementById('img_modal_${carouselId}');if(m&&i){i.src='${url.replace('/public/', '/')}';m.style.display='flex';}">
-        <img src="${url.replace('/public/', '/')}" alt="foto" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.style.display='none'" />
+           onclick="const m=document.getElementById('modal_${carouselId}');const i=document.getElementById('img_modal_${carouselId}');if(m&&i){i.src='${fu}';m.style.display='flex';}">
+        <img src="${fu}" alt="foto" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.style.display='none'" />
         <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;text-transform:uppercase;padding:5px;text-align:center;font-weight:700;letter-spacing:1px">Estado Inicial</div>
-      </div>`).join('')
+      </div>`}).join('')
     if (!isScroll && localUrls.length < 3)
       photoStrip += Array.from({ length: 3 - localUrls.length }).map(() => `<div style="flex:1;min-width:0"></div>`).join('')
   }
@@ -2336,7 +2341,7 @@ function buildPptSubregionSeguimientoSlide(logoUrl, subregion, circuits, geoFeat
     if (!lastReg) return ''
 
     function actCard(act, color, badge) {
-      const fotos = (act.fotos ?? []).map(u => u.replace('/public/', '/'))
+      const fotos = (act.fotos ?? []).map(fixUrl)
       const thumbs = fotos.map(u => {
         const safeU = u.replace(/'/g, '%27')
         return `<div
