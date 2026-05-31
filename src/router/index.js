@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import App from '../App.vue'
 
 const routes = [
@@ -16,7 +16,8 @@ if (import.meta.env.VITE_INTERNAL === 'true') {
   routes.push({ path: '/compromisos',  component: () => import('../views/CompromisosView.vue') })
 }
 
+const isGhPages = import.meta.env.VITE_BASE_URL?.includes('/simeva')
 export default createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: isGhPages ? createWebHashHistory(import.meta.env.BASE_URL) : createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
