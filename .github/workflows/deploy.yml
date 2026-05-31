@@ -29,12 +29,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
-        env:
-          VITE_BASE_URL: /simeva/
-          VITE_INTERNAL: 'true'
-          VITE_API_LOCALIZACIONES: /simeva/data/localizacion.geojson
-          VITE_API_MUNICIPIOS: /simeva/data/municipios.geojson
+        run: npm run build:gh-pages
 
       - uses: actions/upload-pages-artifact@v3
         with:
