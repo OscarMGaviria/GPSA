@@ -254,7 +254,7 @@ export default defineConfig(({ mode }) => {
     environment: 'jsdom',
     globals: true,
   },
-  base: env.VITE_BASE_URL || '/',
+  base: process.env.VITE_BASE_URL || env.VITE_BASE_URL || '/',
   build: {
     // Separar vendors estables en chunks propios para aprovechar caché del navegador
     rollupOptions: {
