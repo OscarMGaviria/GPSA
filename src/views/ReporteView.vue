@@ -185,12 +185,26 @@ function injectCss() {
 
 let pf = null
 
+async function fetchGeoJSON(primaryUrl, fallbackUrl) {
+  if (primaryUrl) {
+    try {
+      const r = await fetch(primaryUrl)
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return await r.json()
+    } catch { /* fall through to local file */ }
+  }
+  const r = await fetch(fallbackUrl)
+  return await r.json()
+}
+
 onMounted(async () => {
   // ── Paso 1: fetch GeoJSON y CSS en paralelo ──────────────────────────────
   loadMsg.value = 'Preparando informe…'
+  const localGeo  = import.meta.env.BASE_URL + 'data/localizacion.geojson'
+  const localMpio = import.meta.env.BASE_URL + 'data/municipios.geojson'
   const [geoResult, mpioResult] = await Promise.allSettled([
-    fetch(import.meta.env.VITE_API_LOCALIZACIONES || (import.meta.env.BASE_URL + 'data/localizacion.geojson')).then(r => r.json()),
-    fetch(import.meta.env.VITE_API_MUNICIPIOS     || (import.meta.env.BASE_URL + 'data/municipios.geojson')).then(r => r.json()),
+    fetchGeoJSON(import.meta.env.VITE_API_LOCALIZACIONES, localGeo),
+    fetchGeoJSON(import.meta.env.VITE_API_MUNICIPIOS, localMpio),
   ])
   if (geoResult.status  === 'fulfilled') geoFeatures.value  = geoResult.value.features  ?? []
   if (mpioResult.status === 'fulfilled') mpioFeatures.value = mpioResult.value.features ?? []
