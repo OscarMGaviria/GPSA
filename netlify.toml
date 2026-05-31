@@ -1,0 +1,14 @@
+[build]
+  command   = "npm run build:netlify"
+  publish   = "dist"
+
+[build.environment]
+  VITE_BASE_URL             = "/"
+  VITE_INTERNAL             = "true"
+  VITE_API_LOCALIZACIONES   = "/data/localizacion.geojson"
+  VITE_API_MUNICIPIOS       = "/data/municipios.geojson"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

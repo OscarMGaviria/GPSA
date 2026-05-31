@@ -18,6 +18,7 @@ dist-ssr
 !.env.example
 !.env.production
 !.env.gh-pages
+!.env.netlify
 
 # Editor directories and files
 .vscode/*
