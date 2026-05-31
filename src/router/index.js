@@ -17,6 +17,6 @@ if (import.meta.env.VITE_INTERNAL === 'true') {
 }
 
 export default createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
