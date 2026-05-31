@@ -4,6 +4,9 @@ import { circuitPhotoUrl } from './useCircuitoPhotos.js'
 
 const allLocalPhotos = import.meta.glob('/public/images/circuitos/**/*.{jpg,jpeg,png,webp}', { eager: true, query: '?url', import: 'default' })
 
+// Base URL del despliegue: '/' en local, '/simeva/' en GitHub Pages
+const BASE = import.meta.env.BASE_URL
+
 const norm = s => (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 const fmtP = v => v != null ? Number(v).toFixed(2) + '%' : '—'
 const fmtC = v => v != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v) : '—'
@@ -1780,7 +1783,7 @@ function buildPptCoverSlide(logoUrl, fecha, filters, stats) {
 
   return `
   <div class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
-    <img src="/images/presentacion/portada.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
+    <img src="${BASE}images/presentacion/portada.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
     <div style="position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;padding-top:60px">
       <div style="text-align:center;line-height:1.0;letter-spacing:-.025em">
         ${titleLines.map(l =>
@@ -1872,7 +1875,7 @@ function buildPptResumenSlide(logoUrl, stats, geoFeatures = [], mpioFeatures = [
 
   const bgImages = subs.map(s => {
     const subnorm = normStr(s.name)
-    const src = `/images/presentacion/${s.name.toLowerCase()}.jpg`
+    const src = `${BASE}images/presentacion/${s.name.toLowerCase()}.jpg`
     return `<img src="${src}" data-bgsub="${subnorm}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.4s ease" onerror="this.style.display='none'" alt=""/>`
   }).join('')
 
@@ -1890,7 +1893,7 @@ function buildPptResumenSlide(logoUrl, stats, geoFeatures = [], mpioFeatures = [
 
   return `
   <div class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Poppins',sans-serif">
-    <img src="/images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
+    <img src="${BASE}images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
     ${sideImagesPanel}
     <div style="position:absolute;inset:0;padding:16px 280px 70px 36px;display:flex;flex-direction:column">
       <div style="font-size:23px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#0b5640;margin-bottom:12px;font-family:'Poppins',sans-serif">RESUMEN EJECUTIVO — PROGRAMA DE ESTABILIZACIÓN DE VÍAS</div>
@@ -1949,7 +1952,7 @@ function buildPptCircuitoSlide(logoUrl, subregion, circuito, vias) {
 
   return `
   <div class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
-    <img src="/images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
+    <img src="${BASE}images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
     <div style="position:absolute;inset:0;padding:14px 275px 70px 36px">
       <div style="font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#0b5640;margin-bottom:2px">INTERVENCIÓN VIAL — ${esc(circuito)}</div>
       <div style="font-family:'Poppins',sans-serif;text-transform:uppercase;color:#ff751f;font-size:16px;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e5e7eb">${lotePref}${esc(subregion)}</div>
@@ -2238,7 +2241,7 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
   return `
   ${pulseStyle}
   <div id="${tabId}" class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
-    <img src="/images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
+    <img src="${BASE}images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
     <div style="position:absolute;inset:0">
       ${mapPanel}
       <div id="${tabId}_col1">
@@ -2466,7 +2469,7 @@ function buildPptSubregionSeguimientoSlide(logoUrl, subregion, circuits, geoFeat
   return `
   ${pulseStyle}
   <div id="${tabId}" class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
-    <img src="/images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
+    <img src="${BASE}images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
     ${openerScript}
     ${hiddenPanels}
     <div style="position:absolute;inset:0">
@@ -2492,7 +2495,7 @@ function buildPptSubregionSeguimientoSlide(logoUrl, subregion, circuits, geoFeat
 function buildPptClosingSlide(logoUrl) {
   return `
   <div class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
-    <img src="/images/presentacion/fin.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
+    <img src="${BASE}images/presentacion/fin.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
   </div>`
 }
 
@@ -2586,7 +2589,7 @@ export function useReporte() {
     const stats = filteredStats?.value ?? filteredStats
     const features = Array.isArray(geoFeatures) ? geoFeatures : (geoFeatures?.value ?? [])
 
-    const logoUrl = window.location.origin + '/Escudo%20de%20armas.png'
+    const logoUrl = window.location.origin + BASE + 'Escudo%20de%20armas.png'
     const fecha = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
 
     const pagesMeta = buildReportePages(stats, filters, logoUrl, fecha, features)

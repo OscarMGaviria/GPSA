@@ -106,7 +106,7 @@ function onWheel(e) {
   applyZoom(e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP)
 }
 
-const logoUrl = window.location.origin + '/Escudo%20de%20armas.png'
+const logoUrl = window.location.origin + import.meta.env.BASE_URL + 'Escudo%20de%20armas.png'
 const fecha   = new Date().toLocaleDateString('es-CO', { year:'numeric', month:'long', day:'numeric' })
 
 // ── Modo presentación ────────────────────────────────────────────────────────

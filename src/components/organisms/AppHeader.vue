@@ -3,6 +3,7 @@ import { PanelRightClose, PanelRightOpen, HelpCircle, FileText } from 'lucide-vu
 import FilterBar from '../molecules/FilterBar.vue'
 
 const isInternal = import.meta.env.VITE_INTERNAL === 'true'
+const escudoSrc  = import.meta.env.BASE_URL + 'Escudo de armas.png'
 
 const props = defineProps({
   title:            { type: String,  default: 'Pavimentación Vial' },
@@ -23,7 +24,7 @@ const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour', 'genera
     <!-- LEFT: logo + branding -->
     <div class="header-brand">
       <div class="header-logo">
-        <img src="/Escudo de armas.png" alt="Gobernación de Antioquia" class="header-logo-img" fetchpriority="high" />
+        <img :src="escudoSrc" alt="Gobernación de Antioquia" class="header-logo-img" fetchpriority="high" />
       </div>
       <div class="header-titles">
         <h1 class="header-title">{{ title }}</h1>
