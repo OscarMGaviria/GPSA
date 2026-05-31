@@ -29,7 +29,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "25OO111B2821",
                 "Shape_Leng": 24381.226553,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 1
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -636,7 +637,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "25OO111B2821",
                 "Shape_Leng": 24381.226553,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 2
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -707,7 +709,8 @@
                 "FECHA_INI": "05/02/2026",
                 "CTO": "25OO111B2824",
                 "Shape_Leng": 14412.6390146,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 3
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -1162,7 +1165,8 @@
                 "FECHA_INI": "05/02/2026",
                 "CTO": "25OO111B2824",
                 "Shape_Leng": 7336.15961955,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 4
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -1379,7 +1383,7 @@
         {
             "type": "Feature",
             "properties": {
-                "CIRCUITO": "Carolina del Principe - Angostura",
+                "CIRCUITO": "Carolina del Príncipe - Angostura",
                 "LONG_INTER": 13.62,
                 "ORDEN": 2,
                 "NOMBRE_VIA": "La Ese - Angostura - La Ye (Partidas Angostura)",
@@ -1397,7 +1401,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2826",
                 "Shape_Leng": 13104.4955419,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 5
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -1836,7 +1841,8 @@
                 "FECHA_INI": "20/01/2026",
                 "CTO": "4600018900",
                 "Shape_Leng": 22959.0220953,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 6
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -2619,7 +2625,8 @@
                 "FECHA_INI": "05/02/2026",
                 "CTO": "25OO111B2824",
                 "Shape_Leng": 2374.08772111,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 7
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -2700,7 +2707,8 @@
                 "FECHA_INI": "20/01/2026",
                 "CTO": "4600018900",
                 "Shape_Leng": 19326.0735081,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 8
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -3431,7 +3439,8 @@
                 "FECHA_INI": "20/01/2026",
                 "CTO": "4600018900",
                 "Shape_Leng": 4957.5127992,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 9
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -3638,7 +3647,8 @@
                 "FECHA_INI": "05/02/2026",
                 "CTO": "25OO111B2824",
                 "Shape_Leng": 13410.5927315,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 10
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -4099,7 +4109,8 @@
                 "FECHA_INI": "05/02/2026",
                 "CTO": "25OO111B2824",
                 "Shape_Leng": 8126.11941614,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 11
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -4402,7 +4413,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2826",
                 "Shape_Leng": 4244.86157328,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 12
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -4581,7 +4593,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "25OO111B2821",
                 "Shape_Leng": 31981.6176455,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 13
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -5556,7 +5569,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "25OO111B2821",
                 "Shape_Leng": 10789.6004381,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 14
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -5995,7 +6009,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2826",
                 "Shape_Leng": 17425.4597613,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 15
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -6444,7 +6459,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2826",
                 "Shape_Leng": 10983.7305179,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 16
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -6775,7 +6791,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2826",
                 "Shape_Leng": 10734.8798857,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 17
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -7046,7 +7063,8 @@
                 "FECHA_INI": "20/01/2026",
                 "CTO": "4600018900",
                 "Shape_Leng": 2910.42414992,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 18
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -7157,7 +7175,8 @@
                 "FECHA_INI": "20/01/2026",
                 "CTO": "4600018900",
                 "Shape_Leng": 14695.5541644,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 19
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -7652,7 +7671,8 @@
                 "FECHA_INI": "20/01/2026",
                 "CTO": "4600018900",
                 "Shape_Leng": 5074.74919203,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 20
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -7873,7 +7893,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2826",
                 "Shape_Leng": 10298.3349483,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 21
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -8238,7 +8259,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "4600018883",
                 "Shape_Leng": 19963.8284803,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 22
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -8915,7 +8937,8 @@
                 "FECHA_INI": "05/02/2026",
                 "CTO": "25OO111B2824",
                 "Shape_Leng": 15437.6880972,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 23
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -9414,7 +9437,8 @@
                 "FECHA_INI": "20/01/2026",
                 "CTO": "4600018900",
                 "Shape_Leng": 18502.9620679,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 24
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -9969,7 +9993,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2825",
                 "Shape_Leng": 24459.1855663,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 25
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -10682,7 +10707,8 @@
                 "FECHA_INI": "04/02/2026",
                 "CTO": "25OO111B2822",
                 "Shape_Leng": 25658.884395,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 26
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -11225,7 +11251,8 @@
                 "FECHA_INI": "04/02/2026",
                 "CTO": "25OO111B2822",
                 "Shape_Leng": 32230.7417674,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 27
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -11816,7 +11843,8 @@
                 "FECHA_INI": "20/01/2026",
                 "CTO": "4600018900",
                 "Shape_Leng": 2213.62288305,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 28
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -11903,7 +11931,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "4600018883",
                 "Shape_Leng": 22777.3246412,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 29
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -12286,7 +12315,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "4600018883",
                 "Shape_Leng": 22777.3246412,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 30
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -12645,7 +12675,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "25OO111B2823",
                 "Shape_Leng": 29539.4441454,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 31
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -13352,7 +13383,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "4600018883",
                 "Shape_Leng": 9670.491015,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 32
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -13699,7 +13731,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "25OO111B2823",
                 "Shape_Leng": 24865.4626946,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 33
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -14028,7 +14061,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2826",
                 "Shape_Leng": 10582.2843881,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 34
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -14335,7 +14369,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2826",
                 "Shape_Leng": 4024.7153096,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 35
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -14510,7 +14545,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2826",
                 "Shape_Leng": 16348.0578852,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 36
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -15065,7 +15101,8 @@
                 "FECHA_INI": "11/02/2026",
                 "CTO": "25OO111B2826",
                 "Shape_Leng": 16344.808899,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 37
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -15544,7 +15581,8 @@
                 "FECHA_INI": "04/02/2026",
                 "CTO": "25OO111B2822",
                 "Shape_Leng": 9917.1664447,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 38
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -15699,7 +15737,8 @@
                 "FECHA_INI": "04/02/2026",
                 "CTO": "25OO111B2822",
                 "Shape_Leng": 24676.9012216,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 39
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -16350,7 +16389,8 @@
                 "FECHA_INI": "04/02/2026",
                 "CTO": "25OO111B2822",
                 "Shape_Leng": 21872.1428726,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 40
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -16677,7 +16717,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "25OO111B2821",
                 "Shape_Leng": 4901.49438287,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 41
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -16838,7 +16879,8 @@
                 "FECHA_INI": "05/02/2026",
                 "CTO": "25OO111B2824",
                 "Shape_Leng": 4783.56296037,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 42
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -17043,7 +17085,8 @@
                 "FECHA_INI": "20/01/2026",
                 "CTO": "4600018900",
                 "Shape_Leng": 3729.36510847,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 43
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -17174,7 +17217,8 @@
                 "FECHA_INI": "20/01/2026",
                 "CTO": "4600018900",
                 "Shape_Leng": 1126.63161416,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 44
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -17241,7 +17285,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "25OO111B2821",
                 "Shape_Leng": 960.424724546,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 45
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -17304,7 +17349,8 @@
                 "FECHA_INI": "04/02/2026",
                 "CTO": "25OO111B2822",
                 "Shape_Leng": 4744.26707921,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 46
             },
             "geometry": {
                 "type": "MultiLineString",
@@ -17435,7 +17481,8 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "25OO111B2821",
                 "Shape_Leng": 16795.9104941,
-                "ESTABILIZADO": 0
+                "ESTABILIZADO": 0,
+                "id": 47
             },
             "geometry": {
                 "type": "MultiLineString",

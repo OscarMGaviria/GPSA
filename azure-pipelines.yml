@@ -1,0 +1,73 @@
+trigger:
+  branches:
+    include:
+      - master
+      - feature/*
+  paths:
+    include:
+      - src/**
+      - public/**
+      - index.html
+      - vite.config.ts
+      - package.json
+
+pr:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - src/**
+
+resources:
+  repositories:
+    - repository: Pipelines-Templates-Repo
+      type: git
+      name: CONTANT/PipelinesCode
+      ref: refs/heads/master
+
+variables:
+  NodeVersion: '22.x'
+  SonarProjectName: 'SIMEVA-FRONTEND'
+  SonarExtraExclusions: 'docker/**,app/Config/**'
+
+stages:
+  - template: templates/js/sonar-scanner-template.yml@Pipelines-Templates-Repo
+    parameters:
+      sonarProjectKey: "$(SonarProjectKey)"
+      sonarProjectName: "$(SonarProjectName)"
+      sonarToken: "$(SonarToken)"
+      sonarHostUrl: "$(SonarHostUrl)"
+      sonarExtraExclusions: "$(SonarExtraExclusions)"
+
+  - stage: CD
+    displayName: 'CD — Deploy SWA'
+    dependsOn: Build
+    condition: >
+      and(
+        succeeded('Build'),
+        or(
+          eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+          startsWith(variables['Build.SourceBranch'], 'refs/heads/feature/')
+        )
+      )
+    variables:
+      - group: simeva-frontend
+    jobs:
+      - deployment: DeploySWA
+        displayName: 'Deploy'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'simeva-frontend'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates-cd/static-web-apps/azure-swa-template.yml@Pipelines-Templates-Repo
+                  parameters:
+                    environment:            $(Environment)
+                    azureServiceConnection: $(AzureServiceConnection)
+                    swaName:                $(SWAName)
+                    resourceGroupName:      $(ResourceGroup)
+                    nodeVersion:            '~22'
+                    enableHealthCheck:        true

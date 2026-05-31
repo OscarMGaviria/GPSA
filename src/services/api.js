@@ -1,5 +1,5 @@
 const ENDPOINTS = {
-  localizaciones: import.meta.env.VITE_API_LOCALIZACIONES,
+  localizaciones: import.meta.env.VITE_API_LOCALIZACIONES ?? '/data/localizacion.geojson',
   municipios:     import.meta.env.VITE_API_MUNICIPIOS,
 }
 

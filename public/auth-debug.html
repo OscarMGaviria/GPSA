@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIMEVA — Diagnóstico de Autenticación</title>
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f1f17; color: #e0e0e0; padding: 20px; }
+    h1 { color: #4caf50; margin-bottom: 16px; font-size: 20px; }
+    h2 { color: #81c784; margin: 16px 0 8px; font-size: 16px; }
+    .card { background: #1a2e20; border: 1px solid #2e6649; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .ok { color: #4caf50; } .err { color: #f44336; } .warn { color: #ff9800; }
+    pre { background: #0a1a10; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+    button { background: #1a5c3a; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin: 4px; }
+    button:hover { background: #0f3d27; }
+    #log { margin-top: 12px; }
+    .log-entry { padding: 4px 0; border-bottom: 1px solid #1a2e20; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 SIMEVA — Diagnóstico de Autenticación MSAL</h1>
+
+  <div class="card">
+    <h2>1. Configuración</h2>
+    <pre id="config">Cargando...</pre>
+  </div>
+
+  <div class="card">
+    <h2>2. Estado de la URL</h2>
+    <pre id="urlInfo">Cargando...</pre>
+  </div>
+
+  <div class="card">
+    <h2>3. handleRedirectPromise()</h2>
+    <pre id="redirectResult">Esperando...</pre>
+  </div>
+
+  <div class="card">
+    <h2>4. Cuentas en caché (getAllAccounts)</h2>
+    <pre id="accounts">Esperando...</pre>
+  </div>
+
+  <div class="card">
+    <h2>5. SessionStorage (claves MSAL)</h2>
+    <pre id="storage">Cargando...</pre>
+  </div>
+
+  <div class="card">
+    <h2>6. Acciones</h2>
+    <button onclick="doLogin()">🔐 Login con Redirect</button>
+    <button onclick="doLoginPopup()">🪟 Login con Popup</button>
+    <button onclick="doLogout()">🚪 Logout</button>
+    <button onclick="location.reload()">🔄 Recargar</button>
+  </div>
+
+  <div class="card">
+    <h2>7. Log de eventos</h2>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    const CLIENT_ID = '36a8f6ce-192b-4128-a441-983b46608205';
+    const TENANT_ID = '642f159e-8f12-4309-b87c-cbc5436ec691';
+    const REDIRECT_URI = window.location.origin;
+
+    function log(msg, type = '') {
+      const el = document.getElementById('log');
+      const div = document.createElement('div');
+      div.className = 'log-entry ' + type;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      el.prepend(div);
+      console.log(`[AUTH-DEBUG] ${msg}`);
+    }
+
+    // Mostrar configuración
+    document.getElementById('config').textContent = JSON.stringify({
+      clientId: CLIENT_ID,
+      tenantId: TENANT_ID,
+      authority: `https://login.microsoftonline.com/${TENANT_ID}`,
+      redirectUri: REDIRECT_URI,
+    }, null, 2);
+
+    // Mostrar URL
+    document.getElementById('urlInfo').textContent = JSON.stringify({
+      href: window.location.href,
+      origin: window.location.origin,
+      pathname: window.location.pathname,
+      hash: window.location.hash ? window.location.hash.substring(0, 100) + '...' : '(vacío)',
+      hasCode: window.location.hash.includes('code='),
+      hasError: window.location.hash.includes('error='),
+      hasState: window.location.hash.includes('state='),
+    }, null, 2);
+
+    // Mostrar sessionStorage
+    function showStorage() {
+      const items = {};
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        const val = sessionStorage.getItem(key);
+        items[key] = val.length > 200 ? val.substring(0, 200) + '...' : val;
+      }
+      document.getElementById('storage').textContent =
+        Object.keys(items).length === 0
+          ? '(vacío — no hay datos de MSAL en sessionStorage)'
+          : JSON.stringify(items, null, 2);
+    }
+    showStorage();
+
+    // Inicializar MSAL
+    let msalInstance = null;
+
+    async function initMsal() {
+      log('Creando instancia de MSAL...');
+      try {
+        msalInstance = new msal.PublicClientApplication({
+          auth: {
+            clientId: CLIENT_ID,
+            authority: `https://login.microsoftonline.com/${TENANT_ID}`,
+            redirectUri: REDIRECT_URI,
+          },
+          cache: {
+            cacheLocation: 'sessionStorage',
+            storeAuthStateInCookie: false,
+          },
+        });
+        log('Llamando initialize()...');
+        await msalInstance.initialize();
+        log('✅ MSAL inicializado correctamente', 'ok');
+
+        log('Llamando handleRedirectPromise()...');
+        const result = await msalInstance.handleRedirectPromise();
+        if (result) {
+          log('✅ handleRedirectPromise devolvió resultado:', 'ok');
+          document.getElementById('redirectResult').textContent = JSON.stringify({
+            account: { name: result.account?.name, username: result.account?.username },
+            scopes: result.scopes,
+            tokenType: result.tokenType,
+            expiresOn: result.expiresOn,
+          }, null, 2);
+          document.getElementById('redirectResult').className = 'ok';
+        } else {
+          log('ℹ️ handleRedirectPromise devolvió null (no hay respuesta de redirect)', 'warn');
+          document.getElementById('redirectResult').textContent = 'null — No hay respuesta de redirect pendiente.';
+        }
+
+        // Mostrar cuentas
+        const accounts = msalInstance.getAllAccounts();
+        log(`getAllAccounts(): ${accounts.length} cuenta(s) encontrada(s)`);
+        if (accounts.length > 0) {
+          document.getElementById('accounts').textContent = JSON.stringify(
+            accounts.map(a => ({ name: a.name, username: a.username, tenantId: a.tenantId, environment: a.environment })),
+            null, 2
+          );
+          document.getElementById('accounts').className = 'ok';
+          log('✅ Usuario autenticado: ' + accounts[0].name, 'ok');
+        } else {
+          document.getElementById('accounts').textContent = '(ninguna cuenta encontrada — no hay sesión activa)';
+          document.getElementById('accounts').className = 'warn';
+          log('⚠️ No hay cuentas — el usuario NO está autenticado', 'warn');
+        }
+
+        showStorage();
+
+      } catch (e) {
+        log('❌ Error al inicializar MSAL: ' + e.message, 'err');
+        document.getElementById('redirectResult').textContent = 'ERROR: ' + e.message + '\n\n' + e.stack;
+        document.getElementById('redirectResult').className = 'err';
+      }
+    }
+
+    async function doLogin() {
+      log('Iniciando loginRedirect...');
+      try {
+        sessionStorage.setItem('simeva-auth-return', '/auth-debug.html');
+        await msalInstance.loginRedirect({ scopes: ['openid', 'profile', 'email'] });
+      } catch (e) {
+        log('❌ Error en loginRedirect: ' + e.message, 'err');
+      }
+    }
+
+    async function doLoginPopup() {
+      log('Iniciando loginPopup...');
+      try {
+        const result = await msalInstance.loginPopup({ scopes: ['openid', 'profile', 'email'] });
+        log('✅ loginPopup exitoso: ' + result.account?.name, 'ok');
+        const accounts = msalInstance.getAllAccounts();
+        document.getElementById('accounts').textContent = JSON.stringify(
+          accounts.map(a => ({ name: a.name, username: a.username })), null, 2
+        );
+        showStorage();
+      } catch (e) {
+        log('❌ Error en loginPopup: ' + e.errorCode + ' — ' + e.message, 'err');
+      }
+    }
+
+    async function doLogout() {
+      log('Cerrando sesión...');
+      try {
+        await msalInstance.logoutRedirect({ postLogoutRedirectUri: REDIRECT_URI + '/auth-debug.html' });
+      } catch (e) {
+        log('❌ Error en logout: ' + e.message, 'err');
+      }
+    }
+
+    initMsal();
+  </script>
+</body>
+</html>
