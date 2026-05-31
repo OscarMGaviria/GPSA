@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+  // Redirige rutas de Vue Router al index.html preservando la ruta
+  var base = '/simeva';
+  var path = window.location.pathname.replace(base, '') || '/';
+  sessionStorage.setItem('redirect', path);
+  window.location.replace(base + '/');
+</script>
+</head>
+</html>

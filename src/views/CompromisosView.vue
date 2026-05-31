@@ -30,7 +30,7 @@ loadData()
 const circuitos = ref([])
 async function loadCircuitos() {
   try {
-    const r  = await fetch('/data/localizacion.geojson')
+    const r  = await fetch(import.meta.env.VITE_API_LOCALIZACIONES || (import.meta.env.BASE_URL + 'data/localizacion.geojson'))
     const gj = await r.json()
     circuitos.value = [...new Set(
       gj.features.map(f => f.properties.CIRCUITO).filter(Boolean)

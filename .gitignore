@@ -30,9 +30,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Datos en vivo (se editan directamente, no versionar)
-public/data/localizacion.geojson
-public/data/localizacion*.geojson
+# Copias temporales de localizacion
 public/data/localizacion - copia.geojson
 
 # Archivos temporales y comprimidos

@@ -189,8 +189,8 @@ onMounted(async () => {
   // ── Paso 1: fetch GeoJSON y CSS en paralelo ──────────────────────────────
   loadMsg.value = 'Preparando informe…'
   const [geoResult, mpioResult] = await Promise.allSettled([
-    fetch('/data/localizacion.geojson').then(r => r.json()),
-    fetch('/data/municipios.geojson').then(r => r.json()),
+    fetch(import.meta.env.VITE_API_LOCALIZACIONES || (import.meta.env.BASE_URL + 'data/localizacion.geojson')).then(r => r.json()),
+    fetch(import.meta.env.VITE_API_MUNICIPIOS     || (import.meta.env.BASE_URL + 'data/municipios.geojson')).then(r => r.json()),
   ])
   if (geoResult.status  === 'fulfilled') geoFeatures.value  = geoResult.value.features  ?? []
   if (mpioResult.status === 'fulfilled') mpioFeatures.value = mpioResult.value.features ?? []
