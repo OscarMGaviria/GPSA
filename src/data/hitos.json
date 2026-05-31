@@ -1,30 +1,5 @@
 {
-  "La Ye - Yondó": [
-    {
-      "id": "mp2zrtwz",
-      "fecha": "2026-05-12",
-      "frentes": [],
-      "ejecutadas": [],
-      "en_ejecucion": [],
-      "pendientes": [],
-      "obs": "No hay frentes activos"
-    },
-    {
-      "id": "mpcmgk7g",
-      "fecha": "2026-05-19",
-      "frentes": [],
-      "ejecutadas": [],
-      "en_ejecucion": [
-        {
-          "nombre": "Se programa reunion de socializacion",
-          "desc": "",
-          "fotos": []
-        }
-      ],
-      "pendientes": [],
-      "obs": "Sin Frentes activos"
-    }
-  ],
+  "La Ye - Yondó": [],
   "Remedios - La Y De La Virgen - Puerto Berrío": [
     {
       "id": "mp2zpnxb",
@@ -83,6 +58,45 @@
       ],
       "pendientes": [],
       "obs": ""
+    },
+    {
+      "id": "mpr3ytwx",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Topografía",
+          "desc": "Se ejecutó",
+          "fotos": [
+            "/images/actividades/990290b7-1e4f-41d5-9a7b-a2a3c13071d6.jpg",
+            "/images/actividades/424b77ec-c12c-434c-ad22-7189e39f2149.jpg"
+          ]
+        },
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Se ejecutaron cinco (5) apiques",
+          "fotos": [
+            "/images/actividades/515765e1-d426-4bba-a484-2abaa69f702f.jpg",
+            "/images/actividades/77278d90-cad1-4643-896d-8a3c5a9e1dc6.jpg"
+          ]
+        },
+        {
+          "nombre": "Ensayos de laboratorio",
+          "desc": "Se realizan ensayos de granulometria, humedad y limites",
+          "fotos": []
+        },
+        {
+          "nombre": "Remplazo de obras transversales",
+          "desc": "Se continúa ejecutando esta actividad esta semana se reporta avance",
+          "fotos": [
+            "/images/actividades/edf2a265-59d3-4e2e-9550-e3ed3a8067e3.jpg",
+            "/images/actividades/a0f8f6e9-f332-4777-8f0b-fda861cdd56e.jpg"
+          ]
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Cáceres - La Chilona": [
@@ -133,6 +147,40 @@
           "desc": "K21+000",
           "fotos": [
             "/images/actividades/236eceee-5f9a-421b-98e4-69aad70a3c25.jpg"
+          ]
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    },
+    {
+      "id": "mpr0crhf",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Completada",
+          "fotos": [
+            "/images/actividades/810d69d3-d191-4543-9458-759b45f24997.jpg"
+          ]
+        }
+      ],
+      "en_ejecucion": [
+        {
+          "nombre": "Contrucción de filtros",
+          "desc": "",
+          "fotos": [
+            "/images/actividades/91737096-2240-4173-9fc9-a64c1cb07e2c.jpg",
+            "/images/actividades/de0da232-1749-4ba6-8c35-ce085bd60d80.jpg"
+          ]
+        },
+        {
+          "nombre": "Limpieza de alcantarillas",
+          "desc": "Se continúa ejecutando esta actividad esta semana se reporta avance",
+          "fotos": [
+            "/images/actividades/45c70dcd-d700-4603-b5c1-2761caeb6317.jpg",
+            "/images/actividades/87fc1fae-da61-4ac4-855f-b88ffaa68843.jpg"
           ]
         }
       ],
@@ -225,6 +273,32 @@
           "nombre": "Instalación de Valla Institucional",
           "desc": "Visita en compañia de secretaria de tránsito Andes para verificar punto de instalación",
           "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    },
+    {
+      "id": "mpr4jsfy",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Se han ejecutado 34 obras de 229 (5 durante la semana)",
+          "fotos": [
+            "/images/actividades/9856a833-ec87-4887-903c-6fbc84a0e3c8.jpg",
+            "/images/actividades/c65ee938-d4a6-4b56-8711-b1c9dd3b950e.jpg"
+          ]
+        },
+        {
+          "nombre": "Topografia",
+          "desc": "Se ejecuto 1.58 km de 22.39 km",
+          "fotos": [
+            "/images/actividades/d503d75c-1c0b-434f-889a-2cd99a275cae.jpg",
+            "/images/actividades/26dc841a-bc47-49cf-a213-d3512ddf3a12.jpg"
+          ]
         }
       ],
       "pendientes": [],
@@ -351,6 +425,26 @@
       ],
       "pendientes": [],
       "obs": ""
+    },
+    {
+      "id": "mprcv8sz",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [
+        {
+          "nombre": "Topografía",
+          "desc": "Se han ejecutado 2.65 km de 15.93 km",
+          "fotos": []
+        },
+        {
+          "nombre": "Inventario de obras transversales",
+          "desc": "Los avances se describen la presente semana.",
+          "fotos": []
+        }
+      ],
+      "en_ejecucion": [],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Titiribi - Armenia": [
@@ -455,6 +549,31 @@
       ],
       "pendientes": [],
       "obs": ""
+    },
+    {
+      "id": "mpqw2wq9",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Topografia",
+          "desc": "Se realizo el levantamiento de 2km",
+          "fotos": []
+        },
+        {
+          "nombre": "Contrucciòn de alcantarillas",
+          "desc": "Se contruiràn dos (2) alcantarilla entre el k0+000 a k0+200",
+          "fotos": []
+        },
+        {
+          "nombre": "Conservación de pavimento existente",
+          "desc": "20 metros al inicio del tramo",
+          "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "San Pedro de Urabá - Necoclí": [
@@ -523,6 +642,36 @@
           "fotos": [
             "/images/actividades/19bb4a89-18bd-4c9a-8b2e-62c9b882fd62.jpg"
           ]
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    },
+    {
+      "id": "mpqxbq86",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Limpieza de alcantarillas",
+          "desc": "Ejecutadas 77 de 350 (7 en la semana)",
+          "fotos": []
+        },
+        {
+          "nombre": "Bacheos",
+          "desc": "Se intervinieron 290 m correspondientes a 9 bacheos",
+          "fotos": []
+        },
+        {
+          "nombre": "Instalación de tubería",
+          "desc": "20 tuberías instaladas",
+          "fotos": []
+        },
+        {
+          "nombre": "Topografía",
+          "desc": "3.0 km de levantamiento",
+          "fotos": []
         }
       ],
       "pendientes": [],
@@ -637,6 +786,39 @@
       ],
       "pendientes": [],
       "obs": ""
+    },
+    {
+      "id": "mpr1a74i",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Ejecutadas 57 de 117",
+          "fotos": [
+            "/images/actividades/89a8f20c-baec-4eab-8bf8-6d1e2122768f.jpg"
+          ]
+        },
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Ejecutados 40 de 83",
+          "fotos": [
+            "/images/actividades/da0b19ff-0a3c-4c10-8e01-bce14b1f0591.jpg",
+            "/images/actividades/875b2dbb-be46-4c07-9dfb-241d96196099.jpg"
+          ]
+        },
+        {
+          "nombre": "Topografía",
+          "desc": "Continua sin avances 13.6 km de 20.64km",
+          "fotos": [
+            "/images/actividades/64ade3cf-a060-41ec-bf8b-becbab47cffe.jpg",
+            "/images/actividades/ba107196-5edf-4079-b552-26f96e063e35.jpg"
+          ]
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Amalfi - Portachuelos - Santa Isabel": [
@@ -712,6 +894,26 @@
         {
           "nombre": "Inventario de obras transversales",
           "desc": "Se continua con el inventario durante la presente semana",
+          "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    },
+    {
+      "id": "mpr1k6x7",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Sin avances ejecutados 48 de 91 Apiques",
+          "fotos": []
+        },
+        {
+          "nombre": "Topografía",
+          "desc": "Continua sin avances ejecutados 12.86 km de 23.46 km",
           "fotos": []
         }
       ],
@@ -798,6 +1000,47 @@
       ],
       "pendientes": [],
       "obs": ""
+    },
+    {
+      "id": "mpqy1ssj",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Ampliación de vias",
+          "desc": "Ejecutada 7.4 km",
+          "fotos": [
+            "/images/actividades/4256a464-68d8-42df-87e2-6a72c93ecebc.jpg",
+            "/images/actividades/3d54ef79-bfb7-48a3-85b4-1af9c3931bec.jpg"
+          ]
+        },
+        {
+          "nombre": "Topografía",
+          "desc": "Se continúa ejecutando esta actividad esta semana se reporta avance",
+          "fotos": [
+            "/images/actividades/d660405d-d07e-4ab0-82e7-79c6462afc46.jpg",
+            "/images/actividades/6d80298e-90fc-450f-b9a6-9562af7e8ebf.jpg",
+            "/images/actividades/9d8ba030-c1bd-4109-857e-8170ffb92ed4.jpg",
+            "/images/actividades/40b57a77-6c9e-47eb-90d6-588e6f6d61e3.jpg"
+          ]
+        },
+        {
+          "nombre": "Exploración de campo",
+          "desc": "Se continúa ejecutando esta actividad esta semana se reporta avance",
+          "fotos": []
+        },
+        {
+          "nombre": "Limpieza de obras transversales",
+          "desc": "Se continúa ejecutando esta actividad esta semana se reporta avance",
+          "fotos": [
+            "/images/actividades/7cde7fc5-1d30-495c-ab5b-fc0237d9cfdd.jpg",
+            "/images/actividades/954a27ad-9c34-4f2c-9ea4-5d0a7c6c31b3.jpg"
+          ]
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
     }
   ],
   "Frontino - Nutibara": [
@@ -853,6 +1096,43 @@
             "/images/actividades/6204c6a3-19b9-44a5-abf5-b42c42a59ba9.jpg",
             "/images/actividades/6df6ac04-80f6-4d93-ac8f-efb3a09912ee.jpg",
             "/images/actividades/617b920e-74a6-4c65-bdfe-9c61518f74de.jpg"
+          ]
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    },
+    {
+      "id": "mpqxu24n",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Resposicion de obras transversales",
+          "desc": "21 ejecutadas en 5.2 km",
+          "fotos": [
+            "/images/actividades/574b29fa-d719-4de1-84f1-cb05e6052ce8.jpg",
+            "/images/actividades/b7a26573-e8c2-4cf4-afb8-64c1c8d81e5d.jpg",
+            "/images/actividades/952126f8-10c6-47ef-994c-f4edc396fa74.jpg"
+          ]
+        },
+        {
+          "nombre": "Topografía",
+          "desc": "Ejecutados 7.8 km",
+          "fotos": [
+            "/images/actividades/b70f6c6b-84ec-44db-a80b-6f3256752d05.jpg",
+            "/images/actividades/c5f700bd-a926-4ccd-9774-dfee2f666462.jpg"
+          ]
+        },
+        {
+          "nombre": "Ampliación de banca",
+          "desc": "Por perdida de banca de 1.5m",
+          "fotos": [
+            "/images/actividades/b52e21d3-bbd4-4e72-a972-69a7e2e6220d.jpg",
+            "/images/actividades/7430fb0e-b93c-4b49-8f49-431ef1504e4c.jpg",
+            "/images/actividades/e057e32f-5a07-47f4-8c37-1e73f16e64de.jpg",
+            "/images/actividades/a4796d2d-dd11-4dba-a5d7-5662ccc84b5d.jpg"
           ]
         }
       ],
@@ -1022,6 +1302,42 @@
           "nombre": "Levantamiento Topográfico",
           "desc": "Se continúa con el levantamiento por parte del contratista",
           "fotos": []
+        }
+      ],
+      "pendientes": [],
+      "obs": ""
+    },
+    {
+      "id": "mpr3ltmi",
+      "fecha": "2026-05-29",
+      "frentes": [],
+      "ejecutadas": [],
+      "en_ejecucion": [
+        {
+          "nombre": "Ampliación de calzada",
+          "desc": "Se continúa ejecutando esta actividad esta semana se reporta avance",
+          "fotos": [
+            "/images/actividades/10e23d28-fb54-44fe-9b41-434a2bcfe89f.jpg",
+            "/images/actividades/0e25c945-4d1c-48fe-b463-948e464ae49b.jpg"
+          ]
+        },
+        {
+          "nombre": "Limpieza de obras hidraulicas",
+          "desc": "Se continúa ejecutando esta actividad esta semana se reporta avance",
+          "fotos": [
+            "/images/actividades/43601752-bb25-4d6e-b14b-44bdb7cdfe08.jpg",
+            "/images/actividades/5215cdc0-a059-44f8-b936-76ef12b05abe.jpg",
+            "/images/actividades/ff623bef-fbed-4c0a-bd70-4b6a25d2265e.jpg"
+          ]
+        },
+        {
+          "nombre": "Topografía",
+          "desc": "Se continúa ejecutando esta actividad esta semana se reporta avance",
+          "fotos": [
+            "/images/actividades/71e39a8d-ca33-4e37-b3b0-e05192af0bd3.jpg",
+            "/images/actividades/47885fd9-a083-4326-8d37-aa73b5ed3d51.jpg",
+            "/images/actividades/393e2d59-2b17-486f-93ff-ce8d1f18ef84.jpg"
+          ]
         }
       ],
       "pendientes": [],

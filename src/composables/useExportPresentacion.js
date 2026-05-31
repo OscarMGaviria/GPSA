@@ -134,6 +134,11 @@ const NAV_JS = `
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ')   handleNext();
   });
 
+  window.__pptGoToSubregion = function(subnorm) {
+    var i = SLIDES.findIndex(function(html) { return html.indexOf('id="sub_' + subnorm + '"') !== -1; });
+    if (i !== -1) show(i);
+  };
+
   window.addEventListener('resize', scale);
   scale();
   show(0);
@@ -187,25 +192,25 @@ function decodePath(p) {
   try { return decodeURIComponent(p) } catch { return p }
 }
 
-// ── Reescribe rutas /images/... → ./fotos/images/... (decodificadas) ─────────
+// ── Reescribe rutas /images/... → ./fotos/images/... ────────────────────────
+// Usa split/join para manejar correctamente rutas con espacios y caracteres especiales
 function rewritePaths(html) {
-  // Reemplaza cualquier aparición de /images/ con la ruta relativa decodificada.
-  // Captura todo hasta el primer delimitador (", ', \', espacio, >)
-  return html.replace(/\/images\/([^"'\\\s>)]+)/g, function (_, rest) {
-    return './fotos/images/' + decodePath(rest)
-  })
-  .split('/Escudo%20de%20armas.png').join('./fotos/Escudo de armas.png')
-  .split('/Escudo de armas.png').join('./fotos/Escudo de armas.png')
+  return html
+    .split('/images/').join('./fotos/images/')
+    .split('/Escudo%20de%20armas.png').join('./fotos/Escudo%20de%20armas.png')
+    .split('/Escudo de armas.png').join('./fotos/Escudo de armas.png')
 }
 
 // ── Extrae rutas únicas de imágenes del HTML (antes de reescribir) ───────────
 function extractImagePaths(html) {
   const paths = new Set()
-  // Captura cualquier /images/... en cualquier contexto
-  const re = /\/images\/([^"'\\\s>)]+)/g
+  // [^"'>\\]+ permite espacios — necesario para archivos como "WhatsApp Image 2026-05-25 at 12.13.03 PM.jpeg"
+  const re = /\/images\/([^"'>\\]+)/g
   let m
   while ((m = re.exec(html)) !== null) {
-    paths.add('/images/' + m[1])
+    // Limpiar trailing whitespace o caracteres que no son parte del path
+    const clean = m[1].replace(/[\s>)]+$/, '')
+    if (clean) paths.add('/images/' + clean)
   }
   return paths
 }

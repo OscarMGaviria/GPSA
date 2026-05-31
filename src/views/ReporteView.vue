@@ -288,6 +288,15 @@ const isFirst = computed(() => currentPg.value === 0)
 const isLast  = computed(() => currentPg.value >= totalPgs.value - 1)
 const dotPages = computed(() => pages.value.slice(1))
 
+// ── Navegación desde slide 2 por subregión ───────────────────────────────────
+onMounted(() => {
+  window.__pptGoToSubregion = (subnorm) => {
+    const idx = pptSlides.value.findIndex(s => s.html.includes(`id="sub_${subnorm}"`))
+    if (idx !== -1) pptGoTo(idx)
+  }
+})
+onUnmounted(() => { delete window.__pptGoToSubregion })
+
 // ── Exportar presentación como ZIP ──────────────────────────────────────────
 const exportando   = ref(false)
 const exportPct    = ref(0)

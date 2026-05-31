@@ -29,7 +29,7 @@
                 "FECHA_INI": "10/02/2026",
                 "CTO": "25OO111B2821",
                 "Shape_Leng": 24381.226553,
-                "ESTABILIZADO": 25
+                "ESTABILIZADO": 0
             },
             "geometry": {
                 "type": "MultiLineString",

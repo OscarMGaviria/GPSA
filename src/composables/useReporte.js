@@ -710,9 +710,9 @@ function buildSVGMap(features, filterSubregion, palette, width = 290, height = 3
 
     const isLight = palette.lightBg
     const color   = highlighted
-      ? (filterCircuito ? '#ea580c' : (av >= 0.8 ? (isLight ? '#10b981' : '#34d399') : av >= 0.4 ? palette.accent : av > 0 ? (isLight ? '#9ca3af' : 'rgba(255,255,255,0.6)') : palette.accent))
+      ? (filterCircuito ? '#ea580c' : (palette.lineColor ?? (av >= 0.8 ? (isLight ? '#10b981' : '#34d399') : av >= 0.4 ? palette.accent : av > 0 ? (isLight ? '#9ca3af' : 'rgba(255,255,255,0.6)') : palette.accent)))
       : '#3b82f6'
-    const sw      = highlighted ? (filterCircuito ? '5' : '2.4') : '1.8'
+    const sw      = highlighted ? (filterCircuito ? '5' : (palette.lineColor ? '3.5' : '2.4')) : '1.8'
     const op      = highlighted ? '1' : '0.55'
 
     const geom = f.geometry
@@ -727,7 +727,8 @@ function buildSVGMap(features, filterSubregion, palette, width = 290, height = 3
       buffers += `<path d="${d}" fill="none" stroke="#ea580c" stroke-width="25" stroke-linecap="round" stroke-linejoin="round" opacity="0.45" class="circuit-buffer"/>`
     }
     
-    return d ? `<path d="${d}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" opacity="${op}" data-sub="${subnorm}"/>` : ''
+    const normCirc = normStr(circ).replace(/[^a-z0-9]/g, '_')
+    return d ? `<path d="${d}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" opacity="${op}" data-sub="${subnorm}" data-circ="${normCirc}" data-ostroke="${color}" data-osw="${sw}" data-oop="${op}"/>` : ''
   }).join('')
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">${mpioPaths}${mpioLabels}${buffers}${paths}</svg>`
@@ -1826,7 +1827,7 @@ function buildPptResumenSlide(logoUrl, stats, geoFeatures = [], mpioFeatures = [
     const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1)
     const x2 = cx + R * Math.cos(a2), y2 = cy + R * Math.sin(a2)
     const d = `M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${R},${R} 0 ${large},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z`
-    return `<path d="${d}" fill="${color}" stroke="#fff" stroke-width="1.5" data-dn="${uid}" data-subnorm="${subnorm}" data-name="${esc(s.name)}" data-km="${km}" style="cursor:pointer;transition:opacity .18s" onmouseover="${over}" onmouseout="${out}"/>`
+    return `<path d="${d}" fill="${color}" stroke="#fff" stroke-width="1.5" data-dn="${uid}" data-subnorm="${subnorm}" data-name="${esc(s.name)}" data-km="${km}" style="cursor:pointer;transition:opacity .18s" onmouseover="${over}" onmouseout="${out}" onclick="window.__pptGoToSubregion&&window.__pptGoToSubregion('${subnorm}')"/>`
   }).join('')
 
   const labelDiv = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:'Poppins',sans-serif;margin-top:10px">
@@ -1844,7 +1845,7 @@ function buildPptResumenSlide(logoUrl, stats, geoFeatures = [], mpioFeatures = [
     const pct = total > 0 ? Math.round((s.km / total) * 100) : 0
     const subnorm = normStr(s.name)
     const bg = i % 2 === 0 ? '#f6fdf9' : '#fff'
-    return `<tr style="background:${bg};cursor:pointer;transition:background .15s" data-trow="${uid}" data-subnorm="${subnorm}" data-name="${esc(s.name)}" data-km="${km}" onmouseover="${over}" onmouseout="${out}">
+    return `<tr style="background:${bg};cursor:pointer;transition:background .15s" data-trow="${uid}" data-subnorm="${subnorm}" data-name="${esc(s.name)}" data-km="${km}" onmouseover="${over}" onmouseout="${out}" onclick="window.__pptGoToSubregion&&window.__pptGoToSubregion('${subnorm}')">
       <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:12px"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${color};margin-right:5px;vertical-align:middle"></span>${esc(s.name)}</td>
       <td style="padding:5px 8px;text-align:right;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:700;color:#0b5640">${km}</td>
       <td style="padding:5px 8px;text-align:right;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280">${pct}%</td>
@@ -1884,6 +1885,9 @@ function buildPptResumenSlide(logoUrl, stats, geoFeatures = [], mpioFeatures = [
       </div>
     </div>`
 
+  // Auto-seleccionar Suroeste al cargar el slide
+  const initScript = `<img src="x" style="display:none" onerror="(function(){var el=document.querySelector('[data-trow=&quot;${uid}&quot;][data-subnorm=&quot;suroeste&quot;]');if(!el)el=document.querySelector('[data-dn=&quot;${uid}&quot;][data-subnorm=&quot;suroeste&quot;]');if(el)el.dispatchEvent(new MouseEvent('mouseover',{bubbles:false}));})()"/>`
+
   return `
   <div class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Poppins',sans-serif">
     <img src="/images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
@@ -1904,6 +1908,7 @@ function buildPptResumenSlide(logoUrl, stats, geoFeatures = [], mpioFeatures = [
         </div>
       </div>
     </div>
+    ${initScript}
   </div>`
 }
 
@@ -2011,7 +2016,7 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
 
   // ── MAP (panel 1) ──
   // height=null → auto-calculated from geographic aspect ratio of the subregion
-  const rawMap = buildSVGMap(geoFeatures, subregion, { accent: '#0b5640', showLabels: true, labelSize: 5 }, 400, null, mpioFeatures, true, circuito)
+  const rawMap = buildSVGMap(geoFeatures, subregion, { accent: '#0b5640', lineColor: '#ea580c', showLabels: true, labelSize: 5 }, 400, null, mpioFeatures, true, circuito)
   // Replace fixed px dimensions with percentage so the SVG scales to fill its container
   // preserveAspectRatio="xMidYMid meet" keeps the full subregion visible with letterboxing
   const mapSvg = rawMap
@@ -2253,6 +2258,237 @@ function buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, a
   </div>`
 }
 
+function buildPptSubregionSeguimientoSlide(logoUrl, subregion, circuits, geoFeatures = [], mpioFeatures = []) {
+  const loteMap = {
+    'oriente': 'LOTE 1', 'occidente': 'LOTE 2', 'uraba': 'LOTE 3', 'magdalena medio': 'LOTE 4',
+    'suroeste': 'LOTE 5', 'nordeste': 'LOTE 6', 'bajo cauca': 'LOTE 7', 'norte': 'LOTE 8'
+  }
+  const lotePref   = loteMap[norm(subregion)] ? `${loteMap[norm(subregion)]}: ` : ''
+  const tabId = 'sub_' + norm(subregion).replace(/[\W_]+/g, '')
+
+  // ── KM total: suma todos los tramos de la subregión en geoFeatures ───────
+  const normSub0 = s => (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+  const totalKm = geoFeatures
+    .filter(f => normSub0(f.properties?.SUBREGION) === normSub0(subregion))
+    .reduce((s, f) => s + (parseFloat(f.properties?.Long_km) || 0), 0)
+
+  // ── Pulse + modal animation styles ───────────────────────────────────────
+  const pulseStyle = `<style>
+    @keyframes vial-pulse{0%,100%{opacity:.55}50%{opacity:.05}}
+    #${tabId} .circuit-buffer{animation:vial-pulse 1.4s ease-in-out infinite}
+    @keyframes actIn{from{opacity:0;transform:translateY(36px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+    #${tabId}_actModal .act-item{animation:actIn 1.4s cubic-bezier(.16,1,.3,1) both}
+  </style>`
+
+  // ── Mapa — toda la subregión, sin circuito resaltado ─────────────────────
+  const mapSvgId = tabId + '_map'
+  const rawMap = buildSVGMap(geoFeatures, subregion, { accent: '#0b5640', lineColor: '#ea580c', showLabels: true, labelSize: 5 }, 400, null, mpioFeatures, true, null)
+  const mapSvg = rawMap
+    ? rawMap.replace(/(<svg)/, `$1 id="${mapSvgId}"`)
+            .replace(/(<svg[^>]*) width="\d+" height="\d+"/, '$1 width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="display:block"')
+    : null
+
+  const kmLabel = totalKm > 0
+    ? `<div style="position:absolute;bottom:0;left:0;right:0;text-align:center;line-height:1.1">
+        <div style="font-size:13px;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:.08em">Longitud Total</div>
+        <div style="font-size:39px;font-weight:900;color:#0b5640;letter-spacing:-.01em">${totalKm.toFixed(2)} km</div>
+      </div>`
+    : ''
+
+  const mapPanel = mapSvg ? `
+    <div style="position:absolute;left:36px;top:103px;bottom:40px;width:400px;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;bottom:${totalKm > 0 ? '72px' : '0'}">${mapSvg}</div>
+      ${kmLabel}
+    </div>` : `
+    <div style="position:absolute;left:36px;top:103px;bottom:40px;width:400px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px">Sin datos geográficos</div>`
+
+  // ── Todos los tramos de la subregión desde geoFeatures ───────────────────
+  const normSub  = (s) => (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+  const tramosMap = {}  // circuito → { km, avF, avFin }
+  for (const f of geoFeatures) {
+    if (normSub(f.properties?.SUBREGION) !== normSub(subregion)) continue
+    const circ  = f.properties?.CIRCUITO ?? '—'
+    const km    = parseFloat(f.properties?.Long_km)   || 0
+    const avF   = parseFloat(f.properties?.AV_FISICO) || 0
+    const avFin = parseFloat(f.properties?.AV_FINAN)  || 0
+    if (!tramosMap[circ]) tramosMap[circ] = { km: 0, avFSum: 0, avFinSum: 0, count: 0 }
+    tramosMap[circ].km     += km
+    tramosMap[circ].avFSum += avF * km
+    tramosMap[circ].avFinSum += avFin * km
+    tramosMap[circ].count  += 1
+  }
+
+  // Verificar contra hitosData directamente (no solo los pasados como parámetro)
+  const circuitosConHitos = new Set(
+    Object.keys(hitosData).filter(k => (hitosData[k] ?? []).length > 0).map(k => norm(k))
+  )
+
+  const totalTramos = Object.keys(tramosMap).length
+
+  // ── Paneles de actividades ocultos (uno por circuito) ────────────────────
+  function buildActsPanel(circuito) {
+    const key      = Object.keys(hitosData).find(k => norm(k) === norm(circuito))
+    const regs     = key ? hitosData[key] : []
+    const lastReg  = regs.slice().sort((a, b) => (b.fecha ?? '').localeCompare(a.fecha ?? ''))[0]
+    if (!lastReg) return ''
+
+    function actCard(act, color, badge) {
+      const fotos = (act.fotos ?? []).map(u => u.replace('/public/', '/'))
+      const thumbs = fotos.map(u => {
+        const safeU = u.replace(/'/g, '%27')
+        return `<div
+          onclick="(function(e){e.stopPropagation();var l=document.getElementById('${tabId}_lbx');var i=document.getElementById('${tabId}_lbx_img');if(l&&i){i.src='${safeU}';l.style.display='flex';}})(event)"
+          style="width:80px;height:80px;border-radius:8px;background:url('${safeU}') center/cover;border:2px solid ${color}30;flex-shrink:0;cursor:zoom-in;transition:transform .2s,box-shadow .2s"
+          onmouseover="this.style.transform='scale(1.07)';this.style.boxShadow='0 4px 14px rgba(0,0,0,0.25)'"
+          onmouseout="this.style.transform='';this.style.boxShadow=''"></div>`
+      }).join('')
+      return `<div class="act-item" style="background:#fff;border-radius:10px;border-left:4px solid ${color};padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
+          <div style="font-size:14px;font-weight:800;color:#111827;line-height:1.3">${esc(act.nombre ?? '—')}</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#fff;background:${color};padding:2px 8px;border-radius:99px;flex-shrink:0">${badge}</div>
+        </div>
+        ${act.desc ? `<div style="font-size:12px;color:#6b7280;line-height:1.5;margin-bottom:8px">${esc(act.desc)}</div>` : ''}
+        ${thumbs ? `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">${thumbs}</div>` : ''}
+      </div>`
+    }
+
+    const ejecutadasCards = (lastReg.ejecutadas ?? []).map(a => actCard(a, '#16a34a', 'Ejecutada'))
+    const enEjecucionCards = (lastReg.en_ejecucion ?? []).map(a => actCard(a, '#d97706', 'En ejecución'))
+    const fecha = lastReg.fecha ?? ''
+
+    let html = `<div style="padding:24px 28px 28px">
+      <div style="font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.1em;margin-bottom:20px">Corte: ${esc(fecha)}</div>`
+
+    if (ejecutadasCards.length) {
+      html += `<div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#16a34a;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+        <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block"></span>Actividades Ejecutadas
+      </div>${ejecutadasCards.join('')}`
+    }
+    if (enEjecucionCards.length) {
+      html += `<div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#d97706;margin-bottom:12px;margin-top:${ejecutadasCards.length ? '20px' : '0'};display:flex;align-items:center;gap:6px">
+        <span style="width:8px;height:8px;border-radius:50%;background:#d97706;display:inline-block"></span>En Ejecución
+      </div>${enEjecucionCards.join('')}`
+    }
+    if (!ejecutadasCards.length && !enEjecucionCards.length) {
+      html += `<div style="text-align:center;padding:40px 0;color:#9ca3af;font-size:13px">Sin actividades registradas en este corte</div>`
+    }
+    html += '</div>'
+    return html
+  }
+
+  // Paneles ocultos con data pre-construida
+  const hiddenPanels = Object.keys(tramosMap).map(circ => {
+    const nc      = norm(circ).replace(/[^a-z0-9]/g, '_')
+    const content = buildActsPanel(circ)
+    const title   = esc(circ)
+    return `<div id="${tabId}_ap_${nc}" style="display:none" data-title="${title}">${content}</div>`
+  }).join('')
+
+  // ── Modal compartido ──────────────────────────────────────────────────────
+  const actModal = `
+    <div id="${tabId}_actModal" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:absolute;inset:0;z-index:99998;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);align-items:flex-start;justify-content:center;padding:32px;overflow-y:auto">
+      <div style="width:100%;max-width:1100px;background:#f8fafc;border-radius:18px;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,0.5)">
+        <div style="background:linear-gradient(135deg,#083d2c,#0b5640);padding:20px 28px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div id="${tabId}_actTitle" style="font-size:17px;font-weight:900;color:#fff;line-height:1.2"></div>
+            <div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.08em">${esc(subregion)}</div>
+          </div>
+          <button onclick="document.getElementById('${tabId}_actModal').style.display='none'" style="background:rgba(255,255,255,.15);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;cursor:pointer;line-height:1">&times;</button>
+        </div>
+        <div id="${tabId}_actBody" style="max-height:580px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.2) transparent;padding:0"></div>
+      </div>
+      <!-- Lightbox de fotos -->
+      <div id="${tabId}_lbx" onclick="this.style.display='none'" style="display:none;position:absolute;inset:0;z-index:99999;background:rgba(0,0,0,0.92);backdrop-filter:blur(6px);align-items:center;justify-content:center;cursor:zoom-out">
+        <img id="${tabId}_lbx_img" src="" style="max-width:88%;max-height:88%;border-radius:14px;box-shadow:0 30px 60px rgba(0,0,0,1);object-fit:contain;pointer-events:none" />
+      </div>
+    </div>`
+
+  // ── Función de apertura (registrada via onerror) ───────────────────────────
+  const openerScript = `<img src="x" style="display:none" onerror="window['openAct_${tabId}']=function(nc,title){
+    var src=document.getElementById('${tabId}_ap_'+nc);
+    var modal=document.getElementById('${tabId}_actModal');
+    var body=document.getElementById('${tabId}_actBody');
+    var ttl=document.getElementById('${tabId}_actTitle');
+    if(!src||!modal||!body||!ttl)return;
+    ttl.textContent=title;
+    body.innerHTML=src.innerHTML;
+    var items=body.querySelectorAll('.act-item');
+    items.forEach(function(el,i){el.style.animationDelay=(i*0.45)+'s';});
+    modal.style.display='flex';
+    modal.scrollTop=0;
+  }"/>`
+
+  // ── Actualizar tramosRows con onclick ─────────────────────────────────────
+  const tramosRowsFinal = Object.entries(tramosMap).map(([circ, d]) => {
+    const tieneHitos  = circuitosConHitos.has(norm(circ))
+    const nameColor   = tieneHitos ? '#111827' : '#b8c4cf'
+    const kmColor     = tieneHitos ? '#ea580c'  : '#c9d4dc'
+    const borderColor = tieneHitos ? '#ececec'  : '#f5f5f5'
+    const normCirc    = (s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim().replace(/[^a-z0-9]/g,'_'))(circ)
+
+    const onOver = `(function(){
+      var svg=document.getElementById('${mapSvgId}');if(!svg)return;
+      svg.querySelectorAll('[data-circ]').forEach(function(p){
+        if(p.dataset.circ==='${normCirc}'){
+          p.setAttribute('stroke','#ea580c');p.setAttribute('stroke-width','7');
+          p.style.opacity='1';p.style.animation='vial-pulse 1.2s ease-in-out infinite';
+          p.style.filter='drop-shadow(0 0 3px rgba(234,88,12,0.7))';
+        } else { p.style.opacity='0.12';p.style.animation='';p.style.filter=''; }
+      });
+    })()`
+
+    const onOut = `(function(){
+      var svg=document.getElementById('${mapSvgId}');if(!svg)return;
+      svg.querySelectorAll('[data-circ]').forEach(function(p){
+        p.setAttribute('stroke',p.dataset.ostroke||'#ea580c');
+        p.setAttribute('stroke-width',p.dataset.osw||'3.5');
+        p.style.opacity=p.dataset.oop||'1';
+        p.style.animation='';p.style.filter='';
+      });
+    })()`
+
+    const onClick = tieneHitos
+      ? `window['openAct_${tabId}']&&window['openAct_${tabId}']('${normCirc}','${esc(circ).replace(/'/g,"\\'")}')`
+      : ''
+    const cursor = tieneHitos ? 'pointer' : 'default'
+    const hoverBg = tieneHitos ? "this.style.background='rgba(234,88,12,0.05)'" : ''
+    const outBg   = tieneHitos ? "this.style.background=''" : ''
+
+    return `<div style="padding:6px 12px;border-bottom:1px solid ${borderColor};display:flex;justify-content:space-between;align-items:center;cursor:${cursor};transition:background .15s"
+      onmouseover="${onOver.replace(/"/g,'&quot;')};${hoverBg}"
+      onmouseout="${onOut.replace(/"/g,'&quot;')};${outBg}"
+      ${onClick ? `onclick="${onClick.replace(/"/g,'&quot;')}"` : ''}>
+      <div style="font-size:23px;font-weight:700;color:${nameColor};flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:12px">${esc(circ)}</div>
+      <div style="font-size:22px;font-weight:800;color:${kmColor};flex-shrink:0;white-space:nowrap">${d.km.toFixed(2)} km</div>
+    </div>`
+  }).join('')
+
+  return `
+  ${pulseStyle}
+  <div id="${tabId}" class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
+    <img src="/images/presentacion/paginas.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block" alt=""/>
+    ${openerScript}
+    ${hiddenPanels}
+    <div style="position:absolute;inset:0">
+      <div style="position:absolute;left:470px;top:175px;right:36px;bottom:112px;background:#fff;border-radius:12px;display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:7px 12px 5px;border-bottom:2px solid #ea580c;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#0b5640">Circuitos de la Subregión</div>
+          <div style="font-size:10px;font-weight:700;color:#ea580c;background:#fff7ed;padding:2px 8px;border-radius:99px;border:1px solid #fed7aa">${totalTramos} circuito${totalTramos !== 1 ? 's' : ''}</div>
+        </div>
+        <div style="flex:1;overflow-y:auto;scrollbar-width:thin">${tramosRowsFinal}</div>
+      </div>
+    </div>
+    <div style="position:absolute;inset:0;pointer-events:none;padding:22px 36px 18px">
+      <div class="seg-header-left" style="max-width:80%">
+        <div class="seg-header-title">${esc(subregion)}</div>
+        <div style="font-family:'Prompt',sans-serif;text-transform:uppercase;color:#ff751f;font-size:20px;font-weight:700;margin-top:2px">${lotePref}${totalKm.toFixed(1)} km totales</div>
+      </div>
+    </div>
+    ${mapPanel}
+    ${actModal}
+  </div>`
+}
+
 function buildPptClosingSlide(logoUrl) {
   return `
   <div class="ppt-slide" style="position:relative;overflow:hidden;font-family:'Prompt',sans-serif">
@@ -2300,7 +2536,7 @@ export function buildPresentacionSlides(stats, filters, logoUrl, fecha, geoFeatu
     }
   }
 
-  // ── Slides de Seguimiento de Campo (uno por circuito con registros) ──────────
+  // ── Slides de Seguimiento de Campo — uno por SUBREGIÓN ───────────────────
   const subOrder   = ['oriente', 'occidente', 'uraba', 'magdalena medio', 'suroeste', 'nordeste', 'bajo cauca', 'norte']
   const getSubRank = cName => {
     const cronData = cronogramasData.circuitos.find(c => norm(c.circuito) === norm(cName))
@@ -2309,19 +2545,33 @@ export function buildPresentacionSlides(stats, filters, logoUrl, fecha, geoFeatu
     return idx === -1 ? 999 : idx
   }
 
-  const circuitosFiltrados = hasCir
-    ? [filters.circuito]
-    : Object.keys(hitosData).sort((a, b) => {
-        const diff = getSubRank(a) - getSubRank(b)
-        return diff !== 0 ? diff : a.localeCompare(b, 'es')
-      })
-
-  for (const circuito of circuitosFiltrados) {
-    const registros = hitosData[circuito]
-    if (!registros?.length) continue
-    const cronData       = cronogramasData.circuitos.find(c => norm(c.circuito) === norm(circuito)) ?? null
-    const { avF, avFin } = getAvances(circuito)
-    slides.push({ html: buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, avFin, geoFeatures, mpioFeatures) })
+  if (hasCir) {
+    // Filtro por circuito → sigue mostrando el slide individual de ese circuito
+    const registros = hitosData[filters.circuito]
+    if (registros?.length) {
+      const cronData       = cronogramasData.circuitos.find(c => norm(c.circuito) === norm(filters.circuito)) ?? null
+      const { avF, avFin } = getAvances(filters.circuito)
+      slides.push({ html: buildPptSeguimientoSlide(logoUrl, filters.circuito, registros, cronData, avF, avFin, geoFeatures, mpioFeatures) })
+    }
+  } else {
+    // Sin filtro de circuito → agrupar por subregión
+    const subregionMap = {}
+    const sortedCircuitos = Object.keys(hitosData).sort((a, b) => {
+      const diff = getSubRank(a) - getSubRank(b)
+      return diff !== 0 ? diff : a.localeCompare(b, 'es')
+    })
+    for (const circuito of sortedCircuitos) {
+      const registros = hitosData[circuito]
+      if (!registros?.length) continue
+      const cronData       = cronogramasData.circuitos.find(c => norm(c.circuito) === norm(circuito)) ?? null
+      const subregion      = cronData?.subregion ?? 'Sin subregión'
+      const { avF, avFin } = getAvances(circuito)
+      if (!subregionMap[subregion]) subregionMap[subregion] = []
+      subregionMap[subregion].push({ circuito, registros, cronData, avF, avFin })
+    }
+    for (const [subregion, circuits] of Object.entries(subregionMap)) {
+      slides.push({ html: buildPptSubregionSeguimientoSlide(logoUrl, subregion, circuits, geoFeatures, mpioFeatures) })
+    }
   }
 
   slides.push({ html: buildPptClosingSlide(logoUrl) })

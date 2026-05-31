@@ -44,5 +44,7 @@ __pycache__/
 *.py
 *.pyc
 
-# Fotos de actividades de campo (módulo interno, se generan localmente)
-public/images/actividades/
+# Fotos antes/durante/despues de circuitos (pesadas, no necesarias para la presentación)
+public/images/circuitos/*/antes/
+public/images/circuitos/*/durante/
+public/images/circuitos/*/despues/
