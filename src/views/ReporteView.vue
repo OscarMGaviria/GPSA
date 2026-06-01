@@ -302,14 +302,24 @@ const isFirst = computed(() => currentPg.value === 0)
 const isLast  = computed(() => currentPg.value >= totalPgs.value - 1)
 const dotPages = computed(() => pages.value.slice(1))
 
-// ── Navegación desde slide 2 por subregión ───────────────────────────────────
+// ── Navegación global desde slides ───────────────────────────────────────────
 onMounted(() => {
   window.__pptGoToSubregion = (subnorm) => {
-    const idx = pptSlides.value.findIndex(s => s.html.includes(`id="sub_${subnorm}"`))
+    const normalized = subnorm.replace(/[\W_]+/g, '')
+    const idx = pptSlides.value.findIndex(s => s.html.includes(`id="sub_${normalized}"`))
+    if (idx !== -1) pptGoTo(idx)
+  }
+  window.__pptGoTo = (idx) => pptGoTo(idx)
+  window.__pptGoToCircuito = (slideId) => {
+    const idx = pptSlides.value.findIndex(s => s.html.includes(`id="${slideId}"`))
     if (idx !== -1) pptGoTo(idx)
   }
 })
-onUnmounted(() => { delete window.__pptGoToSubregion })
+onUnmounted(() => {
+  delete window.__pptGoToSubregion
+  delete window.__pptGoTo
+  delete window.__pptGoToCircuito
+})
 
 // ── Exportar presentación como ZIP ──────────────────────────────────────────
 const exportando   = ref(false)

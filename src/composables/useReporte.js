@@ -607,7 +607,7 @@ function getSubregionPalette(sub) {
 }
 
 // Mapa SVG geográfico coloreado por avance (desde features GeoJSON MultiLineString)
-function buildSVGMap(features, filterSubregion, palette, width = 290, height = 340, mpioFeatures = [], showMpios = false, filterCircuito = null) {
+function buildSVGMap(features, filterSubregion, palette, width = 290, height = 340, mpioFeatures = [], showMpios = false, filterCircuito = null, maxRatio = 1.7) {
   if (!features?.length) return ''
   const normStr = s => (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
 
@@ -656,11 +656,10 @@ function buildSVGMap(features, filterSubregion, palette, width = 290, height = 3
   const dx = x1 - x0 || 1
   let dy = y1 - y0 || 1
 
-  // Cap aspect ratio to ≤1.7 to avoid extreme letterboxing on elongated subregions
-  // (Urabá has dy/dx≈2.86; all others are ≤1.38)
-  const MAX_RATIO = 1.7
-  if (dy / dx > MAX_RATIO) {
-    const excess = dy - dx * MAX_RATIO
+  // Cap aspect ratio para evitar letterboxing extremo en subregiones muy alargadas.
+  // maxRatio=1.7 por defecto; llamadores pueden aumentarlo (p.ej. Urabá) para mostrar el mapa completo.
+  if (dy / dx > maxRatio) {
+    const excess = dy - dx * maxRatio
     y0 += excess / 2
     y1 -= excess / 2
     dy = y1 - y0
@@ -2290,7 +2289,8 @@ function buildPptSubregionSeguimientoSlide(logoUrl, subregion, circuits, geoFeat
 
   // ── Mapa — toda la subregión, sin circuito resaltado ─────────────────────
   const mapSvgId = tabId + '_map'
-  const rawMap = buildSVGMap(geoFeatures, subregion, { accent: '#0b5640', lineColor: '#ea580c', showLabels: true, labelSize: 5 }, 400, null, mpioFeatures, true, null)
+  const mapMaxRatio = normSub0(subregion) === 'uraba' ? 4.0 : 1.7
+  const rawMap = buildSVGMap(geoFeatures, subregion, { accent: '#0b5640', lineColor: '#ea580c', showLabels: true, labelSize: 5 }, 400, null, mpioFeatures, true, null, mapMaxRatio)
   const mapSvg = rawMap
     ? rawMap.replace(/(<svg)/, `$1 id="${mapSvgId}"`)
             .replace(/(<svg[^>]*) width="\d+" height="\d+"/, '$1 width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="display:block"')
@@ -2455,19 +2455,23 @@ function buildPptSubregionSeguimientoSlide(logoUrl, subregion, circuits, geoFeat
       });
     })()`
 
+    const circSlideId = 'seg_' + norm(circ).replace(/[\W_]+/g, '')
     const onClick = tieneHitos
-      ? `window['openAct_${tabId}']&&window['openAct_${tabId}']('${normCirc}','${esc(circ).replace(/'/g,"\\'")}')`
+      ? `window.__pptGoToCircuito&&window.__pptGoToCircuito('${circSlideId}')`
       : ''
     const cursor = tieneHitos ? 'pointer' : 'default'
     const hoverBg = tieneHitos ? "this.style.background='rgba(234,88,12,0.05)'" : ''
     const outBg   = tieneHitos ? "this.style.background=''" : ''
+    const arrowIcon = tieneHitos
+      ? `<svg style="flex-shrink:0;margin-left:8px;opacity:.45" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>`
+      : ''
 
     return `<div style="padding:6px 12px;border-bottom:1px solid ${borderColor};display:flex;justify-content:space-between;align-items:center;cursor:${cursor};transition:background .15s"
       onmouseover="${onOver.replace(/"/g,'&quot;')};${hoverBg}"
       onmouseout="${onOut.replace(/"/g,'&quot;')};${outBg}"
       ${onClick ? `onclick="${onClick.replace(/"/g,'&quot;')}"` : ''}>
       <div style="font-size:23px;font-weight:700;color:${nameColor};flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:12px">${esc(circ)}</div>
-      <div style="font-size:22px;font-weight:800;color:${kmColor};flex-shrink:0;white-space:nowrap">${d.km.toFixed(2)} km</div>
+      <div style="font-size:22px;font-weight:800;color:${kmColor};flex-shrink:0;white-space:nowrap;display:flex;align-items:center">${d.km.toFixed(2)} km${arrowIcon}</div>
     </div>`
   }).join('')
 
@@ -2486,12 +2490,16 @@ function buildPptSubregionSeguimientoSlide(logoUrl, subregion, circuits, geoFeat
         <div style="flex:1;overflow-y:auto;scrollbar-width:thin">${tramosRowsFinal}</div>
       </div>
     </div>
-    <div style="position:absolute;inset:0;pointer-events:none;padding:22px 36px 18px">
-      <div class="seg-header-left" style="max-width:80%">
+    <div style="position:absolute;inset:0;pointer-events:none;padding:22px 36px 18px;display:flex;justify-content:flex-start;align-items:flex-start">
+      <div class="seg-header-left" style="max-width:75%">
         <div class="seg-header-title">${esc(subregion)}</div>
         <div style="font-family:'Prompt',sans-serif;text-transform:uppercase;color:#ff751f;font-size:20px;font-weight:700;margin-top:2px">${lotePref}${totalKm.toFixed(1)} km totales</div>
       </div>
     </div>
+    <button onclick="window.__pptGoTo&&window.__pptGoTo(1)" style="position:absolute;bottom:18px;left:36px;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.92);border:1.5px solid rgba(11,86,64,0.25);border-radius:8px;padding:7px 14px;font-family:'Prompt',sans-serif;font-size:12px;font-weight:700;color:#0b5640;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.10);transition:all .15s;z-index:10" onmouseover="this.style.background='#fff';this.style.boxShadow='0 4px 14px rgba(0,0,0,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.92)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.10)'">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2H3a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V5"/><path d="M7 7l4-4M8 2h3v3"/></svg>
+      Resumen
+    </button>
     ${mapPanel}
     ${actModal}
   </div>`
@@ -2579,6 +2587,11 @@ export function buildPresentacionSlides(stats, filters, logoUrl, fecha, geoFeatu
     }
     for (const [subregion, circuits] of Object.entries(subregionMap)) {
       slides.push({ html: buildPptSubregionSeguimientoSlide(logoUrl, subregion, circuits, geoFeatures, mpioFeatures) })
+      for (const { circuito, registros, cronData, avF, avFin } of circuits) {
+        if (registros?.length) {
+          slides.push({ html: buildPptSeguimientoSlide(logoUrl, circuito, registros, cronData, avF, avFin, geoFeatures, mpioFeatures) })
+        }
+      }
     }
   }
 
