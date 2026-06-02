@@ -93,6 +93,7 @@ async function loadLocal() {
     id:   f.properties.id         ?? (i + 1),
     name: f.properties.name       ?? f.properties.NOMBRE_VIA ?? '',
     cir:  f.properties.CIRCUITO   ?? '',
+    idCircuito: f.properties['id-circuito'] ?? f.properties.CIRCUITO ?? '',
     via:  f.properties.NOMBRE_VIA ?? '',
     mpio: f.properties.MPIO_NOMBR ?? '',
     sub:  f.properties.SUBREGION  ?? '',
@@ -128,6 +129,7 @@ async function loadProd() {
       id:   featId,
       name,
       cir:  f.properties.CIRCUITO   ?? '',
+      idCircuito: f.properties['id-circuito'] ?? f.properties.CIRCUITO ?? '',
       via:  f.properties.NOMBRE_VIA ?? '',
       mpio: f.properties.MPIO_NOMBR ?? '',
       sub:  f.properties.SUBREGION  ?? '',
@@ -288,12 +290,12 @@ async function saveProd() {
 }
 
 // ── Módulo de imágenes ────────────────────────────────────────────────────────
-function photoUrl(cir, tipo) {
-  if (!cir) return null
-  const ts = photoTs.value[`${cir}/${tipo}`] ? `?t=${photoTs.value[`${cir}/${tipo}`]}` : ''
+function photoUrl(idCircuito, tipo) {
+  if (!idCircuito) return null
+  const ts = photoTs.value[`${idCircuito}/${tipo}`] ? `?t=${photoTs.value[`${idCircuito}/${tipo}`]}` : ''
   return isProd
-    ? `${AZURE_PHOTOS_BASE}/${encodeURIComponent(cir)}/${tipo}.jpg${ts}`
-    : `/images/circuitos/${encodeURIComponent(cir)}/${tipo}.jpg${ts}`
+    ? `${AZURE_PHOTOS_BASE}/${encodeURIComponent(idCircuito)}/${tipo}.jpg${ts}`
+    : `/images/circuitos/${encodeURIComponent(idCircuito)}/${tipo}.jpg${ts}`
 }
 
 function openImageModal(f) {
@@ -314,14 +316,14 @@ async function doUpload() {
   if (!imageModal.value || !selectedFile.value) return
   uploading.value = true
   try {
-    const { cir } = imageModal.value
-    const tipo    = imagesTipo.value
+    const idCircuito = imageModal.value.idCircuito
+    const tipo       = imagesTipo.value
     if (isProd) {
-      await uploadProd(cir, tipo, selectedFile.value)
+      await uploadProd(idCircuito, tipo, selectedFile.value)
     } else {
-      await uploadLocal(cir, tipo, selectedFile.value)
+      await uploadLocal(idCircuito, tipo, selectedFile.value)
     }
-    photoTs.value[`${cir}/${tipo}`] = Date.now()
+    photoTs.value[`${idCircuito}/${tipo}`] = Date.now()
     selectedFile.value = null
     if (fileInputRef.value) fileInputRef.value.value = ''
     toast('Foto actualizada ✓', 'ok')
@@ -329,21 +331,22 @@ async function doUpload() {
   uploading.value = false
 }
 
-async function uploadLocal(cir, tipo, file) {
+async function uploadLocal(idCircuito, tipo, file) {
   const r = await fetch(
-    `/api/circuit-photo-upload?circuito=${encodeURIComponent(cir)}&tipo=${encodeURIComponent(tipo)}&filename=${tipo}.jpg`,
+    `/api/circuit-photo-upload?circuito=${encodeURIComponent(idCircuito)}&tipo=${encodeURIComponent(tipo)}&filename=${tipo}.jpg`,
     { method: 'POST', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file }
   )
   const j = await r.json()
   if (!j.ok) throw new Error(j.error)
 }
 
-async function uploadProd(cir, tipo, file) {
-  const r = await fetch(`${ADMIN_API}/images/sas-token`, { method: 'POST', headers: await authHeaders() })
+async function uploadProd(idCircuito, tipo, file) {
+  const endpoint = 'https://apim-simeva-qa.azure-api.net/administracion/images/sas-token'
+  const r = await fetch(endpoint, { method: 'POST', headers: await authHeaders() })
   if (!r.ok) throw new Error('No se pudo obtener token SAS')
   const { sasUrl } = await r.json()
   const u          = new URL(sasUrl)
-  const uploadUrl  = `${u.origin}${u.pathname}/circuitos/${encodeURIComponent(cir)}/${tipo}.jpg${u.search}`
+  const uploadUrl  = `${u.origin}${u.pathname}/circuitos/${encodeURIComponent(idCircuito)}/${tipo}.jpg${u.search}`
   const res = await fetch(uploadUrl, {
     method:  'PUT',
     headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': file.type || 'image/jpeg' },
@@ -795,11 +798,11 @@ function fmtSize(bytes) {
             <!-- Foto actual -->
             <div class="img-current-wrap">
               <img
-                :src="photoUrl(imageModal.cir, imagesTipo)"
-                :key="`${imageModal.cir}/${imagesTipo}/${photoTs[`${imageModal.cir}/${imagesTipo}`] || 0}`"
+                :src="photoUrl(imageModal.idCircuito, imagesTipo)"
+                :key="`${imageModal.idCircuito}/${imagesTipo}/${photoTs[`${imageModal.idCircuito}/${imagesTipo}`] || 0}`"
                 class="img-current"
                 alt="Foto actual"
-                @click="previewUrl = photoUrl(imageModal.cir, imagesTipo)"
+                @click="previewUrl = photoUrl(imageModal.idCircuito, imagesTipo)"
                 @load="$event.target.style.display=''; $event.target.nextElementSibling.style.display='none'"
                 @error="$event.target.style.display='none'; $event.target.nextElementSibling.style.display='flex'"
               />

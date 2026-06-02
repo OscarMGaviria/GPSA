@@ -7,9 +7,9 @@ export const AZURE_PHOTOS_BASE = 'https://stsimevaqa.blob.core.windows.net/image
  * Devuelve la URL de una foto en Azure Blob Storage.
  * tipo: 'antes' | 'durante' | 'despues'
  */
-export function circuitPhotoUrl(circuito, tipo) {
-  if (!circuito) return ''
-  return `${AZURE_PHOTOS_BASE}/${encodeURIComponent(circuito)}/${tipo}.jpg`
+export function circuitPhotoUrl(idCircuito, tipo) {
+  if (!idCircuito) return ''
+  return `${AZURE_PHOTOS_BASE}/${encodeURIComponent(idCircuito)}/${tipo}.jpg`
 }
 
 /**
@@ -19,24 +19,24 @@ export function circuitPhotoUrl(circuito, tipo) {
  * - Si VITE_API_PHOTOS está definida: llama al endpoint JSON
  * - Si no: construye URLs directas al blob de Azure (un archivo por fase)
  */
-export function useCircuitoPhotos(circuitoRef) {
+export function useCircuitoPhotos(idCircuitoRef) {
   const photos  = ref({ antes: [], durante: [], despues: [] })
   const loading = ref(false)
   const error   = ref(null)
 
-  function buildAzurePhotos(circuito) {
+  function buildAzurePhotos(idCircuito) {
     photos.value = {
-      antes:   [circuitPhotoUrl(circuito, 'antes')],
-      durante: [circuitPhotoUrl(circuito, 'durante')],
-      despues: [circuitPhotoUrl(circuito, 'despues')],
+      antes:   [circuitPhotoUrl(idCircuito, 'antes')],
+      durante: [circuitPhotoUrl(idCircuito, 'durante')],
+      despues: [circuitPhotoUrl(idCircuito, 'despues')],
     }
   }
 
-  async function loadFromApi(circuito) {
+  async function loadFromApi(idCircuito) {
     loading.value = true
     error.value   = null
     try {
-      const url = `${API_PHOTOS}/${encodeURIComponent(circuito)}`
+      const url = `${API_PHOTOS}/${encodeURIComponent(idCircuito)}`
       const res = await fetch(url)
       if (!res.ok) throw new Error(`Error ${res.status}`)
       const data = await res.json()
@@ -50,11 +50,11 @@ export function useCircuitoPhotos(circuitoRef) {
     }
   }
 
-  async function loadFromLocalApi(circuito) {
+  async function loadFromLocalApi(idCircuito) {
     loading.value = true
     error.value   = null
     try {
-      const res = await fetch(`/api/circuito-photos/${encodeURIComponent(circuito)}`)
+      const res = await fetch(`/api/circuito-photos/${encodeURIComponent(idCircuito)}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       photos.value = await res.json()
     } catch (err) {
@@ -65,21 +65,21 @@ export function useCircuitoPhotos(circuitoRef) {
     }
   }
 
-  function fetchPhotos(circuito) {
-    if (!circuito) {
+  function fetchPhotos(idCircuito) {
+    if (!idCircuito) {
       photos.value = { antes: [], durante: [], despues: [] }
       return
     }
     if (API_PHOTOS) {
-      loadFromApi(circuito)
+      loadFromApi(idCircuito)
     } else if (import.meta.env.DEV) {
-      loadFromLocalApi(circuito)
+      loadFromLocalApi(idCircuito)
     } else {
-      buildAzurePhotos(circuito)
+      buildAzurePhotos(idCircuito)
     }
   }
 
-  watch(circuitoRef, (val) => fetchPhotos(val), { immediate: true })
+  watch(idCircuitoRef, (val) => fetchPhotos(val), { immediate: true })
 
   return { photos, loading, error }
 }
