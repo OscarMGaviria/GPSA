@@ -63,6 +63,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     selectedVia.value = {
       name: circuito || 'Circuito sin nombre',
       description: {
+        'id-circuito':           first['id-circuito'] ?? first.circuitId ?? '',
         Subregión:               first.SUBREGION  ?? '',
         Municipio:               municipios.join(', '),
         Circuito:                circuito,
