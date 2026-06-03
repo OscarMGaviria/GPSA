@@ -44,7 +44,6 @@ __pycache__/
 *.py
 *.pyc
 
-# Fotos antes/durante/despues de circuitos (pesadas, no necesarias para la presentación)
-public/images/circuitos/*/antes/
-public/images/circuitos/*/durante/
-public/images/circuitos/*/despues/
+# Fotos de circuitos y actividades (se almacenan en Azure Storage)
+public/images/actividades/
+public/images/circuitos/
