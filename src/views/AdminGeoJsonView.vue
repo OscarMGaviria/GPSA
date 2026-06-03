@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAdminAuth } from '../composables/useAdminAuth.js'
 
 const logoSrc = '/images/escudo.png'
@@ -31,7 +31,7 @@ const dEst         = ref(0)
 const loginErr     = ref('')
 
 // ── Estado imágenes ───────────────────────────────────────────────────────────
-const AZURE_PHOTOS_BASE = 'https://stsimevaqa.blob.core.windows.net/geojson/circuitos'
+const AZURE_PHOTOS_BASE = 'https://stsimevaqa.blob.core.windows.net/images/circuitos'
 const TIPOS_FOTO   = ['antes', 'durante', 'despues']
 const TIPO_LABEL   = { antes: 'Antes', durante: 'Durante', despues: 'Después' }
 const imageModal   = ref(null)
@@ -293,7 +293,7 @@ async function saveProd() {
 function photoUrl(idCircuito, tipo) {
   if (!idCircuito) return null
   const ts = photoTs.value[`${idCircuito}/${tipo}`] ? `?t=${photoTs.value[`${idCircuito}/${tipo}`]}` : ''
-  return `${AZURE_PHOTOS_BASE}/${encodeURIComponent(idCircuito)}/${tipo}.jpg${ts}`
+  return `${AZURE_PHOTOS_BASE}/${encodeURIComponent(idCircuito)}/${tipo}.png${ts}`
 }
 
 function openImageModal(f) {
@@ -303,12 +303,31 @@ function openImageModal(f) {
   previewUrl.value  = null
 }
 function closeImageModal() {
-  imageModal.value  = null
+  imageModal.value   = null
   selectedFile.value = null
-  previewUrl.value  = null
+  previewUrl.value   = null
+  if (localPreviewUrl.value) { URL.revokeObjectURL(localPreviewUrl.value); localPreviewUrl.value = null }
 }
 
-function onFileChange(e) { selectedFile.value = e.target.files[0] ?? null }
+const ALLOWED_TYPES = new Set(['image/png', 'image/jpeg'])
+const localPreviewUrl = ref(null)
+
+function isAllowedFile(file) { return file && ALLOWED_TYPES.has(file.type) }
+
+watch(selectedFile, (newFile) => {
+  if (localPreviewUrl.value) { URL.revokeObjectURL(localPreviewUrl.value); localPreviewUrl.value = null }
+  if (newFile) localPreviewUrl.value = URL.createObjectURL(newFile)
+})
+
+function onFileChange(e) {
+  const file = e.target.files[0] ?? null
+  if (file && !isAllowedFile(file)) {
+    toast('Solo se permiten archivos PNG o JPG', 'err')
+    e.target.value = ''
+    return
+  }
+  selectedFile.value = file
+}
 
 async function doUpload() {
   if (!imageModal.value || !selectedFile.value) return
@@ -331,8 +350,8 @@ async function doUpload() {
 
 async function uploadLocal(idCircuito, tipo, file) {
   const r = await fetch(
-    `/api/circuit-photo-upload?circuito=${encodeURIComponent(idCircuito)}&tipo=${encodeURIComponent(tipo)}&filename=${tipo}.jpg`,
-    { method: 'POST', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file }
+    `/api/circuit-photo-upload?circuito=${encodeURIComponent(idCircuito)}&tipo=${encodeURIComponent(tipo)}&filename=${tipo}.png`,
+    { method: 'POST', headers: { 'Content-Type': file.type || 'image/png' }, body: file }
   )
   const j = await r.json()
   if (!j.ok) throw new Error(j.error)
@@ -344,10 +363,10 @@ async function uploadProd(idCircuito, tipo, file) {
   if (!r.ok) throw new Error('No se pudo obtener token SAS')
   const { sasUrl } = await r.json()
   const u          = new URL(sasUrl)
-  const uploadUrl  = `${u.origin}${u.pathname}/circuitos/${encodeURIComponent(idCircuito)}/${tipo}.jpg${u.search}`
+  const uploadUrl  = `${u.origin}${u.pathname}/circuitos/${encodeURIComponent(idCircuito)}/${tipo}.png${u.search}`
   const res = await fetch(uploadUrl, {
     method:  'PUT',
-    headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': file.type || 'image/jpeg' },
+    headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': file.type || 'image/png' },
     body: file,
   })
   if (!res.ok) throw new Error(`Upload ${res.status}`)
@@ -793,45 +812,51 @@ function fmtSize(bytes) {
               >{{ TIPO_LABEL[t] }}</button>
             </div>
 
-            <!-- Foto actual -->
-            <div class="img-current-wrap">
-              <img
-                :src="photoUrl(imageModal.idCircuito, imagesTipo)"
-                :key="`${imageModal.idCircuito}/${imagesTipo}/${photoTs[`${imageModal.idCircuito}/${imagesTipo}`] || 0}`"
-                class="img-current"
-                alt="Foto actual"
-                @click="previewUrl = photoUrl(imageModal.idCircuito, imagesTipo)"
-                @load="$event.target.style.display=''; $event.target.nextElementSibling.style.display='none'"
-                @error="$event.target.style.display='none'; $event.target.nextElementSibling.style.display='flex'"
-              />
-              <div class="img-empty" style="display:none">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36" style="color:#b0c4b8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                <span>Sin foto de "{{ TIPO_LABEL[imagesTipo] }}" — sube una abajo</span>
-              </div>
-            </div>
+            <!-- Cuerpo scrollable -->
+            <div class="img-modal-body">
 
-            <!-- Zona de subida -->
-            <div
-              class="img-upload-zone"
-              :class="{ 'img-upload-zone--has-files': selectedFile }"
-              @dragover.prevent
-              @drop.prevent="e => { selectedFile = [...e.dataTransfer.files].find(f => f.type.startsWith('image/')) ?? null }"
-              @click="!selectedFile && fileInputRef?.click()"
-            >
-              <input ref="fileInputRef" type="file" accept="image/*" class="file-input" @change="onFileChange" />
-              <template v-if="!selectedFile">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="color:#6b9e80"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                <p class="upload-prompt-text">Arrastra una imagen o <strong>haz clic para seleccionar</strong></p>
-                <p class="upload-hint">JPG, PNG, WEBP · Reemplaza la foto de "{{ TIPO_LABEL[imagesTipo] }}"</p>
-              </template>
-              <template v-else>
-                <div class="sel-file-item">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:#1a5c3a"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-                  <span class="sel-file-name">{{ selectedFile.name }}</span>
-                  <span class="sel-file-size">{{ fmtSize(selectedFile.size) }}</span>
-                  <button class="sel-file-del" @click.stop="selectedFile = null; fileInputRef.value = ''">✕</button>
+              <!-- Foto actual -->
+              <div class="img-current-wrap">
+                <img
+                  :src="photoUrl(imageModal.idCircuito, imagesTipo)"
+                  :key="`${imageModal.idCircuito}/${imagesTipo}/${photoTs[`${imageModal.idCircuito}/${imagesTipo}`] || 0}`"
+                  class="img-current"
+                  alt="Foto actual"
+                  @click="previewUrl = photoUrl(imageModal.idCircuito, imagesTipo)"
+                  @load="$event.target.style.display='block'; $event.target.nextElementSibling.style.display='none'"
+                  @error="$event.target.style.display='none'; $event.target.nextElementSibling.style.display='flex'"
+                />
+                <div class="img-empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36" style="color:#b0c4b8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span>Sin foto de "{{ TIPO_LABEL[imagesTipo] }}" — sube una abajo</span>
                 </div>
-              </template>
+              </div>
+
+              <!-- Zona de subida -->
+              <div
+                class="img-upload-zone"
+                :class="{ 'img-upload-zone--has-files': selectedFile }"
+                @dragover.prevent
+                @drop.prevent="e => { const f = [...e.dataTransfer.files].find(isAllowedFile); if (!f && e.dataTransfer.files.length) { toast('Solo se permiten archivos PNG o JPG', 'err'); return; } selectedFile = f ?? null }"
+                @click="!selectedFile && fileInputRef?.click()"
+              >
+                <input ref="fileInputRef" type="file" accept=".png,.jpg,.jpeg" class="file-input" @change="onFileChange" />
+                <template v-if="!selectedFile">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" style="color:#6b9e80"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <p class="upload-prompt-text">Arrastra una imagen o <strong>haz clic para seleccionar</strong></p>
+                  <p class="upload-hint">JPG, PNG · Reemplaza la foto de "{{ TIPO_LABEL[imagesTipo] }}"</p>
+                </template>
+                <template v-else>
+                  <img :src="localPreviewUrl" class="img-upload-preview" alt="Vista previa" />
+                  <div class="sel-file-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:#1a5c3a"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                    <span class="sel-file-name">{{ selectedFile.name }}</span>
+                    <span class="sel-file-size">{{ fmtSize(selectedFile.size) }}</span>
+                    <button class="sel-file-del" @click.stop="selectedFile = null; fileInputRef.value = ''">✕</button>
+                  </div>
+                </template>
+              </div>
+
             </div>
 
             <!-- Footer -->
@@ -1160,13 +1185,20 @@ function fmtSize(bytes) {
 .img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block }
 .img-del { position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%; background: rgba(15,61,39,.75); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s }
 .img-thumb:hover .img-del { opacity: 1 }
-.img-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; height: 100%; min-height: 120px; color: #9ab5a3; font-size: 12px; text-align: center; line-height: 1.6 }
 
-.img-upload-zone { margin: 0 24px 0; border: 2px dashed #c2d9cb; border-radius: 12px; padding: 20px; cursor: pointer; transition: all .2s; background: #f8fbf9; flex-shrink: 0 }
+.img-modal-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 16px 0 }
+
+.img-current-wrap { padding: 0 24px }
+.img-current { display: block; width: 100%; max-height: 300px; object-fit: contain; border-radius: 10px; background: #f0f4f1; cursor: zoom-in }
+.img-empty { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 120px; color: #9ab5a3; font-size: 12px; text-align: center; line-height: 1.6; background: #f8fbf9; border-radius: 10px }
+
+.img-upload-zone { margin: 0 24px; border: 2px dashed #c2d9cb; border-radius: 12px; padding: 20px; cursor: pointer; transition: all .2s; background: #f8fbf9 }
 .img-upload-zone:hover, .img-upload-zone--has-files { border-color: #1a5c3a; background: #f0f8f3 }
+.img-upload-zone--has-files { cursor: default; padding: 12px }
 .file-input { display: none }
 .upload-prompt-text { font-size: 13px; color: #3d6b50; margin: 8px 0 4px; text-align: center }
 .upload-hint { font-size: 11px; color: #9ab5a3; text-align: center }
+.img-upload-preview { display: block; width: 100%; max-height: 300px; object-fit: contain; border-radius: 8px; background: #e8f0eb; margin-bottom: 10px }
 .sel-files-list { display: flex; flex-direction: column; gap: 6px }
 .sel-file-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: #fff; border: 1px solid #d4eddf; border-radius: 8px }
 .sel-file-name { flex: 1; font-size: 12px; color: #1a2e20; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }

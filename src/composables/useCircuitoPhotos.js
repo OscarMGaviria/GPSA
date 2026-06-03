@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 
 const API_PHOTOS = import.meta.env.VITE_API_PHOTOS
-export const AZURE_PHOTOS_BASE = 'https://stsimevaqa.blob.core.windows.net/geojson/circuitos'
+export const AZURE_PHOTOS_BASE = 'https://stsimevaqa.blob.core.windows.net/images/circuitos'
 
 /**
  * Devuelve la URL de una foto en Azure Blob Storage.
@@ -9,7 +9,7 @@ export const AZURE_PHOTOS_BASE = 'https://stsimevaqa.blob.core.windows.net/geojs
  */
 export function circuitPhotoUrl(idCircuito, tipo) {
   if (!idCircuito) return ''
-  return `${AZURE_PHOTOS_BASE}/${encodeURIComponent(idCircuito)}/${tipo}.jpg`
+  return `${AZURE_PHOTOS_BASE}/${encodeURIComponent(idCircuito)}/${tipo}.png`
 }
 
 /**
