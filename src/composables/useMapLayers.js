@@ -343,6 +343,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           selectedVia.value = {
             name: circuito || 'Circuito sin nombre',
             description: {
+              circuitId:               first.circuitId ?? '',
               Subregión:               canonicalSub(first.SUBREGION),
               Municipio:               municipios.join(', '),
               Circuito:                circuito,
