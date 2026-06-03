@@ -31,7 +31,7 @@ const dEst         = ref(0)
 const loginErr     = ref('')
 
 // ── Estado imágenes ───────────────────────────────────────────────────────────
-const AZURE_PHOTOS_BASE = 'https://stsimevaqa.blob.core.windows.net/images/circuitos'
+const AZURE_PHOTOS_BASE = 'https://stsimevaqa.blob.core.windows.net/geojson/circuitos'
 const TIPOS_FOTO   = ['antes', 'durante', 'despues']
 const TIPO_LABEL   = { antes: 'Antes', durante: 'Durante', despues: 'Después' }
 const imageModal   = ref(null)
@@ -293,9 +293,7 @@ async function saveProd() {
 function photoUrl(idCircuito, tipo) {
   if (!idCircuito) return null
   const ts = photoTs.value[`${idCircuito}/${tipo}`] ? `?t=${photoTs.value[`${idCircuito}/${tipo}`]}` : ''
-  return isProd
-    ? `${AZURE_PHOTOS_BASE}/${encodeURIComponent(idCircuito)}/${tipo}.jpg${ts}`
-    : `/images/circuitos/${encodeURIComponent(idCircuito)}/${tipo}.jpg${ts}`
+  return `${AZURE_PHOTOS_BASE}/${encodeURIComponent(idCircuito)}/${tipo}.jpg${ts}`
 }
 
 function openImageModal(f) {
