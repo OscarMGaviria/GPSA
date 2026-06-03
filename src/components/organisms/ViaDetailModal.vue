@@ -67,9 +67,9 @@ const tableRows = computed(() => {
 
 // ── Galería ───────────────────────────────────────────────────────────────────
 const PHASES = [
-  { key: 'antes', label: 'Antes' },
-  // { key: 'durante', label: 'Durante' },  // TODO: reactivar cuando estén listas
-  // { key: 'despues', label: 'Después' },
+  { key: 'antes',   label: 'Antes' },
+  { key: 'durante', label: 'Durante' },
+  { key: 'despues', label: 'Después' },
 ]
 
 const brokenUrls = ref(new Set())
