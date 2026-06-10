@@ -115,15 +115,15 @@ async function loadProd() {
 
   const geoJson = await geoRes.json()
   const { circuits } = await circRes.json()
-  // partitionKey = NOMBRE_VIA (nombre del circuito), no un id numérico
+  // partitionKey es el ID numérico del circuito en la base de datos
   const progIdx = {}
-  for (const c of (circuits ?? [])) progIdx[c.partitionKey] = c
+  for (const c of (circuits ?? [])) progIdx[String(c.partitionKey)] = c
 
   rawGeoJson.value = geoJson.data?.type === 'FeatureCollection' ? geoJson.data : geoJson
   features.value = rawGeoJson.value.features.map((f, i) => {
     const name   = f.properties.name ?? f.properties.NOMBRE_VIA ?? ''
     const featId = f.properties.id   ?? (i + 1)
-    const prog   = progIdx[name]   // buscar por NOMBRE_VIA, que es el partitionKey
+    const prog   = progIdx[String(featId)]   // buscar por el ID numérico del circuito (partitionKey en la base de datos)
     return {
       _i:   i,
       id:   featId,

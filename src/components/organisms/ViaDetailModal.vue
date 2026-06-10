@@ -30,8 +30,9 @@ function onAfterLeave() { emit('close') }
 // ── Datos ────────────────────────────────────────────────────────────────────
 const desc     = computed(() => props.via.description || {})
 const circuito = computed(() => desc.value['Circuito'] ?? '')
+const idCircuito = computed(() => props.via.idCircuito ?? circuito.value)
 
-const { photos } = useCircuitoPhotos(circuito)
+const { photos } = useCircuitoPhotos(idCircuito)
 const name   = computed(() => props.via.name || 'Tramo sin nombre')
 
 const get = (...keys) => {

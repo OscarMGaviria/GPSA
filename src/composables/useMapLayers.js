@@ -306,6 +306,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           selectedMpio.value = null
           selectedVia.value = {
             name:        p.NOMBRE_VIA ?? 'Vía',
+            idCircuito:  p['id-circuito'] ?? p.CIRCUITO ?? '',
             description: {
               Municipio:               sentenceCase(p.MPIO_NOMBR ?? ''),
               Subregión:               canonicalSub(p.SUBREGION),

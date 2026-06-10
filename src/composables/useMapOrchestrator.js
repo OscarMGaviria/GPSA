@@ -47,6 +47,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     const p = feat.properties
     selectedVia.value = {
       name:        p.NOMBRE_VIA ?? 'Vía',
+      idCircuito:  p['id-circuito'] ?? p.CIRCUITO ?? '',
       description: {
         Municipio:               p.MPIO_NOMBR ?? '',
         Subregión:               p.SUBREGION  ?? '',
