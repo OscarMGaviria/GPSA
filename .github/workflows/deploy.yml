@@ -2,19 +2,21 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,15 +25,22 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm install
-      - run: npm run build
-        env:
-          VITE_API_LOCALIZACIONES: https://apim-simeva-qa.azure-api.net/maps/geojson/simeva/localizacion
-          VITE_API_MUNICIPIOS: https://apim-simeva-qa.azure-api.net/maps/geojson/simeva/municipios
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build:gh-pages
 
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
-      - id: deployment
-        uses: actions/deploy-pages@v4
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

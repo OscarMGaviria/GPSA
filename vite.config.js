@@ -223,6 +223,66 @@ function localizacionApiPlugin() {
   }
 }
 
+function circuitPhotoUploadPlugin() {
+  const baseDir  = path.resolve('./public/images/circuitos')
+  const TIPOS    = new Set(['antes', 'durante', 'despues'])
+  const IMG_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif'])
+
+  function safePath(cir, tipo, filename) {
+    if (!cir || cir.includes('/') || cir.includes('..')) return null
+    if (!TIPOS.has(tipo)) return null
+    if (!filename || filename.includes('/') || filename.includes('..')) return null
+    const ext = path.extname(filename).toLowerCase()
+    if (!IMG_EXTS.has(ext)) return null
+    return path.join(baseDir, cir, tipo, filename)
+  }
+
+  return {
+    name: 'circuit-photo-upload',
+    configureServer(server) {
+      server.middlewares.use('/api/circuit-photo-upload', (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+        res.setHeader('Content-Type', 'application/json')
+        if (req.method === 'OPTIONS') { res.statusCode = 204; res.end(); return }
+
+        const qs       = new URLSearchParams((req.url.split('?')[1]) ?? '')
+        const circuito = decodeURIComponent(qs.get('circuito') ?? '')
+        const tipo     = qs.get('tipo') ?? ''
+        const filename = decodeURIComponent(qs.get('filename') ?? '')
+
+        if (req.method === 'POST') {
+          const fp = safePath(circuito, tipo, filename)
+          if (!fp) { res.statusCode = 400; return res.end(JSON.stringify({ error: 'Invalid params' })) }
+          fs.mkdirSync(path.dirname(fp), { recursive: true })
+          const chunks = []
+          req.on('data', c => chunks.push(c))
+          req.on('end', () => {
+            try {
+              fs.writeFileSync(fp, Buffer.concat(chunks))
+              res.end(JSON.stringify({ ok: true, url: `/images/circuitos/${encodeURIComponent(circuito)}/${tipo}/${encodeURIComponent(filename)}` }))
+            } catch (e) { res.statusCode = 500; res.end(JSON.stringify({ error: e.message })) }
+          })
+          return
+        }
+
+        if (req.method === 'DELETE') {
+          const fp = safePath(circuito, tipo, filename)
+          if (!fp) { res.statusCode = 400; return res.end(JSON.stringify({ error: 'Invalid params' })) }
+          try {
+            if (fs.existsSync(fp)) fs.unlinkSync(fp)
+            res.end(JSON.stringify({ ok: true }))
+          } catch (e) { res.statusCode = 500; res.end(JSON.stringify({ error: e.message })) }
+          return
+        }
+
+        res.statusCode = 405; res.end(JSON.stringify({ error: 'Method not allowed' }))
+      })
+    }
+  }
+}
+
 // En producción, los archivos internos (AppShell, router, vistas internas) no existen
 // en el repo. Este plugin hace stub de cualquier import relativo cuyo archivo no esté
 // en disco, para que Rollup pueda resolverlos sin error. El código que los usa nunca
@@ -249,12 +309,12 @@ export default defineConfig(({ mode }) => {
   const isInternal = env.VITE_INTERNAL === 'true'
 
   return {
-  plugins: [vue(), cronogramasApiPlugin(), compromisosApiPlugin(), localizacionApiPlugin(), hitosApiPlugin(), actividadFotoPlugin(), photosApiPlugin(), stubInternalModulesPlugin(isInternal)].filter(Boolean),
+  plugins: [vue(), cronogramasApiPlugin(), compromisosApiPlugin(), localizacionApiPlugin(), hitosApiPlugin(), actividadFotoPlugin(), photosApiPlugin(), circuitPhotoUploadPlugin(), stubInternalModulesPlugin(isInternal)].filter(Boolean),
   test: {
     environment: 'jsdom',
     globals: true,
   },
-  base: '/',
+  base: process.env.VITE_BASE_URL || env.VITE_BASE_URL || '/',
   build: {
     // Separar vendors estables en chunks propios para aprovechar caché del navegador
     rollupOptions: {

@@ -36,46 +36,67 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
         onLoad:       () => { store.setMapLoading(true); loadSimeva() },
       })
 
-  function openVia(via) {
-    if (!_map || !cachedVias.value) return
-    const feat = cachedVias.value.features.find(f => f.properties.NOMBRE_VIA === via.nombre)
-    if (!feat) return
+  function _circuitFeats(nombre) {
+    const circuito = cachedVias.value.features.find(f => f.properties.NOMBRE_VIA === nombre)?.properties.CIRCUITO ?? ''
+    return { circuito, feats: cachedVias.value.features.filter(f => f.properties.CIRCUITO === circuito) }
+  }
+
+  function _fitCircuit(feats) {
     const bounds = new maplibregl.LngLatBounds()
     function walk(c) { typeof c[0] === 'number' ? bounds.extend(c) : c.forEach(walk) }
-    walk(feat.geometry.coordinates)
+    for (const feat of feats) walk(feat.geometry.coordinates)
     if (!bounds.isEmpty()) _map.fitBounds(bounds, { padding: 80, duration: 900 })
-    const p = feat.properties
+  }
+
+  function openVia(via) {
+    if (!_map || !cachedVias.value) return
+    const { circuito, feats } = _circuitFeats(via.nombre)
+    if (!feats.length) return
+    _fitCircuit(feats)
+    const first = feats[0].properties
+    const sentenceCase = s => s ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : ''
+    const municipios = [...new Set(feats.map(f => sentenceCase(f.properties.MPIO_NOMBR ?? '')).filter(Boolean))]
+    const totalKm = feats.reduce((s, f) => s + (parseFloat(f.properties.Long_km) || 0), 0)
+    const avanceFisico = totalKm > 0
+      ? feats.reduce((s, f) => s + (parseFloat(f.properties.AV_FISICO) || 0) * (parseFloat(f.properties.Long_km) || 0), 0) / totalKm
+      : 0
     selectedVia.value = {
-      name:        p.NOMBRE_VIA ?? 'Vía',
-      idCircuito:  p['id-circuito'] ?? p.CIRCUITO ?? '',
+      name: circuito || 'Circuito sin nombre',
+      idCircuito:  first['id-circuito'] ?? first.CIRCUITO ?? '',
       description: {
-        Municipio:               p.MPIO_NOMBR ?? '',
-        Subregión:               p.SUBREGION  ?? '',
-        Circuito:                p.CIRCUITO   ?? '',
-        'Código de vía':         p.CODIGO_VIA ?? '',
-        Contrato:                p.CTO        ?? '',
-        Contratista:             p.CONTRATIST ?? '',
-        Interventoría:           p.INTERV     ?? '',
-        'Longitud (km)':         parseFloat(p.Long_km) || '',
-        'Avance físico':         p.AV_FISICO != null ? `${Math.round(p.AV_FISICO * 100)}%` : '',
-        'Fecha de inicio':       p.FECHA_INI  ?? '',
-        'Plazo (meses)':         p.PLAZO_MESE ?? '',
-        'Duración transcurrida': p.FECHA_INI && p.PLAZO_MESE
-          ? `${pctTiempoTranscurrido(p.FECHA_INI, p.PLAZO_MESE)}%` : '',
+        circuitId:               first['id-circuito'] ?? first.CIRCUITO ?? '',
+        Subregión:               first.SUBREGION  ?? '',
+        Municipio:               municipios.join(', '),
+        Circuito:                circuito,
+        Contrato:                first.CTO        ?? '',
+        Contratista:             first.CONTRATIST ?? '',
+        Interventoría:           first.INTERV     ?? '',
+        'Longitud (km)':         Math.round(totalKm * 100) / 100,
+        'Avance físico':         `${Math.round(avanceFisico * 100)}%`,
+        'Fecha de inicio':       first.FECHA_INI  ?? '',
+        'Plazo (meses)':         first.PLAZO_MESE ?? '',
+        'Duración transcurrida': first.FECHA_INI && first.PLAZO_MESE
+          ? `${pctTiempoTranscurrido(first.FECHA_INI, first.PLAZO_MESE)}%` : '',
       },
-      photos:   [],
-      geometry: feat.geometry,
     }
   }
 
   function flyToVia(via) {
     if (!_map || !cachedVias.value) return
-    const feat = cachedVias.value.features.find(f => f.properties.NOMBRE_VIA === via.nombre)
-    if (!feat) return
-    const bounds = new maplibregl.LngLatBounds()
-    function walk(c) { typeof c[0] === 'number' ? bounds.extend(c) : c.forEach(walk) }
-    walk(feat.geometry.coordinates)
-    if (!bounds.isEmpty()) _map.fitBounds(bounds, { padding: 80, duration: 900 })
+    const { feats } = _circuitFeats(via.nombre)
+    if (feats.length) _fitCircuit(feats)
+  }
+
+  let _coordMarker = null
+
+  function flyToCoords(lat, lng) {
+    if (!_map) return
+    _map.flyTo({ center: [lng, lat], zoom: 15, duration: 900, essential: true })
+    if (_coordMarker) _coordMarker.remove()
+    _coordMarker = new maplibregl.Marker({ color: '#ef4444' })
+      .setLngLat([lng, lat])
+      .addTo(_map)
+    setTimeout(() => { if (_coordMarker) { _coordMarker.remove(); _coordMarker = null } }, 8000)
   }
 
   return {
@@ -86,5 +107,6 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     noResults,
     openVia,
     flyToVia,
+    flyToCoords,
   }
 }

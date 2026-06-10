@@ -17,6 +17,8 @@ dist-ssr
 .env.*
 !.env.example
 !.env.production
+!.env.gh-pages
+!.env.netlify
 
 # Editor directories and files
 .vscode/*
@@ -30,9 +32,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Datos en vivo (se editan directamente, no versionar)
-public/data/localizacion.geojson
-public/data/localizacion*.geojson
+# Copias temporales de localizacion
 public/data/localizacion - copia.geojson
 
 # Archivos temporales y comprimidos
@@ -44,5 +44,6 @@ __pycache__/
 *.py
 *.pyc
 
-# Fotos de actividades de campo (módulo interno, se generan localmente)
+# Fotos de circuitos y actividades (se almacenan en Azure Storage)
 public/images/actividades/
+public/images/circuitos/

@@ -1,6 +1,19 @@
 <script setup>
 import { ref, computed } from 'vue'
 import cronogramas from '../data/cronogramas.json'
+import CurvaSView      from '../components/organisms/CurvaSView.vue'
+import ValorGanadoView from '../components/organisms/ValorGanadoView.vue'
+import EnsayosView     from '../components/organisms/EnsayosView.vue'
+import ModuloResiliente from '../components/organisms/ModuloResiliente.vue'
+
+const TABS = [
+  { id: 'gantt',      label: 'Cronograma' },
+  { id: 'curvas',     label: 'Curva S' },
+  { id: 'valor',      label: 'Valor Ganado' },
+  { id: 'ensayos',    label: 'Ensayos' },
+  { id: 'resiliente', label: 'Módulo Resiliente' },
+]
+const activeTab = ref('gantt')
 
 const circuitos  = cronogramas.circuitos
 const busqueda   = ref('')
@@ -93,9 +106,32 @@ function imprimir() { window.print() }
         </div>
       </aside>
 
-      <!-- ── Contenido: Gantt ── -->
+      <!-- ── Contenido con tabs ── -->
       <main class="g-main">
-        <div v-if="circuito" class="gantt-wrap">
+
+        <!-- Tab bar -->
+        <div class="g-tabs">
+          <button
+            v-for="tab in TABS"
+            :key="tab.id"
+            class="g-tab"
+            :class="{ 'g-tab--active': activeTab === tab.id }"
+            @click="activeTab = tab.id"
+          >{{ tab.label }}</button>
+        </div>
+
+        <!-- Módulos distintos al Gantt -->
+        <template v-if="circuito && activeTab !== 'gantt'">
+          <CurvaSView      v-if="activeTab === 'curvas'"     :circuito="circuito.circuito" />
+          <ValorGanadoView v-if="activeTab === 'valor'"      :circuito="circuito.circuito" />
+          <EnsayosView     v-if="activeTab === 'ensayos'"    :circuito="circuito.circuito" />
+          <ModuloResiliente v-if="activeTab === 'resiliente'" :circuito="circuito.circuito" />
+        </template>
+
+        <div v-if="!circuito && activeTab !== 'gantt'" class="g-empty">Selecciona un circuito</div>
+
+        <!-- Gantt -->
+        <div v-if="activeTab === 'gantt' && circuito" class="gantt-wrap">
 
           <!-- Título del cronograma -->
           <div class="gantt-header">
@@ -155,7 +191,8 @@ function imprimir() { window.print() }
           </div>
 
         </div>
-        <div v-else class="g-empty">Selecciona un circuito</div>
+        <div v-if="activeTab === 'gantt' && !circuito" class="g-empty">Selecciona un circuito</div>
+
       </main>
 
     </div>
@@ -340,7 +377,48 @@ function imprimir() { window.print() }
 .g-main {
   flex: 1;
   overflow: auto;
-  padding: 24px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Tabs ── */
+.g-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 12px 24px 0;
+  background: #f0f7f3;
+  border-bottom: 2px solid #d1e9d8;
+  flex-shrink: 0;
+}
+.g-tab {
+  padding: 8px 18px;
+  border: 1.5px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  font-family: 'Prompt', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all .14s;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+.g-tab:hover { background: #e0f2ea; color: #0b5640; }
+.g-tab--active {
+  background: #fff;
+  color: #0b5640;
+  border-color: #d1e9d8;
+  margin-bottom: -2px;
+  padding-bottom: 10px;
+}
+
+/* Área de contenido debajo de los tabs */
+.gantt-wrap, :deep(.curva-s-root), :deep(.vg-root), :deep(.ensayos-root), :deep(.resiliente-root) {
+  flex: 1;
+  margin: 24px;
 }
 .g-empty {
   display: flex;
