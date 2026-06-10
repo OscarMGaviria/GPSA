@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
 
-// Reset el módulo entre tests para limpiar el caché interno de manifest
+// Reset el módulo entre tests para limpiar el caché interno
 beforeEach(() => {
   vi.resetModules()
 })
@@ -25,28 +25,26 @@ function mockFetch(responseData, ok = true) {
 // Tests
 // ─────────────────────────────────────────────────────────────────────────────
 describe('useCircuitoPhotos — modo local (manifest.json)', () => {
-  it('retorna fotos vacías si idCircuito es null/vacío', async () => {
+  it('retorna fotos vacías si circuito es null/vacío', async () => {
     const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
-    const idCircuito = ref('')
-    const { photos, loading } = useCircuitoPhotos(idCircuito)
+    const circuito = ref('')
+    const { photos, loading } = useCircuitoPhotos(circuito)
     await nextTick()
     expect(photos.value).toEqual({ antes: [], durante: [], despues: [] })
     expect(loading.value).toBe(false)
   })
 
-  it('carga fotos desde el manifest cuando el idCircuito existe', async () => {
-    const manifest = {
-      'C-001': {
-        antes:   ['foto1.jpg', 'foto2.jpg'],
-        durante: ['foto3.jpg'],
-        despues: [],
-      },
+  it('carga fotos desde el manifest cuando el circuito existe', async () => {
+    const circuitPhotos = {
+      antes:   ['/images/circuitos/C-001/antes/foto1.jpg', '/images/circuitos/C-001/antes/foto2.jpg'],
+      durante: ['/images/circuitos/C-001/durante/foto3.jpg'],
+      despues: [],
     }
-    mockFetch(manifest)
+    mockFetch(circuitPhotos)
 
     const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
-    const idCircuito = ref('C-001')
-    const { photos, loading, error } = useCircuitoPhotos(idCircuito)
+    const circuito = ref('Frontino - Nutibara')
+    const { photos, loading, error } = useCircuitoPhotos(circuito)
 
     // Esperar a que se resuelva el fetch
     await nextTick()
@@ -59,18 +57,16 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
   })
 
   it('construye las URLs correctas desde el manifest', async () => {
-    const manifest = {
-      'C-002': {
-        antes:   ['antes_01.jpg'],
-        durante: [],
-        despues: ['despues_01.jpg'],
-      },
+    const circuitPhotos = {
+      antes:   ['/images/circuitos/C-002/antes/antes_01.jpg'],
+      durante: [],
+      despues: ['/images/circuitos/C-002/despues/despues_01.jpg'],
     }
-    mockFetch(manifest)
+    mockFetch(circuitPhotos)
 
     const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
-    const idCircuito = ref('C-002')
-    const { photos } = useCircuitoPhotos(idCircuito)
+    const circuito = ref('Guarne - Yolombal')
+    const { photos } = useCircuitoPhotos(circuito)
 
     await nextTick()
     await new Promise(r => setTimeout(r, 10))
@@ -80,12 +76,12 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
     expect(photos.value.despues[0]).toContain('/despues/despues_01.jpg')
   })
 
-  it('retorna fotos vacías si el idCircuito no existe en el manifest', async () => {
-    mockFetch({ 'C-999': { antes: [], durante: [], despues: [] } })
+  it('retorna fotos vacías si el circuito no existe en el manifest', async () => {
+    mockFetch({ antes: [], durante: [], despues: [] })
 
     const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
-    const idCircuito = ref('C-888')
-    const { photos } = useCircuitoPhotos(idCircuito)
+    const circuito = ref('Circuito Inexistente')
+    const { photos } = useCircuitoPhotos(circuito)
 
     await nextTick()
     await new Promise(r => setTimeout(r, 10))
@@ -101,8 +97,8 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
     }))
 
     const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
-    const idCircuito = ref('C-001')
-    const { photos, error } = useCircuitoPhotos(idCircuito)
+    const circuito = ref('Frontino - Nutibara')
+    const { photos, error } = useCircuitoPhotos(circuito)
 
     await nextTick()
     await new Promise(r => setTimeout(r, 10))
@@ -112,12 +108,12 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
   })
 
   it('loading es false después de completar la carga', async () => {
-    const manifest = { 'C-003': { antes: ['a.jpg'], durante: [], despues: [] } }
-    mockFetch(manifest)
+    const circuitPhotos = { antes: ['/images/circuitos/C-003/antes/a.jpg'], durante: [], despues: [] }
+    mockFetch(circuitPhotos)
 
     const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
-    const idCircuito = ref('C-003')
-    const { loading } = useCircuitoPhotos(idCircuito)
+    const circuito = ref('Circuito X')
+    const { loading } = useCircuitoPhotos(circuito)
 
     await nextTick()
     await new Promise(r => setTimeout(r, 10))

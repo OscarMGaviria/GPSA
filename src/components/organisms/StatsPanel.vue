@@ -5,7 +5,7 @@ import StatCard       from '../atoms/StatCard.vue'
 import ProgressBar    from '../atoms/ProgressBar.vue'
 import RadarChart     from '../atoms/RadarChart.vue'
 import StatsDetailModal from './StatsDetailModal.vue'
-import { shortLabel, mesesTranscurridos, calcAvanceKm } from '../../utils/stats.js'
+import { shortLabel, mesesTranscurridos, pctTiempoTranscurrido, calcAvanceKm } from '../../utils/stats.js'
 
 const emit = defineEmits(['filter-subregion', 'open-via', 'fly-via'])
 
@@ -133,12 +133,10 @@ const radarAxes = computed(() => {
   const avanceFis = Math.round(vias.reduce((s, v) => s + (v.avance    || 0), 0) / totalVias)
   const avanceFin = Math.round(vias.reduce((s, v) => s + (v.avanceFin || 0), 0) / totalVias)
 
-  // Avance en plazo: promedio de (meses transcurridos / plazo total) por vía
+  // Avance en plazo: promedio de pctTiempoTranscurrido por vía usando fechaIni y plazoMeses
   const avancePlazo = Math.min(100, Math.round(
     vias.reduce((s, v) => {
-      const plazo = v.plazoMeses || 1
-      const transcurridos = mesesTranscurridos(v.contrato)
-      return s + Math.min(100, (transcurridos / plazo) * 100)
+      return s + pctTiempoTranscurrido(v.fechaIni, v.plazoMeses)
     }, 0) / totalVias
   ))
 
