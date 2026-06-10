@@ -105,7 +105,7 @@ watch(() => props.isOpen, (val) => {
     showContent.value = false
     resetCounters()
   }
-})
+}, { immediate: true })
 
 // Re-animar cuando llegan datos reales del API
 watch(
