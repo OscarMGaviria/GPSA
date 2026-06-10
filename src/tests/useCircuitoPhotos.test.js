@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
 
-// Reset el módulo entre tests para limpiar el caché interno de manifest
+// Reset el módulo entre tests para limpiar el caché interno
 beforeEach(() => {
   vi.resetModules()
 })
@@ -35,14 +35,12 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
   })
 
   it('carga fotos desde el manifest cuando el circuito existe', async () => {
-    const manifest = {
-      'Frontino - Nutibara': {
-        antes:   ['foto1.jpg', 'foto2.jpg'],
-        durante: ['foto3.jpg'],
-        despues: [],
-      },
+    const circuitPhotos = {
+      antes:   ['/images/circuitos/C-001/antes/foto1.jpg', '/images/circuitos/C-001/antes/foto2.jpg'],
+      durante: ['/images/circuitos/C-001/durante/foto3.jpg'],
+      despues: [],
     }
-    mockFetch(manifest)
+    mockFetch(circuitPhotos)
 
     const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
     const circuito = ref('Frontino - Nutibara')
@@ -59,14 +57,12 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
   })
 
   it('construye las URLs correctas desde el manifest', async () => {
-    const manifest = {
-      'Guarne - Yolombal': {
-        antes:   ['antes_01.jpg'],
-        durante: [],
-        despues: ['despues_01.jpg'],
-      },
+    const circuitPhotos = {
+      antes:   ['/images/circuitos/C-002/antes/antes_01.jpg'],
+      durante: [],
+      despues: ['/images/circuitos/C-002/despues/despues_01.jpg'],
     }
-    mockFetch(manifest)
+    mockFetch(circuitPhotos)
 
     const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
     const circuito = ref('Guarne - Yolombal')
@@ -81,7 +77,7 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
   })
 
   it('retorna fotos vacías si el circuito no existe en el manifest', async () => {
-    mockFetch({ 'Otro Circuito': { antes: [], durante: [], despues: [] } })
+    mockFetch({ antes: [], durante: [], despues: [] })
 
     const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
     const circuito = ref('Circuito Inexistente')
@@ -112,8 +108,8 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
   })
 
   it('loading es false después de completar la carga', async () => {
-    const manifest = { 'Circuito X': { antes: ['a.jpg'], durante: [], despues: [] } }
-    mockFetch(manifest)
+    const circuitPhotos = { antes: ['/images/circuitos/C-003/antes/a.jpg'], durante: [], despues: [] }
+    mockFetch(circuitPhotos)
 
     const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
     const circuito = ref('Circuito X')

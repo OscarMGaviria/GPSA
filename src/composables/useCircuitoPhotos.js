@@ -3,13 +3,15 @@ import { ref, watch } from 'vue'
 const API_PHOTOS = import.meta.env.VITE_API_PHOTOS
 export const AZURE_PHOTOS_BASE = 'https://stsimevaqa.blob.core.windows.net/images/circuitos'
 
+const pageLoadTs = Date.now()
+
 /**
  * Devuelve la URL de una foto en Azure Blob Storage.
  * tipo: 'antes' | 'durante' | 'despues'
  */
 export function circuitPhotoUrl(circuito, tipo) {
   if (!circuito) return ''
-  return `${AZURE_PHOTOS_BASE}/${encodeURIComponent(circuito)}/${tipo}.jpg`
+  return `${AZURE_PHOTOS_BASE}/${encodeURIComponent(circuito)}/${tipo}.png?t=${pageLoadTs}`
 }
 
 /**
@@ -32,6 +34,18 @@ export function useCircuitoPhotos(circuitoRef) {
     }
   }
 
+  function applyCacheBuster(data) {
+    if (!data) return { antes: [], durante: [], despues: [] }
+    const result = { antes: [], durante: [], despues: [] }
+    for (const phase of ['antes', 'durante', 'despues']) {
+      result[phase] = (data[phase] || []).map(url => {
+        const separator = url.includes('?') ? '&' : '?'
+        return `${url}${separator}t=${pageLoadTs}`
+      })
+    }
+    return result
+  }
+
   async function loadFromApi(circuito) {
     loading.value = true
     error.value   = null
@@ -40,7 +54,8 @@ export function useCircuitoPhotos(circuitoRef) {
       const res = await fetch(url)
       if (!res.ok) throw new Error(`Error ${res.status}`)
       const data = await res.json()
-      photos.value = data?.data ?? data
+      const rawPhotos = data?.data ?? data
+      photos.value = applyCacheBuster(rawPhotos)
     } catch (err) {
       console.error('[SIMEVA] Error cargando fotos:', err)
       error.value  = err.message
@@ -56,7 +71,8 @@ export function useCircuitoPhotos(circuitoRef) {
     try {
       const res = await fetch(`/api/circuito-photos/${encodeURIComponent(circuito)}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      photos.value = await res.json()
+      const rawPhotos = await res.json()
+      photos.value = applyCacheBuster(rawPhotos)
     } catch (err) {
       error.value  = err.message
       photos.value = { antes: [], durante: [], despues: [] }
@@ -72,7 +88,7 @@ export function useCircuitoPhotos(circuitoRef) {
     }
     if (API_PHOTOS) {
       loadFromApi(circuito)
-    } else if (import.meta.env.DEV) {
+    } else if (import.meta.env.VITEST || import.meta.env.MODE === 'test' || (import.meta.env.DEV && !import.meta.env.VITE_ADMIN_API)) {
       loadFromLocalApi(circuito)
     } else {
       buildAzurePhotos(circuito)

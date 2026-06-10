@@ -61,7 +61,7 @@ describe('calcAvanceKm', () => {
   })
 
   it('calcula correctamente con una sola vía al 50%', () => {
-    const vias = [{ km: 10, avance: 50 }]
+    const vias = [{ km: 10, estabilizado: 5 }]
     const result = calcAvanceKm(vias)
     expect(result.pct).toBe(50)
     expect(result.contractuales).toBe(10)
@@ -71,8 +71,8 @@ describe('calcAvanceKm', () => {
 
   it('calcula el promedio de avance entre varias vías', () => {
     const vias = [
-      { km: 20, avance: 100 },
-      { km: 20, avance: 0 },
+      { km: 20, estabilizado: 20 },
+      { km: 20, estabilizado: 0 },
     ]
     const result = calcAvanceKm(vias)
     expect(result.pct).toBe(50)
@@ -82,14 +82,14 @@ describe('calcAvanceKm', () => {
   })
 
   it('maneja vías sin propiedad km (la trata como 0)', () => {
-    const vias = [{ avance: 100 }, { km: 10, avance: 0 }]
+    const vias = [{ estabilizado: 5 }, { km: 10, estabilizado: 0 }]
     const result = calcAvanceKm(vias)
     expect(result.contractuales).toBe(10)
     expect(result.pct).toBe(50)
   })
 
   it('redondea a 2 decimales', () => {
-    const vias = [{ km: 3, avance: 33 }]
+    const vias = [{ km: 3, estabilizado: 0.99 }]
     const result = calcAvanceKm(vias)
     expect(result.intervenidos).toBe(0.99)
     expect(result.pendientes).toBe(2.01)

@@ -218,7 +218,6 @@ async function saveProd() {
 
   let errors = 0
   await Promise.all(toSave.map(async f => {
-<<<<<<< Updated upstream
     const id = encodeURIComponent(f.name)
     const r  = await fetch(`${ADMIN_API}/circuits/${id}/progress`, {
       method:  'PUT',
@@ -228,12 +227,6 @@ async function saveProd() {
         progressFinancial: f.fin,
         kmStabilized:      f.est,
       }),
-=======
-    const r = await fetch(`${ADMIN_API}/circuits/${f.id}/progress`, {
-      method: 'PUT',
-      headers: await authHeaders(),
-      body: JSON.stringify({ progressPhysical: +(f.fis / 100).toFixed(6), progressFinancial: +(f.fin / 100).toFixed(6), kmStabilized: f.est }),
->>>>>>> Stashed changes
     })
     if (!r.ok) {
       if (r.status === 401) { toast('Sesión expirada — vuelve a iniciar sesión', 'err'); logout(); }
@@ -253,6 +246,15 @@ async function saveProd() {
 function openModal(feat, field, label, max) {
   modal.value    = { feat, field, label, max }
   modalVal.value = feat[field]
+}
+
+// ── Módulo de imágenes ────────────────────────────────────────────────────────
+const pageLoadTs = Date.now()
+
+function photoUrl(idCircuito, tipo) {
+  if (!idCircuito) return null
+  const ts = photoTs.value[`${idCircuito}/${tipo}`] || pageLoadTs
+  return `${AZURE_PHOTOS_BASE}/${encodeURIComponent(idCircuito)}/${tipo}.png?t=${ts}`
 }
 function closeModal() { modal.value = null }
 function applyModal() {
