@@ -34,6 +34,7 @@ export function useMapInit(mapContainer, { onMapCreated, onLoad } = {}) {
   const terrainActive = ref(false)
   let _map       = null
   let resizeObs  = null
+  let _prevBasemap = null
 
   const getMap = () => _map
 
@@ -41,23 +42,77 @@ export function useMapInit(mapContainer, { onMapCreated, onLoad } = {}) {
     if (!_map) return
     terrainActive.value = !terrainActive.value
     if (terrainActive.value) {
-      _map.setTerrain({ source: 'terrain-dem', exaggeration: 2.5 })
-      if (!_map.getLayer('hillshade')) {
-        _map.addLayer({
-          id: 'hillshade', type: 'hillshade', source: 'terrain-dem',
-          paint: {
-            'hillshade-exaggeration':           0.7,
-            'hillshade-shadow-color':           '#1a2e1a',
-            'hillshade-highlight-color':        '#f0f4f0',
-            'hillshade-accent-color':           '#3a5c3a',
-            'hillshade-illumination-direction': 315,
-          },
-        }, 'base-layer')
+      // Si el mapa base activo es 'ninguno', forzar el mapa base 'estandar' (OpenStreetMap)
+      // para evitar artefactos visuales tridimensionales sobre fondo transparente.
+      if (activeBasemap.value === 'ninguno') {
+        _prevBasemap = 'ninguno'
+        switchBasemap(BASEMAPS[0]) // BASEMAPS[0] es 'estandar'
+      } else {
+        _prevBasemap = null
       }
-      _map.easeTo({ pitch: 50, duration: 900 })
+
+      _map.setTerrain({ source: 'terrainSource', exaggeration: 1.5 })
+      
+      // Activar cielo atmosférico (experimental en MapLibre GL v3+)
+      if (typeof _map.setSky === 'function') {
+        _map.setSky({
+          'sky-color': '#199EF3',
+          'sky-horizon-blend': 0.5,
+          'horizon-color': '#f0f8ff',
+          'horizon-fog-blend': 0.7,
+          'fog-color': '#ffffff',
+          'fog-ground-blend': 0.5
+        })
+      }
+
+      // Cambiar el color de los municipios para la vista 3D (ej: un azul celeste tecnológico)
+      if (_map.getLayer('municipios-fill')) {
+        _map.setPaintProperty('municipios-fill', 'fill-color', '#0284c7')
+        _map.setPaintProperty('municipios-fill', 'fill-opacity', [
+          'case', ['boolean', ['feature-state', 'hover'], false], 0.3, 0.1
+        ])
+      }
+      if (_map.getLayer('municipios-outline')) {
+        _map.setPaintProperty('municipios-outline', 'line-color', '#0284c7')
+        _map.setPaintProperty('municipios-outline', 'line-width', 1.2)
+      }
+
+      if (!_map.getLayer('hillshade')) {
+        const layers = _map.getStyle().layers || []
+        const beforeId = layers.find(l => l.id !== 'base-layer')?.id
+        _map.addLayer({
+          id: 'hillshade', type: 'hillshade', source: 'hillshadeSource',
+          layout: { visibility: 'visible' },
+          paint: {
+            'hillshade-shadow-color': '#473B24',
+          },
+        }, beforeId)
+      }
+      _map.easeTo({ pitch: 70, duration: 900 })
     } else {
       _map.setTerrain(null)
+      if (typeof _map.setSky === 'function') {
+        _map.setSky(undefined)
+      }
       if (_map.getLayer('hillshade')) _map.removeLayer('hillshade')
+
+      // Restaurar el color original de los municipios (verde #2d8653)
+      if (_map.getLayer('municipios-fill')) {
+        _map.setPaintProperty('municipios-fill', 'fill-color', '#2d8653')
+        _map.setPaintProperty('municipios-fill', 'fill-opacity', [
+          'case', ['boolean', ['feature-state', 'hover'], false], 0.22, 0.07
+        ])
+      }
+      if (_map.getLayer('municipios-outline')) {
+        _map.setPaintProperty('municipios-outline', 'line-color', '#2d8653')
+        _map.setPaintProperty('municipios-outline', 'line-width', 0.8)
+      }
+
+      // Si se forzó el mapa base, restaurar 'ninguno' al apagar el relieve
+      if (_prevBasemap === 'ninguno') {
+        switchBasemap(BASEMAPS.find(b => b.id === 'ninguno'))
+      }
+
       _map.easeTo({ pitch: 0, duration: 900 })
     }
   }
@@ -93,6 +148,7 @@ export function useMapInit(mapContainer, { onMapCreated, onLoad } = {}) {
       zoom:   ZOOM,
       pitch:   0,
       bearing: 0,
+      maxPitch: 85,
     })
 
     onMapCreated?.(_map)
@@ -105,17 +161,14 @@ export function useMapInit(mapContainer, { onMapCreated, onLoad } = {}) {
     resizeObs.observe(mapContainer.value)
 
     _map.on('load', async () => {
-      // DEM: AWS Terrarium — buena cobertura y resolución para los Andes
-      _map.addSource('terrain-dem', {
+      _map.addSource('terrainSource', {
         type: 'raster-dem',
-        tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
-        tileSize: 256,
-        encoding: 'terrarium',
-        maxzoom: 15,
+        url: 'https://tiles.mapterhorn.com/tilejson.json'
       })
-
-      // Terrain y hillshade disponibles pero inactivos al inicio
-      // El usuario los activa con el botón de relieve
+      _map.addSource('hillshadeSource', {
+        type: 'raster-dem',
+        url: 'https://tiles.mapterhorn.com/tilejson.json'
+      })
 
       await onLoad?.()
     })

@@ -170,20 +170,27 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     if (geoMunicipios) {
       try {
         map.addSource('municipios', { type: 'geojson', data: geoMunicipios, generateId: true })
+        const isTerrain = !!map.getTerrain()
         map.addLayer({
           id: 'municipios-fill',
           type: 'fill',
           source: 'municipios',
           paint: {
-            'fill-color': '#2d8653',
-            'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.22, 0.07],
+            'fill-color': isTerrain ? '#0284c7' : '#2d8653',
+            'fill-opacity': isTerrain
+              ? ['case', ['boolean', ['feature-state', 'hover'], false], 0.3, 0.1]
+              : ['case', ['boolean', ['feature-state', 'hover'], false], 0.22, 0.07],
           },
         })
         map.addLayer({
           id: 'municipios-outline',
           type: 'line',
           source: 'municipios',
-          paint: { 'line-color': '#2d8653', 'line-width': 0.8, 'line-opacity': 0.5 },
+          paint: {
+            'line-color': isTerrain ? '#0284c7' : '#2d8653',
+            'line-width': isTerrain ? 1.2 : 0.8,
+            'line-opacity': 0.5
+          },
         })
         map.addLayer({
           id: 'municipios-labels',
