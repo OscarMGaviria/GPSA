@@ -17,7 +17,7 @@
       "X-Azure-FDID": "81eb118f-7989-4ac2-a017-3ebe528ae077"
     },
     "allowedForwardedHosts": [
-      "__FRONTDOOR_DEFAULT_HOSTNAME__",
+      "endpoint-simeva-qa-bfa8ehajf4akb5gm.z02.azurefd.net",
       "simeva-qa.antioquia.gov.co",
       "simeva.antioquia.gov.co"
     ]
