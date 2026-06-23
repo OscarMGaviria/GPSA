@@ -241,11 +241,9 @@ const yTicks = computed(() => {
     >
       <div class="bottom-sheet-handle"></div>
       <div class="bottom-sheet-summary" v-if="mobileState === 'collapsed'">
-        <span class="summary-item"><strong>{{ viasIntervenidas }}</strong> vías</span>
+        <span class="summary-item"><strong>{{ circuitos }}</strong> circuitos</span>
         <span class="summary-dot">•</span>
-        <span class="summary-item"><strong>{{ longitudTotal.toFixed(1) }}</strong> km</span>
-        <span class="summary-dot">•</span>
-        <span class="summary-item"><strong>{{ avanceKmCalc.pct }}%</strong> avance</span>
+        <span class="summary-item"><strong>{{ longitudTotal.toFixed(2) }}</strong> km</span>
       </div>
     </div>
 
