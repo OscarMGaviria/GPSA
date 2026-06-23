@@ -5,6 +5,7 @@ import AppHeader  from './components/organisms/AppHeader.vue'
 import MapView    from './components/organisms/MapView.vue'
 import StatsPanel from './components/organisms/StatsPanel.vue'
 import AppTour    from './components/organisms/AppTour.vue'
+import AppWelcome from './components/organisms/AppWelcome.vue'
 import { useRouter } from 'vue-router'
 import { useMapStore } from './stores/useMapStore.js'
 
@@ -15,6 +16,7 @@ const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filte
 const router = isInternal ? useRouter() : null
 const isPanelOpen = ref(true)
 const showTour    = ref(localStorage.getItem('simeva-tour-done') !== '1')
+const showWelcome = ref(true)
 const mapViewRef  = ref(null)
 
 const isMobile = ref(false)
@@ -72,6 +74,7 @@ watch(activeFilters, (f) => {
     </Transition>
 
     <AppTour v-if="showTour && !isMobile" @close="showTour = false" />
+    <AppWelcome v-if="showWelcome && isMobile" @close="showWelcome = false" />
 
     <AppHeader
       @filter-change="store.setFilter"
