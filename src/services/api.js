@@ -15,7 +15,9 @@ async function fetchGeoJSON(url) {
   try {
     const res = await fetch(url)
     if (!res.ok) throw new Error(`Error ${res.status}`)
-    text = await res.text()
+    const arrayBuffer = await res.arrayBuffer()
+    const decoder = new TextDecoder('utf-8')
+    text = decoder.decode(arrayBuffer)
   } catch (err) {
     // Sin red o error HTTP → intentar caché
     const cached = readCache(url)

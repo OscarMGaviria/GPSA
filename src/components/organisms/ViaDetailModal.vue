@@ -56,11 +56,12 @@ const TABLE_FIELDS = [
 const tableRows = computed(() => {
   const used = new Set()
   const rows = []
+  const skipKeys = new Set(['circuitId', 'circuitid', 'id-circuito', 'idCircuito', 'circuit_id', 'id'])
   for (const k of TABLE_FIELDS) {
-    if (desc.value[k]) { rows.push([k, desc.value[k]]); used.add(k) }
+    if (desc.value[k] && !skipKeys.has(k)) { rows.push([k, desc.value[k]]); used.add(k) }
   }
   for (const [k, v] of Object.entries(desc.value)) {
-    if (!used.has(k)) rows.push([k, v])
+    if (!used.has(k) && !skipKeys.has(k) && !skipKeys.has(k.toLowerCase())) rows.push([k, v])
   }
   return rows
 })
@@ -123,7 +124,7 @@ const displayPct  = ref(0)
 let   barTimer    = null
 
 function countUpPct(target) {
-  const dur = 700, s = performance.now()
+  const dur = 1400, s = performance.now()
   ;(function step(now) {
     const t = Math.min((now - s) / dur, 1)
     displayPct.value = Math.round(target * (1 - Math.pow(1 - t, 3)))
@@ -156,7 +157,7 @@ onMounted(() => {
   barTimer = setTimeout(() => {
     barVisible.value = true
     countUpPct(avancePct.value)
-  }, 280)
+  }, 1400)
 })
 onUnmounted(() => {
   document.removeEventListener('keydown', onKey)
@@ -164,6 +165,42 @@ onUnmounted(() => {
   clearTimeout(barTimer)
   if (_autoTimer) clearInterval(_autoTimer)
 })
+
+// Lightbox swipe handlers
+let lbTouchStartY = 0
+let lbTouchStartX = 0
+let lbTouchStartTime = 0
+
+function onLbTouchStart(e) {
+  if (e.touches.length > 0) {
+    lbTouchStartY = e.touches[0].clientY
+    lbTouchStartX = e.touches[0].clientX
+    lbTouchStartTime = Date.now()
+  }
+}
+
+function onLbTouchEnd(e) {
+  if (e.changedTouches.length > 0 && allPhotos.value.length > 1) {
+    const deltaY = e.changedTouches[0].clientY - lbTouchStartY
+    const deltaX = e.changedTouches[0].clientX - lbTouchStartX
+    const duration = Date.now() - lbTouchStartTime
+    
+    if (duration < 350) {
+      const absX = Math.abs(deltaX)
+      const absY = Math.abs(deltaY)
+      
+      if (absX > 30 || absY > 30) {
+        if (absX >= absY) {
+          if (deltaX < 0) next()
+          else prev()
+        } else {
+          if (deltaY < 0) next()
+          else prev()
+        }
+      }
+    }
+  }
+}
 </script>
 
 <template>
@@ -175,9 +212,18 @@ onUnmounted(() => {
         <!-- ── HEADER ── -->
         <header class="mhead">
           <div class="mhead-content">
-            <span class="mhead-inst">Gobernación de Antioquia · Secretaría de Infraestructura Física</span>
-            <h2 class="mhead-name">{{ name }}</h2>
-            <div class="mhead-chips">
+            <span class="mhead-inst desktop-only">Gobernación de Antioquia · Secretaría de Infraestructura Física</span>
+            <div class="mhead-title-wrap">
+              <h2 class="mhead-name">
+                <span class="desktop-only">{{ name }}</span>
+                <span class="mobile-only">{{ circuito || name }}</span>
+              </h2>
+              <button v-if="hasPhotos" class="btn-camera-mobile mobile-only" @click="openLightbox" aria-label="Ver registro fotográfico" title="Ver registro fotográfico">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="camera-icon-svg"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Fotos</span>
+              </button>
+            </div>
+            <div class="mhead-chips desktop-only">
               <span v-if="get('Municipio')" class="mhead-chip">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 {{ get('Municipio') }}
@@ -263,29 +309,8 @@ onUnmounted(() => {
           <!-- LEFT: datos -->
           <div class="col-left">
 
-            <!-- Avance -->
-            <div class="block">
-              <div class="block-header">
-                <span class="block-label">Avance de obra</span>
-                <span class="status-pill" :class="statusClass">{{ statusLabel }}</span>
-              </div>
-              <div class="avance-pct-row">
-                <span class="avance-pct">{{ barVisible ? displayPct : 0 }}<span class="avance-sym">%</span></span>
-              </div>
-              <div class="bar-wrap">
-                <div class="bar-track">
-                  <div class="bar-fill" :style="{ transform: 'scaleX(' + (barVisible ? avancePct / 100 : 0) + ')', background: barColor }" />
-                </div>
-                <div class="bar-ticks">
-                  <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="divider" />
-
             <!-- Información del circuito -->
-            <div class="block block--table">
+            <div class="block block--table block-entry-1">
               <p class="block-label">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Información del circuito
@@ -299,6 +324,33 @@ onUnmounted(() => {
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <div class="divider block-entry-divider" />
+
+            <!-- Avance -->
+            <div class="block block-entry-2">
+              <div class="block-header">
+                <span class="block-label">Avance de obra</span>
+                <span class="status-pill" :class="statusClass">{{ statusLabel }}</span>
+              </div>
+              <div class="avance-pct-row">
+                <span class="avance-pct">{{ barVisible ? displayPct : 0 }}<span class="avance-sym">%</span></span>
+              </div>
+              <div class="bar-wrap">
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    :style="{
+                      transform: 'scaleX(' + (barVisible ? avancePct / 100 : (avancePct < 25 ? 1 : 0)) + ')',
+                      background: barColor
+                    }"
+                  />
+                </div>
+                <div class="bar-ticks">
+                  <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -373,7 +425,13 @@ onUnmounted(() => {
 
     <!-- ── LIGHTBOX ── -->
     <Transition name="lb-anim">
-      <div v-if="lightboxOpen" class="lb-backdrop" @click.self="closeLightbox">
+      <div
+        v-if="lightboxOpen"
+        class="lb-backdrop"
+        @click.self="closeLightbox"
+        @touchstart="onLbTouchStart"
+        @touchend="onLbTouchEnd"
+      >
         <div class="lb-wrap">
           <Transition name="lb-photo" mode="out-in">
             <img
@@ -644,9 +702,9 @@ onUnmounted(() => {
   gap: 6px;
   margin: 0 0 12px;
   font-family: 'Prompt', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  color: #9ca3af;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #1f2937;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -679,6 +737,12 @@ onUnmounted(() => {
   font-weight: 900;
   color: #0b5640;
   line-height: 1;
+  animation: pctBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes pctBounce {
+  0% { transform: scale(0.9); opacity: 0; }
+  70% { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
 }
 .avance-sym {
   font-size: 20px;
@@ -698,6 +762,8 @@ onUnmounted(() => {
   height: 100%;
   border-radius: 99px;
   transform-origin: left;
+  position: relative;
+  overflow: hidden;
 }
 .bar-ticks {
   display: flex;
@@ -728,12 +794,12 @@ onUnmounted(() => {
 }
 .td-val {
   padding: 7.5px 0;
-  font-size: 12.5px;
-  color: #1f2937;
-  font-weight: 600;
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
   word-break: break-word;
 }
-.td-val--bold { color: #0b5640; font-weight: 800; font-size: 13px; }
+.td-val--bold { color: #9ca3af; font-weight: 500; font-size: 12px; }
 
 /* ── Marca de agua de etapa ── */
 .photo-watermark {
@@ -758,7 +824,32 @@ onUnmounted(() => {
 
 /* ── Bar fill animación ── */
 .bar-fill {
-  transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 1.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  left: -40%;
+  animation: barShine 2.8s infinite ease-in-out;
+}
+
+@keyframes barShine {
+  0% {
+    left: -40%;
+  }
+  35%, 100% {
+    left: 120%;
+  }
 }
 
 /* ── Stagger filas info ── */
@@ -1069,5 +1160,191 @@ onUnmounted(() => {
   .lb-photo-enter-active,
   .lb-photo-leave-active { transition: none; }
   @keyframes rowSlideIn { from { opacity: 1; transform: none; } }
+}
+
+/* Entry animations for blocks */
+.block-entry-1 {
+  animation: blockSlideIn 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+.block-entry-2 {
+  animation: blockSlideIn 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s both;
+}
+.block-entry-divider {
+  animation: blockFadeIn 1.0s ease 0.2s both;
+}
+
+@keyframes blockSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes blockFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block-entry-1,
+  .block-entry-2,
+  .block-entry-divider {
+    animation: none !important;
+  }
+}
+
+/* Mobile and Desktop visibility utilities */
+.desktop-only {
+  display: inline-block;
+}
+span.desktop-only {
+  display: inline;
+}
+.mobile-only {
+  display: none !important;
+}
+
+.mhead-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: flex !important;
+  }
+  span.mobile-only {
+    display: inline !important;
+  }
+  
+  .backdrop {
+    padding: 10px !important;
+  }
+  
+  .modal {
+    height: 95vh !important;
+    max-height: 95vh !important;
+    border-radius: 12px !important;
+  }
+  
+  .mhead {
+    padding: 12px 14px !important;
+  }
+  
+  .mhead-name {
+    font-size: 15px !important;
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 !important;
+    flex: 1;
+  }
+  
+  .btn-camera-mobile {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 20px;
+    color: #ffffff;
+    font-family: 'Prompt', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  .btn-camera-mobile:active {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  .camera-icon-svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .main-tabs {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 8px !important;
+    padding: 10px 14px 0 !important;
+  }
+  .main-tab {
+    flex-shrink: 0 !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+  
+  .mcols {
+    display: block !important;
+    overflow-y: auto !important;
+    padding: 12px !important;
+  }
+  
+  .col-left {
+    border-right: none !important;
+    width: 100% !important;
+    overflow-y: visible !important;
+    height: auto !important;
+    flex: none !important;
+  }
+  
+  .col-right {
+    display: none !important; /* Hide standard photo gallery */
+  }
+  
+  .avance-pct {
+    font-size: 22px !important;
+  }
+  .avance-sym {
+    font-size: 14px !important;
+  }
+  .bar-track {
+    height: 5px !important;
+  }
+  
+  .block {
+    padding: 12px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .info-tbl tr {
+    animation: none !important; /* Disable animations on mobile for speed */
+  }
+  
+  .td-key {
+    width: 40% !important;
+    font-size: 11px !important;
+    padding: 6px 8px 6px 0 !important;
+  }
+  .td-val {
+    font-size: 11px !important;
+    padding: 6px 0 !important;
+  }
+  
+  .mfoot {
+    padding: 10px 14px !important;
+  }
+  .mfoot-brand {
+    font-size: 9.5px !important;
+  }
+  .btn-cerrar {
+    padding: 6px 16px !important;
+    font-size: 12px !important;
+  }
 }
 </style>

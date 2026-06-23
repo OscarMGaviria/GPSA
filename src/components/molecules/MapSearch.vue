@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { Search, X } from 'lucide-vue-next'
+import { Search, X } from '@lucide/vue'
 import { useMapStore } from '../../stores/useMapStore.js'
 
 const emit = defineEmits(['open-via'])

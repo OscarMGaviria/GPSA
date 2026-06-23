@@ -1,6 +1,6 @@
 <script setup>
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
-import { Layers, Mountain } from 'lucide-vue-next'
+import { Layers, Mountain } from '@lucide/vue'
 import { BASEMAPS } from '../../composables/useMapInit.js'
 import { useMapOrchestrator } from '../../composables/useMapOrchestrator.js'
 import { useMapStore } from '../../stores/useMapStore.js'
@@ -18,6 +18,8 @@ const {
   openVia,
   flyToVia,
   flyToCoords,
+  mapBearing,
+  resetBearing,
 } = useMapOrchestrator(mapContainer, () => store.activeFilters)
 
 defineExpose({ openVia, flyToVia })
@@ -246,6 +248,24 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
       </div>
     </Transition>
 
+    <!-- Brújula / Rosa de los vientos (Norte) -->
+    <button
+      class="compass-toggle"
+      @click="resetBearing"
+      title="Orientar al Norte"
+      :style="{ transform: `rotate(${-mapBearing}deg)` }"
+    >
+      <svg viewBox="0 0 40 40" class="compass-svg">
+        <circle cx="20" cy="20" r="16" fill="rgba(255, 255, 255, 0.9)" stroke="#e2e8f0" stroke-width="1.5" />
+        <path d="M20 7 L24 20 L20 17 Z" fill="#ef4444" />
+        <path d="M20 7 L16 20 L20 17 Z" fill="#c2410c" />
+        <path d="M20 33 L24 20 L20 23 Z" fill="#9ca3af" />
+        <path d="M20 33 L16 20 L20 23 Z" fill="#6b7280" />
+        <circle cx="20" cy="20" r="2.5" fill="#ffffff" stroke="#374151" stroke-width="1" />
+        <text x="20" y="6.5" font-size="5.5" font-family="'Prompt', sans-serif" font-weight="900" text-anchor="middle" fill="#1e293b" dy="0">N</text>
+      </svg>
+    </button>
+
     <!-- Botón relieve 3D -->
     <button
       class="terrain-toggle"
@@ -358,6 +378,42 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
   height: 16px;
   flex-shrink: 0;
   color: #f59e0b;
+}
+
+/* ── Compass toggle ── */
+.compass-toggle {
+  position: absolute;
+  bottom: 124px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+.compass-toggle:active {
+  transform: scale(0.93);
+}
+@media (hover: hover) and (pointer: fine) {
+  .compass-toggle:hover {
+    background: #f3f4f6;
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  }
+}
+.compass-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* ── Terrain toggle ── */
@@ -1036,4 +1092,22 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
   transform: translateX(-50%) translateY(-6px);
 }
 
+@media (max-width: 1024px) {
+  .basemap-switcher {
+    bottom: 76px;
+  }
+  .terrain-toggle {
+    bottom: 120px;
+  }
+  .compass-toggle {
+    bottom: 164px;
+  }
+  .atm-logo {
+    bottom: 76px;
+    left: 12px;
+  }
+  .atm-logo img {
+    height: 60px;
+  }
+}
 </style>

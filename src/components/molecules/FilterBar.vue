@@ -1,6 +1,6 @@
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { Search, X } from 'lucide-vue-next'
+import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { Search, X } from '@lucide/vue'
 import Selector from '../atoms/Selector.vue'
 
 const props = defineProps({
@@ -12,22 +12,30 @@ const props = defineProps({
 
 const emit = defineEmits(['filter-change'])
 
-const searchText   = ref('')
-const subregionVal = ref(props.subregionOptions[0])
-const municipioVal = ref(props.municipioOptions[0])
-const circuitoVal  = ref(props.circuitoOptions[0])
+const searchText   = ref(props.activeFilters?.search ?? '')
+const subregionVal = ref(props.activeFilters?.subregion ?? props.subregionOptions[0])
+const municipioVal = ref(props.activeFilters?.municipio ?? props.municipioOptions[0])
+const circuitoVal  = ref(props.activeFilters?.circuito ?? props.circuitoOptions[0])
+
+let isSyncing = false
 
 // Sincronizar estado local cuando los filtros cambian externamente (ej: click en gráfica)
 watch(() => props.activeFilters, (f) => {
   if (!f) return
+  isSyncing = true
   searchText.value   = f.search    ?? ''
   subregionVal.value = f.subregion ?? props.subregionOptions[0]
   municipioVal.value = f.municipio ?? props.municipioOptions[0]
   circuitoVal.value  = f.circuito  ?? props.circuitoOptions[0]
-}, { deep: true })
+  nextTick(() => {
+    isSyncing = false
+  })
+}, { immediate: true, deep: true })
 
 watch(subregionVal, () => {
+  if (isSyncing) return
   municipioVal.value = props.municipioOptions[0]
+  circuitoVal.value  = props.circuitoOptions[0]
   emitFilters()
 })
 
@@ -48,14 +56,34 @@ const clearFilters = () => {
   emitFilters()
 }
 
+const hasActiveFilters = computed(() => {
+  const hasSearch = searchText.value.trim() !== ''
+  const hasSubregion = subregionVal.value && subregionVal.value !== props.subregionOptions[0]
+  const hasMunicipio = municipioVal.value && municipioVal.value !== props.municipioOptions[0]
+  const hasCircuito = circuitoVal.value && circuitoVal.value !== props.circuitoOptions[0]
+  return hasSearch || hasSubregion || hasMunicipio || hasCircuito
+})
+
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 1024
+}
+
 const onKeydown = (e) => { if (e.key === 'Escape') clearFilters() }
-onMounted(()   => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+onMounted(()   => {
+  window.addEventListener('keydown', onKeydown)
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('resize', checkMobile)
+})
 </script>
 
 <template>
   <div class="filter-bar">
-    <div class="search-wrapper">
+    <div v-if="!isMobile" class="search-wrapper">
       <Search :size="14" class="search-icon" />
       <input
         v-model="searchText"
@@ -70,11 +98,27 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
     <Selector v-model="municipioVal" :options="municipioOptions" @update:modelValue="emitFilters" align="right" />
     <Selector v-model="circuitoVal"  :options="circuitoOptions"  @update:modelValue="emitFilters" align="right" />
 
-    <div class="btn-clear-wrapper">
-      <button class="btn-clear" @click="clearFilters" aria-label="Borrar filtros">
+    <div v-if="!isMobile" class="btn-clear-wrapper">
+      <button
+        class="btn-clear"
+        :disabled="!hasActiveFilters"
+        @click="clearFilters"
+        aria-label="Borrar filtros"
+      >
         <X :size="14" />
       </button>
       <span class="btn-tooltip">Borrar filtros</span>
+    </div>
+    <div v-else class="btn-clear-mobile-wrapper">
+      <button
+        class="btn-clear-mobile"
+        :class="{ 'btn-clear-mobile--active': hasActiveFilters }"
+        :disabled="!hasActiveFilters"
+        @click="clearFilters"
+        aria-label="Limpiar filtros"
+      >
+        Limpiar Filtros
+      </button>
     </div>
   </div>
 </template>
@@ -159,6 +203,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   background: rgba(239, 68, 68, 0.28);
   border-color: rgba(248, 113, 113, 0.7);
 }
+.btn-clear:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+}
 
 .btn-tooltip {
   position: absolute;
@@ -187,4 +239,107 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   border-bottom-color: #1f2937;
 }
 .btn-clear-wrapper:hover .btn-tooltip { opacity: 1; }
+
+@media (max-width: 1024px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 12px;
+  }
+  .search-wrapper {
+    width: 100%;
+  }
+  .search-input {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 14px;
+    padding: 10px 12px 10px 36px;
+    color: #1f2937;
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    box-shadow: none;
+  }
+  .search-input::placeholder {
+    color: #9ca3af;
+  }
+  .search-input:hover,
+  .search-input:focus {
+    background: #ffffff;
+    border-color: #9ca3af;
+    color: #1f2937;
+    box-shadow: none;
+  }
+  .search-icon {
+    color: #9ca3af;
+  }
+  .search-wrapper:hover .search-icon,
+  .search-wrapper:focus-within .search-icon {
+    color: #4b5563;
+  }
+  :deep(.select-container) {
+    width: 100%;
+  }
+  :deep(.select-trigger) {
+    width: 100%;
+    padding: 10px 14px;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    color: #1f2937;
+    box-shadow: none;
+    box-sizing: border-box;
+    height: 40px;
+  }
+  :deep(.select-trigger:hover) {
+    border-color: #9ca3af;
+    background: #e5e7eb;
+  }
+  :deep(.trigger-arrow) {
+    color: #6b7280;
+  }
+  :deep(.dropdown-panel) {
+    width: 100% !important;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+    margin-top: 4px;
+  }
+  .btn-clear-wrapper {
+    display: none !important;
+  }
+  .btn-clear-mobile-wrapper {
+    width: 100%;
+    margin-top: 4px;
+  }
+  .btn-clear-mobile {
+    width: 100%;
+    height: 42px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #cbd5e1;
+    border-radius: 10px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: not-allowed;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-clear-mobile.btn-clear-mobile--active {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #ef4444;
+    cursor: pointer;
+  }
+  .btn-clear-mobile.btn-clear-mobile--active:active {
+    background: #fecaca;
+    border-color: #f87171;
+  }
+}
 </style>

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { ChevronDown, Check, Search } from 'lucide-vue-next'
+import { ChevronDown, Check, Search } from '@lucide/vue'
 
 const props = defineProps({
   options: {

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { Search, ChevronUp, ChevronDown, Route, Ruler, MapPin, GitBranch } from 'lucide-vue-next'
+import { Search, ChevronUp, ChevronDown, Route, Ruler, MapPin, GitBranch } from '@lucide/vue'
 import { calcViasAgrupadas, calcLongitudAgrupada, calcMunicipiosRows, calcCircuitosRows, avanceBadge, avanceLabel } from '../../utils/aggregations.js'
 
 const props = defineProps({
@@ -757,5 +757,68 @@ kbd {
   .btn-cerrar:active { transform: none; }
   .row-enter-active, .row-move { transition: none; }
   .long-bar-fill { transition: none; }
+}
+
+@media (max-width: 1024px) {
+  .modal-backdrop {
+    padding: 8px !important;
+  }
+  .modal {
+    width: 100% !important;
+    height: 95vh !important;
+    max-height: 95vh !important;
+    border-radius: 12px !important;
+  }
+  .modal-header {
+    padding: 12px 14px !important;
+  }
+  .modal-titulo {
+    font-size: 15px !important;
+  }
+  .modal-desc {
+    font-size: 11px !important;
+  }
+  .header-icon {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+  }
+  .btn-close {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    font-size: 15px !important;
+  }
+  .search-bar {
+    padding: 10px 14px !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .search-input {
+    font-size: 13px !important;
+  }
+  .btn-expand-all {
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+  }
+  .modal-body {
+    padding: 0 !important;
+    overflow-x: auto !important; /* Enable horizontal scrolling for tables */
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Make tables scrollable */
+  .data-table {
+    min-width: 600px !important; /* Force a minimum width so columns have enough room and scroll instead of collapsing */
+  }
+  .modal-footer {
+    padding: 10px 14px !important;
+  }
+  .footer-hint {
+    display: none !important; /* Esc hint is useless on mobile tap keyboards */
+  }
+  .btn-cerrar {
+    padding: 6px 16px !important;
+    font-size: 12px !important;
+  }
 }
 </style>

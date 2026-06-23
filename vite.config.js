@@ -322,7 +322,7 @@ export default defineConfig(({ mode }) => {
         manualChunks: {
           'vendor-map':   ['maplibre-gl'],
           'vendor-vue':   ['vue', 'pinia'],
-          'vendor-icons': ['lucide-vue-next'],
+          'vendor-icons': ['@lucide/vue'],
         },
       },
     },

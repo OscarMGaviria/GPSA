@@ -1,5 +1,6 @@
 <script setup>
-import { PanelRightClose, PanelRightOpen, HelpCircle, FileText } from 'lucide-vue-next'
+import { ref, computed } from 'vue'
+import { PanelRightClose, PanelRightOpen, HelpCircle, FileText, SlidersHorizontal, X } from '@lucide/vue'
 import FilterBar from '../molecules/FilterBar.vue'
 
 const isInternal = import.meta.env.VITE_INTERNAL === 'true'
@@ -16,6 +17,18 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour', 'generate-report'])
+
+const isMobileDrawerOpen = ref(false)
+
+const activeFiltersCount = computed(() => {
+  if (!props.activeFilters) return 0
+  let count = 0
+  if (props.activeFilters.search) count++
+  if (props.activeFilters.subregion && props.activeFilters.subregion !== 'Todas las subregiones') count++
+  if (props.activeFilters.municipio && props.activeFilters.municipio !== 'Todos los municipios') count++
+  if (props.activeFilters.circuito && props.activeFilters.circuito !== 'Todos los circuitos') count++
+  return count
+})
 </script>
 
 <template>
@@ -28,14 +41,15 @@ const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour', 'genera
       </div>
       <div class="header-titles">
         <h1 class="header-title">{{ title }}</h1>
-        <p class="header-subtitle">{{ subtitle }}</p>
+        <p class="header-subtitle desktop-only">{{ subtitle }}</p>
+        <p class="header-subtitle mobile-only">SIMEVA</p>
       </div>
     </div>
 
     <div class="header-divider"></div>
 
-    <!-- RIGHT: filters + panel toggle -->
-    <div class="header-filters">
+    <!-- RIGHT: filters + panel toggle (Desktop Only) -->
+    <div class="header-filters desktop-only">
       <FilterBar
         :subregion-options="subregionOptions"
         :municipio-options="municipioOptions"
@@ -80,6 +94,41 @@ const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour', 'genera
         <span class="btn-tooltip">{{ panelOpen ? 'Colapsar panel' : 'Expandir panel' }}</span>
       </div>
     </div>
+
+    <!-- RIGHT: Mobile actions (Mobile Only) -->
+    <div class="header-mobile-actions mobile-only">
+      <button class="btn-mobile-filter" @click="isMobileDrawerOpen = true">
+        <SlidersHorizontal :size="15" />
+        <span>Filtros</span>
+        <span v-if="activeFiltersCount > 0" class="filter-badge">{{ activeFiltersCount }}</span>
+      </button>
+    </div>
+
+    <!-- Mobile Drawer Overlay -->
+    <Transition name="drawer-fade">
+      <div v-if="isMobileDrawerOpen" class="drawer-backdrop" @click="isMobileDrawerOpen = false">
+        <div class="drawer-content" @click.stop>
+          <div class="drawer-header">
+            <div class="drawer-title-wrapper">
+              <h2 class="drawer-title">Filtros de Búsqueda</h2>
+              <p class="drawer-subtitle">Filtra los tramos viales por subregión, municipio o circuito</p>
+            </div>
+            <button class="drawer-close" @click="isMobileDrawerOpen = false" aria-label="Cerrar filtros">
+              <X :size="18" />
+            </button>
+          </div>
+          <div class="drawer-body">
+            <FilterBar
+              :subregion-options="subregionOptions"
+              :municipio-options="municipioOptions"
+              :circuito-options="circuitoOptions"
+              :active-filters="activeFilters"
+              @filter-change="emit('filter-change', $event)"
+            />
+          </div>
+        </div>
+      </div>
+    </Transition>
 
   </header>
 </template>
@@ -219,4 +268,234 @@ const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour', 'genera
   border-bottom-color: #1f2937;
 }
 .btn-panel-wrapper:hover .btn-tooltip { opacity: 1; }
+
+/* Mobile styling controls */
+.mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 1024px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: flex !important;
+  }
+  .app-header {
+    padding: 10px 16px;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .header-brand {
+    flex: 1;
+    min-width: 0;
+    gap: 10px;
+  }
+  .header-titles {
+    min-width: 0;
+    flex: 1;
+  }
+  .header-logo-img {
+    height: 40px;
+  }
+  .header-title {
+    font-size: 13.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .header-subtitle {
+    font-size: 9.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .header-divider {
+    display: none;
+  }
+}
+
+.header-mobile-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-mobile-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  color: #ffffff;
+  font-family: 'Prompt', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  height: 36px;
+}
+.btn-mobile-filter:active {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.filter-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+/* Filter Modal overlay styling */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.drawer-content {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.drawer-title-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-title {
+  margin: 0;
+  font-family: 'Prompt', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.drawer-subtitle {
+  margin: 0;
+  font-family: 'Prompt', sans-serif;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.drawer-close {
+  background: #f1f5f9;
+  border: none;
+  color: #475569;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  padding: 0;
+}
+.drawer-close:active {
+  background: #e2e8f0;
+}
+
+.drawer-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.drawer-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.btn-apply {
+  width: 100%;
+  height: 48px;
+  background: #0b5640;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Prompt', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-apply:active {
+  background: #0a4d38;
+}
+
+/* Animations */
+@keyframes modalZoomIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes modalZoomOut {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+.drawer-fade-enter-active,
+.drawer-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.drawer-fade-enter-from,
+.drawer-fade-leave-to {
+  opacity: 0;
+}
+
+.drawer-fade-enter-active .drawer-content {
+  animation: modalZoomIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.drawer-fade-leave-active .drawer-content {
+  animation: modalZoomOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 </style>

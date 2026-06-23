@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, computed, onUnmounted } from 'vue'
-import { Route, Ruler, MapPin, GitBranch } from 'lucide-vue-next'
+import { Route, Ruler, MapPin, GitBranch } from '@lucide/vue'
 import StatCard       from '../atoms/StatCard.vue'
 import ProgressBar    from '../atoms/ProgressBar.vue'
 import RadarChart     from '../atoms/RadarChart.vue'
@@ -8,6 +8,59 @@ import StatsDetailModal from './StatsDetailModal.vue'
 import { shortLabel, mesesTranscurridos, pctTiempoTranscurrido, calcAvanceKm } from '../../utils/stats.js'
 
 const emit = defineEmits(['filter-subregion', 'open-via', 'fly-via'])
+
+// Mobile bottom sheet state
+const mobileState = ref('collapsed')
+
+function cycleMobileState() {
+  if (mobileState.value === 'collapsed') {
+    mobileState.value = 'half'
+  } else if (mobileState.value === 'half') {
+    mobileState.value = 'expanded'
+  } else {
+    mobileState.value = 'collapsed'
+  }
+}
+
+let touchStartY = 0
+let touchStartX = 0
+let touchStartTime = 0
+
+function onTouchStart(e) {
+  if (e.touches.length > 0) {
+    touchStartY = e.touches[0].clientY
+    touchStartX = e.touches[0].clientX
+    touchStartTime = Date.now()
+  }
+}
+
+function onTouchEnd(e) {
+  if (e.changedTouches.length > 0) {
+    const deltaY = e.changedTouches[0].clientY - touchStartY
+    const deltaX = e.changedTouches[0].clientX - touchStartX
+    const duration = Date.now() - touchStartTime
+    
+    // Quick swipe and vertical movement dominates
+    if (Math.abs(deltaY) > 40 && Math.abs(deltaY) > Math.abs(deltaX) && duration < 350) {
+      if (deltaY < 0) {
+        // Swipe up
+        if (mobileState.value === 'collapsed') {
+          mobileState.value = 'half'
+        } else if (mobileState.value === 'half') {
+          mobileState.value = 'expanded'
+        }
+      } else {
+        // Swipe down
+        if (mobileState.value === 'expanded') {
+          mobileState.value = 'half'
+        } else if (mobileState.value === 'half') {
+          mobileState.value = 'collapsed'
+        }
+      }
+    }
+  }
+}
+
 
 const props = defineProps({
   isOpen:            { type: Boolean, default: true },
@@ -170,7 +223,32 @@ const yTicks = computed(() => {
 </script>
 
 <template>
-  <div class="stats-side" :class="{ open: props.isOpen }">
+  <div
+    class="stats-side"
+    :class="{
+      open: props.isOpen,
+      'mobile-collapsed': mobileState === 'collapsed',
+      'mobile-half': mobileState === 'half',
+      'mobile-expanded': mobileState === 'expanded'
+    }"
+  >
+    <!-- Handle for mobile swipeable bottom sheet -->
+    <div
+      class="bottom-sheet-handle-wrapper mobile-only"
+      @touchstart="onTouchStart"
+      @touchend="onTouchEnd"
+      @click="cycleMobileState"
+    >
+      <div class="bottom-sheet-handle"></div>
+      <div class="bottom-sheet-summary" v-if="mobileState === 'collapsed'">
+        <span class="summary-item"><strong>{{ viasIntervenidas }}</strong> vías</span>
+        <span class="summary-dot">•</span>
+        <span class="summary-item"><strong>{{ longitudTotal.toFixed(1) }}</strong> km</span>
+        <span class="summary-dot">•</span>
+        <span class="summary-item"><strong>{{ avanceKmCalc.pct }}%</strong> avance</span>
+      </div>
+    </div>
+
     <div class="panel-inner">
 
       <!-- ── KPI cards ─────────────────────────────────────────────────── -->
@@ -298,7 +376,9 @@ const yTicks = computed(() => {
                     height: s.km > 0 ? Math.max((s.km / maxKm * 100), 4) + '%' : '4px',
                     animationDelay: (i * 80) + 'ms'
                   }"
-                />
+                >
+                  <span v-if="s.km > 0" class="bar-badge">{{ s.km.toFixed(2) }} km</span>
+                </div>
               </div>
               <span class="bar-label" :title="s.name">{{ shortLabel(s.name) }}</span>
             </div>
@@ -544,6 +624,7 @@ const yTicks = computed(() => {
   gap: 4px;
   flex: 1;
   min-height: 0;
+  margin-bottom: 25px; /* Espacio para las etiquetas de subregión absoluto-posicionadas */
 }
 
 .chart-y {
@@ -551,12 +632,11 @@ const yTicks = computed(() => {
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-end;
-  padding-bottom: 24px;
   flex-shrink: 0;
   width: 34px;
 }
 .y-tick {
-  font-size: 8px;
+  font-size: clamp(9px, 0.75vw, 12px);
   color: #9ca3af;
   white-space: nowrap;
 }
@@ -567,14 +647,12 @@ const yTicks = computed(() => {
   display: flex;
   align-items: flex-end;
   gap: 3px;
-  padding-bottom: 24px;
   border-bottom: 1.5px solid #c8e6d4;
 }
 
 .chart-grid {
   position: absolute;
   inset: 0;
-  bottom: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -608,8 +686,10 @@ const yTicks = computed(() => {
   font-weight: 700;
 }
 .bar-col--active .bar-badge {
-  background: #0b5640;
+  background: #08402f;
   color: #fff;
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
 }
 .bar-col--dimmed {
   opacity: 0.55;
@@ -632,10 +712,6 @@ const yTicks = computed(() => {
     color: #1a5c3a;
     font-weight: 700;
   }
-  .bar-col:hover .bar-badge {
-    background: rgba(45, 134, 83, 0.7);
-    transform: translateX(-50%) translateY(-4px) scale(1.1);
-  }
 }
 .bar-outer {
   flex: 1;
@@ -648,26 +724,35 @@ const yTicks = computed(() => {
 }
 .bar-badge {
   position: absolute;
-  top: 0;
+  top: 4px;
   left: 50%;
-  transform: translateX(-50%);
-  font-size: 8px;
-  font-weight: 700;
-  color: #fff;
-  background: rgba(255,255,255,0.22);
-  padding: 1px 3px;
-  border-radius: 3px;
-  white-space: nowrap;
-  z-index: 1;
-  animation: fadeDown .4s ease both;
-  animation-delay: inherit;
-  transition: background .25s ease, transform .25s ease;
+  transform: translate(-50%, 2px) scale(0.9);
+  font-size: clamp(9px, 0.75vw, 11.5px); /* Fuente más alta */
+  font-weight: 800;
+  color: #ffffff;
+  background: rgba(11, 86, 64, 0.9);
+  padding: 2px;
+  border-radius: 4px;
+  white-space: normal; /* Permite saltar de línea si no cabe el texto */
+  word-break: break-word;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  width: 95%; /* Se ajusta exactamente al ancho de la barra */
+  max-width: 95%; /* Nunca se sale del ancho disponible de la barra */
+  box-sizing: border-box;
+  text-align: center;
+  line-height: 1.1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-@keyframes fadeDown {
-  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+.bar-col:hover .bar-badge {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
 }
+
 .bar-fill {
   width: 78%;
   border-radius: 4px 4px 0 0;
@@ -676,6 +761,7 @@ const yTicks = computed(() => {
   animation: barGrow .7s cubic-bezier(.34,1.10,.64,1) both;
   transform-origin: bottom;
   transition: background .25s ease, box-shadow .25s ease, transform .25s ease;
+  position: relative;
 }
 
 @keyframes barGrow {
@@ -703,13 +789,17 @@ const yTicks = computed(() => {
   width: 78% !important;
 }
 .bar-label {
-  font-size: 8px;
+  position: absolute;
+  bottom: -25px; /* Posicionada debajo de la línea base */
+  left: 0;
+  right: 0;
+  height: 22px;
+  font-size: clamp(9px, 0.75vw, 12px);
   color: #6b7280;
   text-align: center;
   line-height: 1.2;
-  height: 22px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   transition: color .25s ease, font-weight .25s ease;
 }
@@ -723,5 +813,130 @@ const yTicks = computed(() => {
   @keyframes fadeSlideRight { from { opacity: 1; transform: none; } }
   @keyframes barGrow       { from { transform: scaleY(1); opacity: 1; } }
   @keyframes shimmer       { from { background-position: 0 0; } }
+}
+
+/* Mobile bottom sheet controls */
+.mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 1024px) {
+  .mobile-only {
+    display: flex !important;
+  }
+  
+  .stats-side {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 1000 !important;
+    border-left: none !important;
+    border-top: 1px solid rgba(200, 223, 208, 0.8) !important;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -8px 24px rgba(11, 86, 64, 0.15) !important;
+    background: #eaf4ed !important;
+    overflow: hidden !important;
+    transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .stats-side.mobile-collapsed {
+    height: 64px !important;
+  }
+  
+  .stats-side.mobile-half {
+    height: 45vh !important;
+  }
+  
+  .stats-side.mobile-expanded {
+    height: 85vh !important;
+  }
+  
+  .panel-inner {
+    padding: 0 16px 20px !important;
+    height: calc(100% - 64px) !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  
+  .cards-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  
+  .avance-row {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  .chart-card {
+    min-height: 200px !important;
+  }
+  
+  .chart-body {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 8px !important;
+  }
+  
+  .chart-area {
+    min-width: 480px !important;
+  }
+}
+
+.bottom-sheet-handle-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px 8px;
+  cursor: pointer;
+  background: #eaf4ed;
+  border-bottom: 1px solid rgba(200, 223, 208, 0.4);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.bottom-sheet-handle {
+  width: 36px;
+  height: 5px;
+  background: #cbd5e1;
+  border-radius: 3px;
+  margin-bottom: 6px;
+  transition: background 0.2s;
+}
+
+.bottom-sheet-handle-wrapper:hover .bottom-sheet-handle {
+  background: #94a3b8;
+}
+
+.bottom-sheet-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Prompt', sans-serif;
+  font-size: 13px;
+  color: #1a5c3a;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.summary-item strong {
+  font-weight: 700;
+  color: #0b5640;
+}
+
+.summary-dot {
+  color: #a3d9b9;
+  font-size: 10px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

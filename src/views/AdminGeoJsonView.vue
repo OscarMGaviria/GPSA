@@ -87,7 +87,9 @@ async function load() {
 async function loadLocal() {
   const r = await fetch(GEO_FILE)
   if (!r.ok) throw new Error(`HTTP ${r.status}`)
-  rawGeoJson.value = await r.json()
+  const buf = await r.arrayBuffer()
+  const decoded = new TextDecoder('utf-8').decode(buf)
+  rawGeoJson.value = JSON.parse(decoded)
   features.value = rawGeoJson.value.features.map((f, i) => ({
     _i:   i,
     id:   f.properties.id         ?? (i + 1),
@@ -113,7 +115,9 @@ async function loadProd() {
   if (!geoRes.ok)  throw new Error(`GeoJSON HTTP ${geoRes.status}`)
   if (!circRes.ok) throw new Error(`Circuits API HTTP ${circRes.status}`)
 
-  const geoJson = await geoRes.json()
+  const geoBuf = await geoRes.arrayBuffer()
+  const geoDecoded = new TextDecoder('utf-8').decode(geoBuf)
+  const geoJson = JSON.parse(geoDecoded)
   const { circuits } = await circRes.json()
   // partitionKey es el ID numérico del circuito en la base de datos
   const progIdx = {}

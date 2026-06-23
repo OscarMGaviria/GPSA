@@ -186,15 +186,20 @@ function injectCss() {
 let pf = null
 
 async function fetchGeoJSON(primaryUrl, fallbackUrl) {
+  async function fetchAndDecode(url) {
+    const r = await fetch(url)
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const buf = await r.arrayBuffer()
+    const decoded = new TextDecoder('utf-8').decode(buf)
+    return JSON.parse(decoded)
+  }
+
   if (primaryUrl) {
     try {
-      const r = await fetch(primaryUrl)
-      if (!r.ok) throw new Error(`HTTP ${r.status}`)
-      return await r.json()
+      return await fetchAndDecode(primaryUrl)
     } catch { /* fall through to local file */ }
   }
-  const r = await fetch(fallbackUrl)
-  return await r.json()
+  return await fetchAndDecode(fallbackUrl)
 }
 
 onMounted(async () => {

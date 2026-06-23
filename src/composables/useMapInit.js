@@ -67,9 +67,11 @@ export function useMapInit(mapContainer, { onMapCreated, onLoad } = {}) {
 
       // Cambiar el color de los municipios para la vista 3D (ej: un azul celeste tecnológico)
       if (_map.getLayer('municipios-fill')) {
-        _map.setPaintProperty('municipios-fill', 'fill-color', '#0284c7')
+        _map.setPaintProperty('municipios-fill', 'fill-color', [
+          'case', ['==', ['get', '_hasVias'], 1], '#015a88', '#0284c7'
+        ])
         _map.setPaintProperty('municipios-fill', 'fill-opacity', [
-          'case', ['boolean', ['feature-state', 'hover'], false], 0.3, 0.1
+          'case', ['boolean', ['feature-state', 'hover'], false], 0.3, ['==', ['get', '_hasVias'], 1], 0.18, 0.1
         ])
       }
       if (_map.getLayer('municipios-outline')) {
@@ -98,9 +100,11 @@ export function useMapInit(mapContainer, { onMapCreated, onLoad } = {}) {
 
       // Restaurar el color original de los municipios (verde #2d8653)
       if (_map.getLayer('municipios-fill')) {
-        _map.setPaintProperty('municipios-fill', 'fill-color', '#2d8653')
+        _map.setPaintProperty('municipios-fill', 'fill-color', [
+          'case', ['==', ['get', '_hasVias'], 1], '#1a5c3a', '#2d8653'
+        ])
         _map.setPaintProperty('municipios-fill', 'fill-opacity', [
-          'case', ['boolean', ['feature-state', 'hover'], false], 0.22, 0.07
+          'case', ['boolean', ['feature-state', 'hover'], false], 0.22, ['==', ['get', '_hasVias'], 1], 0.14, 0.07
         ])
       }
       if (_map.getLayer('municipios-outline')) {
@@ -132,6 +136,7 @@ export function useMapInit(mapContainer, { onMapCreated, onLoad } = {}) {
 
   onMounted(() => {
     const initial = BASEMAPS[0]
+    const isMobileDevice = window.innerWidth <= 1024
 
     _map = new maplibregl.Map({
       container: mapContainer.value,
@@ -148,8 +153,14 @@ export function useMapInit(mapContainer, { onMapCreated, onLoad } = {}) {
       zoom:   ZOOM,
       pitch:   0,
       bearing: 0,
-      maxPitch: 85,
+      maxPitch: isMobileDevice ? 0 : 85,
+      dragRotate: !isMobileDevice,
+      pitchWithRotate: !isMobileDevice,
     })
+
+    if (isMobileDevice) {
+      _map.touchZoomRotate.disableRotation()
+    }
 
     onMapCreated?.(_map)
 

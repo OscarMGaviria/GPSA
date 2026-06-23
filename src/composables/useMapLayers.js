@@ -1,9 +1,11 @@
 import { ref, onUnmounted } from 'vue'
 import { getLocalizaciones, getMunicipios } from '../services/api.js'
 import { pctTiempoTranscurrido } from '../utils/stats.js'
+import { useMapStore } from '../stores/useMapStore.js'
 import hitosData from '../data/hitos.json'
 
 const normStr = s => (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+const normUp  = s => (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim()
 const _circuitosConSeguimiento = new Set(Object.keys(hitosData).map(normStr))
 
 function sentenceCase(str) {
@@ -18,6 +20,7 @@ function capitalize(str) {
 }
 
 export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { buildCallouts, updateCalloutPositions } = {}) {
+  const store          = useMapStore()
   const loading          = ref(true)
   const loadError        = ref(false)
   const fromCache        = ref(false)
@@ -169,7 +172,26 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     // ── Capa municipios ───────────────────────────────────────────────────────
     if (geoMunicipios) {
       try {
-        map.addSource('municipios', { type: 'geojson', data: geoMunicipios, generateId: true })
+        const municipiosConViasNorm = new Set(
+          geoVias?.features.map(f => normUp(f.properties.MPIO_NOMBR)).filter(Boolean) ?? []
+        )
+        const geoMunicipiosTagged = {
+          ...geoMunicipios,
+          features: geoMunicipios.features.map(f => {
+            const mpioNormName = normUp(f.properties.MPIO_NOMBR)
+            const hasVias = municipiosConViasNorm.has(mpioNormName) ? 1 : 0
+            return {
+              ...f,
+              properties: {
+                ...f.properties,
+                _subregionNorm: normUp(f.properties.SUBREGION),
+                _mpioNorm: mpioNormName,
+                _hasVias: hasVias,
+              },
+            }
+          }),
+        }
+        map.addSource('municipios', { type: 'geojson', data: geoMunicipiosTagged, generateId: true })
         const isTerrain = !!map.getTerrain()
         map.addLayer({
           id: 'municipios-fill',
@@ -246,10 +268,17 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             properties: {
               ...f.properties,
               _hasReport: _circuitosConSeguimiento.has(normStr(f.properties.CIRCUITO ?? '')) ? 1 : 0,
+              _subregionNorm: normUp(f.properties.SUBREGION),
+              _mpioNorm: normUp(f.properties.MPIO_NOMBR),
             },
           })),
         }
-        map.addSource('vias', { type: 'geojson', data: geoViasTagged, generateId: true })
+        map.addSource('vias', {
+          type: 'geojson',
+          data: geoViasTagged,
+          generateId: true,
+          tolerance: 1.25 // Tolerancia de simplificación (Douglas-Peucker) para enderezar tramos en zoom alejado y dar detalle al acercarse
+        })
 
         // 1. Casing base (siempre visible)
         map.addLayer({
@@ -257,29 +286,35 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           type: 'line',
           source: 'vias',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.4 },
+          paint: { 'line-color': '#ffffff', 'line-width': 6, 'line-opacity': 0.4 },
         })
-        // 2. Halo blanco ampliado en hover
+        // 2. Halo negro ampliado en hover (ancho 13.6px, opacidad 0.18)
         map.addLayer({
           id: 'vias-hover-casing',
           type: 'line',
           source: 'vias',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           filter: ['==', ['get', 'NOMBRE_VIA'], ''],
-          paint: { 'line-color': '#ffffff', 'line-width': 13, 'line-opacity': 0.55 },
+          paint: {
+            'line-color': '#000000',
+            'line-width': 13.6,
+            'line-opacity': 0.18
+          },
         })
-        // 3. Glow verde difuminado en hover
+        // 3. Contorno interno negro en hover (ancho 8.5px, opacidad 0.45)
         map.addLayer({
-          id: 'vias-glow',
+          id: 'vias-hover-inner-casing',
           type: 'line',
           source: 'vias',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           filter: ['==', ['get', 'NOMBRE_VIA'], ''],
           paint: {
-            'line-color': ['case', ['==', ['get', '_hasReport'], 0], '#fca5a5', '#4ade80'],
-            'line-width': 16, 'line-opacity': 0.28, 'line-blur': 8,
+            'line-color': '#000000',
+            'line-width': 8.5,
+            'line-opacity': 0.45
           },
         })
+        // (Glow removido a petición del usuario para evitar efectos difuminados de tipo brillo/neon)
         // 4. Línea principal (siempre visible)
         map.addLayer({
           id: 'vias-line',
@@ -292,34 +327,44 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
               ['==', ['get', '_hasReport'], 0], '#ef4444',
               ['coalesce', ['get', 'stroke'], '#ffaa00'],
             ],
-            'line-width':   5,
+            'line-width':   4.25,
             'line-opacity': 1,
           },
         })
-        // 5. Highlight encima en hover (engrosamiento + brillo)
+        // (Highlight blanco superior removido a petición del usuario para evitar el uso del color blanco)
+
+        // 6. Hit target (invisible but thick) to capture hover/click easily
         map.addLayer({
-          id: 'vias-hover-line',
+          id: 'vias-hit-target',
           type: 'line',
           source: 'vias',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          filter: ['==', ['get', 'NOMBRE_VIA'], ''],
-          paint: { 'line-color': '#ffffff', 'line-width': 7.5, 'line-opacity': 0.45 },
+          paint: { 'line-color': '#000000', 'line-width': 24, 'line-opacity': 0.0 },
         })
 
-        const HOVER_FILTER_ON  = (circuito) => ['==', ['get', 'CIRCUITO'], circuito]
+        const HOVER_FILTER_ON  = (circuito) => {
+          const expressions = ['all', ['==', ['get', 'CIRCUITO'], circuito]]
+          const sub = store.activeFilters.subregion
+          const mpio = store.activeFilters.municipio
+          if (sub && sub !== 'Todas las subregiones') {
+            expressions.push(['==', ['get', '_subregionNorm'], normUp(sub)])
+          }
+          if (mpio && mpio !== 'Todos los municipios') {
+            expressions.push(['==', ['get', '_mpioNorm'], normUp(mpio)])
+          }
+          return expressions
+        }
         const HOVER_FILTER_OFF = ['==', ['get', 'CIRCUITO'], '']
 
         function startHover(nombreVia) {
           const f = HOVER_FILTER_ON(nombreVia)
           map.setFilter('vias-hover-casing', f)
-          map.setFilter('vias-glow', f)
-          map.setFilter('vias-hover-line', f)
+          map.setFilter('vias-hover-inner-casing', f)
         }
 
         function stopHover() {
           map.setFilter('vias-hover-casing', HOVER_FILTER_OFF)
-          map.setFilter('vias-glow', HOVER_FILTER_OFF)
-          map.setFilter('vias-hover-line', HOVER_FILTER_OFF)
+          map.setFilter('vias-hover-inner-casing', HOVER_FILTER_OFF)
         }
 
         // Mapa CIRCUITO → { km, avance } agregado para el tooltip
@@ -338,7 +383,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
         let hoveredVia = null
 
-        map.on('click', 'vias-line', (e) => {
+        map.on('click', 'vias-hit-target', (e) => {
           const p        = e.features[0].properties
           const circuito = p.CIRCUITO ?? ''
           const circuitFeats = cachedVias.value?.features.filter(f => f.properties.CIRCUITO === circuito) ?? []
@@ -368,7 +413,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           }
         })
 
-        map.on('mousemove', 'vias-line', (e) => {
+        map.on('mousemove', 'vias-hit-target', (e) => {
           map.getCanvas().style.cursor = 'pointer'
           const circuito = e.features[0].properties.CIRCUITO ?? ''
           if (circuito !== hoveredVia) {
@@ -378,7 +423,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           const data = circuitDataMap[circuito] ?? {}
           viaHoverLabel.value = { name: circuito, km: data.km ?? null, avance: data.avance ?? null, x: e.point.x, y: e.point.y, visible: true }
         })
-        map.on('mouseleave', 'vias-line', () => {
+        map.on('mouseleave', 'vias-hit-target', () => {
           map.getCanvas().style.cursor = ''
           stopHover()
           hoveredVia = null

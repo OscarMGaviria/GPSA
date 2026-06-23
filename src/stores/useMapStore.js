@@ -35,6 +35,27 @@ export const useMapStore = defineStore('map', () => {
     return ['Todos los municipios', ...lista]
   })
 
+  const filteredCircuitoOptions = computed(() => {
+    const sub = activeFilters.value.subregion
+    const mpio = activeFilters.value.municipio
+    const hasSub = sub && sub !== 'Todas las subregiones'
+    const hasMpio = mpio && mpio !== 'Todos los municipios'
+
+    if (!hasSub && !hasMpio) return filterOptions.value.circuitos
+
+    const normSub = norm(sub)
+    const normMpio = norm(mpio)
+
+    const vias = mapStats.value.viasDetalle.filter(v => {
+      if (hasSub && norm(v.subregion) !== normSub) return false
+      if (hasMpio && norm(v.municipio) !== normMpio) return false
+      return true
+    })
+
+    const lista = [...new Set(vias.map(v => v.circuito).filter(Boolean))].sort()
+    return ['Todos los circuitos', ...lista]
+  })
+
   // Normaliza texto para comparar sin acentos ni mayúsculas
   const norm = s => s?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() ?? ''
 
@@ -80,6 +101,9 @@ export const useMapStore = defineStore('map', () => {
   function setFilter(filters) {
     if (filters.subregion !== activeFilters.value.subregion) {
       filters.municipio = 'Todos los municipios'
+      filters.circuito = 'Todos los circuitos'
+    } else if (filters.municipio !== activeFilters.value.municipio) {
+      filters.circuito = 'Todos los circuitos'
     }
     activeFilters.value = filters
   }
@@ -94,6 +118,7 @@ export const useMapStore = defineStore('map', () => {
     filteredStats,
     mapLoading,
     filteredMunicipioOptions,
+    filteredCircuitoOptions,
     setFilter,
     setFilterOptions,
     setMapStats,

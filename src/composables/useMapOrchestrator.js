@@ -1,3 +1,4 @@
+import { ref }                         from 'vue'
 import maplibregl                   from 'maplibre-gl'
 import { useCallouts }              from './useCallouts.js'
 import { useMapLayers }             from './useMapLayers.js'
@@ -9,6 +10,7 @@ import { pctTiempoTranscurrido }    from '../utils/stats.js'
 export function useMapOrchestrator(mapContainer, filtersGetter) {
   const store = useMapStore()
   let _map = null
+  const mapBearing = ref(0)
 
   const { visibleCallouts, buildCallouts, updateCalloutPositions, refreshVisibleCallouts }
     = useCallouts(() => _map)
@@ -32,9 +34,19 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
 
   const { activeBasemap, switcherOpen, terrainActive, switchBasemap, toggleTerrain }
     = useMapInit(mapContainer, {
-        onMapCreated: (m) => { _map = m },
+        onMapCreated: (m) => {
+          _map = m
+          m.on('rotate', () => {
+            mapBearing.value = m.getBearing()
+          })
+        },
         onLoad:       () => { store.setMapLoading(true); loadSimeva() },
       })
+
+  function resetBearing() {
+    if (!_map) return
+    _map.easeTo({ bearing: 0, pitch: 0, duration: 500 })
+  }
 
   function _circuitFeats(nombre) {
     const circuito = cachedVias.value.features.find(f => f.properties.NOMBRE_VIA === nombre)?.properties.CIRCUITO ?? ''
@@ -108,5 +120,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     openVia,
     flyToVia,
     flyToCoords,
+    mapBearing,
+    resetBearing,
   }
 }

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppHeader  from './components/organisms/AppHeader.vue'
 import MapView    from './components/organisms/MapView.vue'
@@ -11,11 +11,23 @@ import { useMapStore } from './stores/useMapStore.js'
 const isInternal = import.meta.env.VITE_INTERNAL === 'true'
 
 const store = useMapStore()
-const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions } = storeToRefs(store)
+const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions, filteredCircuitoOptions } = storeToRefs(store)
 const router = isInternal ? useRouter() : null
 const isPanelOpen = ref(true)
 const showTour    = ref(localStorage.getItem('simeva-tour-done') !== '1')
 const mapViewRef  = ref(null)
+
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 1024
+}
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
 
 // Subregión activa en la gráfica: la seleccionada explícitamente,
 // o la que corresponde al municipio seleccionado (inferida del mapa municipiosPorSubregion)
@@ -59,7 +71,7 @@ watch(activeFilters, (f) => {
       </div>
     </Transition>
 
-    <AppTour v-if="showTour" @close="showTour = false" />
+    <AppTour v-if="showTour && !isMobile" @close="showTour = false" />
 
     <AppHeader
       @filter-change="store.setFilter"
@@ -69,7 +81,7 @@ watch(activeFilters, (f) => {
       @generate-report="router.push('/reporte')"
       :subregion-options="filterOptions.subregiones"
       :municipio-options="filteredMunicipioOptions"
-      :circuito-options="filterOptions.circuitos"
+      :circuito-options="filteredCircuitoOptions"
       :active-filters="activeFilters"
     />
     <div class="content-area">
@@ -109,6 +121,13 @@ watch(activeFilters, (f) => {
   flex-direction: row;
   flex: 1;
   overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .content-area {
+    position: relative;
+    flex-direction: column;
+  }
 }
 
 /* ── Loading full-screen ── */

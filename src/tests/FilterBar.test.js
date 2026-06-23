@@ -1,6 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import FilterBar from '../components/molecules/FilterBar.vue'
+
+beforeEach(() => {
+  window.innerWidth = 1280
+  window.dispatchEvent(new Event('resize'))
+})
 
 const defaultProps = {
   subregionOptions: ['Todas las subregiones', 'Norte', 'Oriente'],
@@ -33,6 +38,9 @@ describe('FilterBar — emits al cambiar inputs', () => {
 
   it('emite filter-change al hacer clic en el botón de limpiar', async () => {
     const wrapper = mount(FilterBar, { props: defaultProps })
+    await wrapper.setProps({
+      activeFilters: { search: 'Frontino', subregion: 'Todas las subregiones', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' }
+    })
     await wrapper.find('.btn-clear').trigger('click')
     expect(wrapper.emitted('filter-change')).toBeTruthy()
   })

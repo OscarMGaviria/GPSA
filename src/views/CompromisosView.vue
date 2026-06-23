@@ -31,7 +31,9 @@ const circuitos = ref([])
 async function loadCircuitos() {
   try {
     const r  = await fetch(import.meta.env.VITE_API_LOCALIZACIONES || (import.meta.env.BASE_URL + 'data/localizacion.geojson'))
-    const gj = await r.json()
+    const buf = await r.arrayBuffer()
+    const decoded = new TextDecoder('utf-8').decode(buf)
+    const gj = JSON.parse(decoded)
     circuitos.value = [...new Set(
       gj.features.map(f => f.properties.CIRCUITO).filter(Boolean)
     )].sort()
