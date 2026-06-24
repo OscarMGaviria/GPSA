@@ -366,6 +366,18 @@ function onLbTouchEnd(e) {
               <template v-if="hasPhotos">
                 <div class="phase-wrap" @mouseenter="pauseAuto" @mouseleave="resumeAuto">
                   <div class="photo-stage" @click="openLightbox">
+                    <!-- Imagen de fondo difuminada -->
+                    <Transition name="photo-fade" mode="out-in">
+                      <img
+                        :key="'blur-' + activeIdx"
+                        :src="allPhotos[activeIdx].url"
+                        alt=""
+                        class="photo-bg-blur"
+                        decoding="async"
+                        @error="onImgError"
+                      />
+                    </Transition>
+                    <!-- Imagen principal nítida -->
                     <Transition name="photo-cross" mode="out-in">
                       <img
                         :key="activeIdx"
@@ -874,15 +886,28 @@ function onLbTouchEnd(e) {
 .photo-stage {
   position: absolute;
   inset: 0;
-  background: #0d0d0d;
+  background: #f3f5f4;
   overflow: hidden;
   cursor: zoom-in;
+}
+.photo-bg-blur {
+  position: absolute;
+  inset: -20px;
+  width: calc(100% + 40px);
+  height: calc(100% + 40px);
+  object-fit: cover;
+  filter: blur(20px) brightness(0.9) saturate(1.1);
+  opacity: 0.38;
+  pointer-events: none;
+  z-index: 1;
 }
 .photo-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
+  position: relative;
+  z-index: 2;
 }
 
 /* ── Botón ampliar (aparece al hover) ── */
@@ -906,16 +931,40 @@ function onLbTouchEnd(e) {
   .photo-expand-btn:hover { background: rgba(0,0,0,.75); }
 }
 
-/* ── Transición zoom+fade entre fotos ── */
+/* ── Transición zoom+fade entre fotos (imagen nítida) ── */
 .photo-cross-enter-active {
-  transition: opacity 0.38s ease-out, transform 0.38s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .photo-cross-leave-active {
   position: absolute; inset: 0;
-  transition: opacity 0.22s ease-out, transform 0.22s ease-in;
+  transition: opacity 160ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.photo-cross-enter-from { opacity: 0; transform: scale(1.045); }
-.photo-cross-leave-to   { opacity: 0; transform: scale(0.96); }
+.photo-cross-enter-from {
+  opacity: 0;
+  transform: scale(0.98);
+}
+.photo-cross-leave-to {
+  opacity: 0;
+  transform: scale(1.01);
+}
+
+/* ── Transición de desvanecimiento puro (fondo difuminado) ── */
+.photo-fade-enter-active {
+  transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.photo-fade-leave-active {
+  position: absolute;
+  inset: -20px;
+  width: calc(100% + 40px);
+  height: calc(100% + 40px);
+  transition: opacity 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.photo-fade-enter-from,
+.photo-fade-leave-to {
+  opacity: 0;
+}
 
 
 .pnav {

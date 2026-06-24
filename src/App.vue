@@ -73,8 +73,8 @@ watch(activeFilters, (f) => {
       </div>
     </Transition>
 
-    <AppTour v-if="showTour && !isMobile" @close="showTour = false" />
-    <AppWelcome v-if="showWelcome && isMobile" @close="showWelcome = false" />
+    <AppTour v-if="showTour && !isMobile && !showWelcome" @close="showTour = false" />
+    <AppWelcome v-if="showWelcome" @close="showWelcome = false" />
 
     <AppHeader
       @filter-change="store.setFilter"
@@ -113,6 +113,7 @@ watch(activeFilters, (f) => {
 #app {
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   margin: 0;
   padding: 0;
   display: flex;

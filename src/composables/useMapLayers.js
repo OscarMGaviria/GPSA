@@ -367,14 +367,16 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           map.setFilter('vias-hover-inner-casing', HOVER_FILTER_OFF)
         }
 
-        // Mapa CIRCUITO → { km, avance } agregado para el tooltip
+        // Mapa CIRCUITO + SUBREGION → { km, avance } agregado para el tooltip/click
         const circuitDataMap = {}
         for (const f of geoVias.features) {
           const circ = f.properties.CIRCUITO ?? ''
-          if (!circuitDataMap[circ]) circuitDataMap[circ] = { km: 0, avanceKm: 0 }
+          const sub  = f.properties.SUBREGION ?? ''
+          const key  = circ + '||' + sub
+          if (!circuitDataMap[key]) circuitDataMap[key] = { km: 0, avanceKm: 0 }
           const km = parseFloat(f.properties.Long_km) || 0
-          circuitDataMap[circ].km      += km
-          circuitDataMap[circ].avanceKm += (parseFloat(f.properties.AV_FISICO) || 0) * km
+          circuitDataMap[key].km      += km
+          circuitDataMap[key].avanceKm += (parseFloat(f.properties.AV_FISICO) || 0) * km
         }
         for (const c of Object.values(circuitDataMap)) {
           c.avance = c.km > 0 ? Math.round((c.avanceKm / c.km) * 100) : 0
@@ -386,15 +388,18 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         map.on('click', 'vias-hit-target', (e) => {
           const p        = e.features[0].properties
           const circuito = p.CIRCUITO ?? ''
-          const circuitFeats = cachedVias.value?.features.filter(f => f.properties.CIRCUITO === circuito) ?? []
+          const subregion = p.SUBREGION ?? ''
+          const key      = circuito + '||' + subregion
+          const circuitFeats = cachedVias.value?.features.filter(f => f.properties.CIRCUITO === circuito && f.properties.SUBREGION === subregion) ?? []
           const first    = circuitFeats[0]?.properties ?? p
           const municipios = [...new Set(circuitFeats.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))]
-          const data     = circuitDataMap[circuito] ?? {}
+          const data     = circuitDataMap[key] ?? {}
 
           selectedMpio.value = null
           selectedVia.value = {
             name: circuito || 'Circuito sin nombre',
             idCircuito:  first['id-circuito'] ?? first.CIRCUITO ?? '',
+            subregion: subregion,
             description: {
               circuitId:               first['id-circuito'] ?? first.CIRCUITO ?? '',
               Subregión:               canonicalSub(first.SUBREGION),
@@ -415,12 +420,15 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
         map.on('mousemove', 'vias-hit-target', (e) => {
           map.getCanvas().style.cursor = 'pointer'
-          const circuito = e.features[0].properties.CIRCUITO ?? ''
+          const p = e.features[0].properties
+          const circuito = p.CIRCUITO ?? ''
+          const subregion = p.SUBREGION ?? ''
+          const key = circuito + '||' + subregion
           if (circuito !== hoveredVia) {
             startHover(circuito)
             hoveredVia = circuito
           }
-          const data = circuitDataMap[circuito] ?? {}
+          const data = circuitDataMap[key] ?? {}
           viaHoverLabel.value = { name: circuito, km: data.km ?? null, avance: data.avance ?? null, x: e.point.x, y: e.point.y, visible: true }
         })
         map.on('mouseleave', 'vias-hit-target', () => {

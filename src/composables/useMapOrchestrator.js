@@ -48,9 +48,17 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     _map.easeTo({ bearing: 0, pitch: 0, duration: 500 })
   }
 
-  function _circuitFeats(nombre) {
-    const circuito = cachedVias.value.features.find(f => f.properties.NOMBRE_VIA === nombre)?.properties.CIRCUITO ?? ''
-    return { circuito, feats: cachedVias.value.features.filter(f => f.properties.CIRCUITO === circuito) }
+  function _circuitFeats(nombre, subregion = '') {
+    const foundProps = cachedVias.value.features.find(f => f.properties.NOMBRE_VIA === nombre)?.properties
+    const circuito = foundProps?.CIRCUITO ?? ''
+    const norm = s => s?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() ?? ''
+    const normSub = norm(subregion)
+    const feats = cachedVias.value.features.filter(f => {
+      if (f.properties.CIRCUITO !== circuito) return false
+      if (subregion && norm(f.properties.SUBREGION) !== normSub) return false
+      return true
+    })
+    return { circuito, feats }
   }
 
   function _fitCircuit(feats) {
@@ -62,7 +70,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
 
   function openVia(via) {
     if (!_map || !cachedVias.value) return
-    const { circuito, feats } = _circuitFeats(via.nombre)
+    const { circuito, feats } = _circuitFeats(via.nombre, via.subregion)
     if (!feats.length) return
     _fitCircuit(feats)
     const first = feats[0].properties
@@ -75,6 +83,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     selectedVia.value = {
       name: circuito || 'Circuito sin nombre',
       idCircuito:  first['id-circuito'] ?? first.CIRCUITO ?? '',
+      subregion: via.subregion || first.SUBREGION || '',
       description: {
         circuitId:               first['id-circuito'] ?? first.CIRCUITO ?? '',
         Subregión:               first.SUBREGION  ?? '',
@@ -95,7 +104,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
 
   function flyToVia(via) {
     if (!_map || !cachedVias.value) return
-    const { feats } = _circuitFeats(via.nombre)
+    const { feats } = _circuitFeats(via.nombre, via.subregion)
     if (feats.length) _fitCircuit(feats)
   }
 

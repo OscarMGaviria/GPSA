@@ -10,7 +10,7 @@ const props = defineProps({
   activeFilters:    { type: Object, default: null },
 })
 
-const emit = defineEmits(['filter-change'])
+const emit = defineEmits(['filter-change', 'close'])
 
 const searchText   = ref(props.activeFilters?.search ?? '')
 const subregionVal = ref(props.activeFilters?.subregion ?? props.subregionOptions[0])
@@ -109,7 +109,7 @@ onUnmounted(() => {
       </button>
       <span class="btn-tooltip">Borrar filtros</span>
     </div>
-    <div v-else class="btn-clear-mobile-wrapper">
+    <div v-else class="filter-actions-mobile">
       <button
         class="btn-clear-mobile"
         :class="{ 'btn-clear-mobile--active': hasActiveFilters }"
@@ -117,7 +117,14 @@ onUnmounted(() => {
         @click="clearFilters"
         aria-label="Limpiar filtros"
       >
-        Limpiar Filtros
+        Limpiar
+      </button>
+      <button
+        class="btn-apply-mobile"
+        @click="emit('close')"
+        aria-label="Aplicar filtros"
+      >
+        Aplicar
       </button>
     </div>
   </div>
@@ -311,12 +318,15 @@ onUnmounted(() => {
   .btn-clear-wrapper {
     display: none !important;
   }
-  .btn-clear-mobile-wrapper {
+  .filter-actions-mobile {
+    display: flex;
+    gap: 10px;
     width: 100%;
-    margin-top: 4px;
+    margin-top: 8px;
+    box-sizing: border-box;
   }
   .btn-clear-mobile {
-    width: 100%;
+    flex: 35;
     height: 42px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -324,9 +334,9 @@ onUnmounted(() => {
     border-radius: 10px;
     font-family: 'Prompt', sans-serif;
     font-size: 13.5px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: not-allowed;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -340,6 +350,28 @@ onUnmounted(() => {
   .btn-clear-mobile.btn-clear-mobile--active:active {
     background: #fecaca;
     border-color: #f87171;
+    transform: scale(0.97);
+  }
+  .btn-apply-mobile {
+    flex: 65;
+    height: 42px;
+    background: linear-gradient(135deg, #1d7249 0%, #0d5f39 100%);
+    border: none;
+    color: #ffffff;
+    border-radius: 10px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(29, 114, 73, 0.2);
+    transition: transform 0.1s, box-shadow 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-apply-mobile:active {
+    transform: scale(0.97);
+    box-shadow: 0 2px 6px rgba(29, 114, 73, 0.15);
   }
 }
 </style>

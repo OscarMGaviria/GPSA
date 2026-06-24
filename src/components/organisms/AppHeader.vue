@@ -124,6 +124,7 @@ const activeFiltersCount = computed(() => {
               :circuito-options="circuitoOptions"
               :active-filters="activeFilters"
               @filter-change="emit('filter-change', $event)"
+              @close="isMobileDrawerOpen = false"
             />
           </div>
         </div>

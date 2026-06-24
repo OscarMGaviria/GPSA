@@ -24,12 +24,12 @@ function closeWelcome() {
           <div class="welcome-header">
             <img :src="logoSrc" alt="Gobernación de Antioquia" class="welcome-logo-img" />
             <h2 class="welcome-title">¡Bienvenido a SIMEVA!</h2>
-            <p class="welcome-subtitle">visor interactivo</p>
+            <p class="welcome-subtitle">Visor interactivo</p>
           </div>
 
           <div class="welcome-content">
             <p class="intro-text">
-              Explora el avance del proyecto de estabilización vial del departamento de Antioquia.
+              Consulta el avance de las obras de mejoramiento vial con estabilización en el departamento de Antioquia.
             </p>
 
             <div class="guide-steps">
@@ -49,7 +49,7 @@ function closeWelcome() {
                 </div>
                 <div class="step-details">
                   <h4 class="step-title">Panel de Estadísticas</h4>
-                  <p class="step-desc">Desliza la barra inferior hacia arriba para visualizar KPIs globales, avance físico-financiero y gráficos interactivos.</p>
+                  <p class="step-desc">Desliza la barra inferior hacia arriba para consultar el resumen del proyecto</p>
                 </div>
               </div>
 
@@ -67,7 +67,7 @@ function closeWelcome() {
 
           <div class="welcome-actions">
             <button class="btn-start" @click="closeWelcome">
-              <span>Comenzar Exploración</span>
+              <span>Explorar el proyecto</span>
               <div class="btn-shine"></div>
             </button>
           </div>

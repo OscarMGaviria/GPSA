@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed, onUnmounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { Route, Ruler, MapPin, GitBranch } from '@lucide/vue'
 import StatCard       from '../atoms/StatCard.vue'
 import ProgressBar    from '../atoms/ProgressBar.vue'
@@ -8,6 +8,8 @@ import StatsDetailModal from './StatsDetailModal.vue'
 import { shortLabel, mesesTranscurridos, pctTiempoTranscurrido, calcAvanceKm } from '../../utils/stats.js'
 
 const emit = defineEmits(['filter-subregion', 'open-via', 'fly-via'])
+
+const panelRef = ref(null)
 
 // Mobile bottom sheet state
 const mobileState = ref('collapsed')
@@ -166,10 +168,23 @@ watch(
   () => { if (showContent.value) animateCounters() }
 )
 
+function handleClickOutside(event) {
+  if (window.innerWidth > 1024) return
+  if (mobileState.value === 'collapsed') return
+  if (panelRef.value && !panelRef.value.contains(event.target)) {
+    mobileState.value = 'collapsed'
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside, { passive: true })
+})
+
 onUnmounted(() => {
   clearTimeout(openTimer)
   clearTimeout(innerTimer)
   cancelAllRafs()
+  document.removeEventListener('click', handleClickOutside)
 })
 
 // ── Avance en km calculado desde viasDetalle ────────────────────────────────
@@ -224,6 +239,7 @@ const yTicks = computed(() => {
 
 <template>
   <div
+    ref="panelRef"
     class="stats-side"
     :class="{
       open: props.isOpen,

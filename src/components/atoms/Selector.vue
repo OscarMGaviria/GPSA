@@ -44,7 +44,10 @@ const toggle = async () => {
   if (isOpen.value) {
     searchQ.value = ''
     await nextTick()
-    searchRef.value?.focus()
+    const isMobile = window.innerWidth <= 1024
+    if (!isMobile) {
+      searchRef.value?.focus()
+    }
   }
 }
 

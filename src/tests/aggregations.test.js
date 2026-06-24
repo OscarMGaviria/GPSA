@@ -54,6 +54,22 @@ describe('calcViasAgrupadas', () => {
     const result = calcViasAgrupadas(VIAS, '', 'km', false)
     expect(result[0].km).toBeGreaterThanOrEqual(result[1].km)
   })
+
+  it('separa circuitos en diferentes subregiones', () => {
+    const viasConDuplicado = [
+      ...VIAS,
+      { nombre: 'Tramo Extra Oriente', municipio: 'GUARNE', subregion: 'Oriente', circuito: 'Frontino - Nutibara', contratista: 'CONSORCIO A', km: 8, avance: 40 }
+    ]
+    const result = calcViasAgrupadas(viasConDuplicado)
+    const occidenteResult = result.find(r => r.circuito === 'Frontino - Nutibara' && r.subregion === 'Occidente')
+    const orienteResult = result.find(r => r.circuito === 'Frontino - Nutibara' && r.subregion === 'Oriente')
+
+    expect(occidenteResult).toBeDefined()
+    expect(occidenteResult.km).toBe(15)
+
+    expect(orienteResult).toBeDefined()
+    expect(orienteResult.km).toBe(8)
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -145,6 +161,24 @@ describe('calcCircuitosRows', () => {
     const result = calcCircuitosRows(VIAS, 'guarne')
     expect(result.length).toBe(1)
     expect(result[0].circuito).toBe('Guarne - Yolombal')
+  })
+
+  it('separa circuitos homónimos en diferentes subregiones', () => {
+    const viasConDuplicado = [
+      ...VIAS,
+      { nombre: 'Tramo Extra Oriente', municipio: 'GUARNE', subregion: 'Oriente', circuito: 'Frontino - Nutibara', contratista: 'CONSORCIO A', km: 8, avance: 40 }
+    ]
+    const result = calcCircuitosRows(viasConDuplicado)
+    const occidenteResult = result.find(r => r.circuito === 'Frontino - Nutibara' && r.subregion === 'Occidente')
+    const orienteResult = result.find(r => r.circuito === 'Frontino - Nutibara' && r.subregion === 'Oriente')
+
+    expect(occidenteResult).toBeDefined()
+    expect(occidenteResult.tramos).toBe(2)
+    expect(occidenteResult.km).toBe(15)
+
+    expect(orienteResult).toBeDefined()
+    expect(orienteResult.tramos).toBe(1)
+    expect(orienteResult.km).toBe(8)
   })
 })
 

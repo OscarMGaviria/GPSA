@@ -7,13 +7,13 @@
 export function calcViasAgrupadas(viasDetalle, busqueda = '', sortKey = 'circuito', sortAsc = true) {
   const map = {}
   for (const v of viasDetalle) {
-    const key = v.circuito || v.nombre
+    const key = (v.circuito || v.nombre) + '||' + (v.subregion || '')
     if (!map[key]) {
-      map[key] = { circuito: key, subregion: v.subregion, contratista: v.contratista, km: 0, viasMap: {} }
+      map[key] = { circuito: v.circuito || v.nombre, subregion: v.subregion, contratista: v.contratista, km: 0, viasMap: {} }
     }
     map[key].km += v.km
     const vk = v.nombre
-    if (!map[key].viasMap[vk]) map[key].viasMap[vk] = { nombre: v.nombre, codigo: v.codigo, km: 0 }
+    if (!map[key].viasMap[vk]) map[key].viasMap[vk] = { nombre: v.nombre, codigo: v.codigo, subregion: v.subregion, km: 0 }
     map[key].viasMap[vk].km += v.km
   }
 
@@ -112,8 +112,10 @@ export function calcMunicipiosRows(viasDetalle, busqueda = '', sortKey = 'km', s
 export function calcCircuitosRows(viasDetalle, busqueda = '', sortKey = 'nombre', sortAsc = true) {
   const map = {}
   for (const v of viasDetalle) {
-    const key = v.circuito || v.nombre
-    if (!map[key]) map[key] = { circuito: key, municipio: v.municipio, subregion: v.subregion, tramos: 0, km: 0, avanceSum: 0, contratista: v.contratista }
+    const key = (v.circuito || v.nombre) + '||' + (v.subregion || '')
+    if (!map[key]) {
+      map[key] = { circuito: v.circuito || v.nombre, municipio: v.municipio, subregion: v.subregion, tramos: 0, km: 0, avanceSum: 0, contratista: v.contratista }
+    }
     map[key].tramos++
     map[key].km        += v.km
     map[key].avanceSum += v.avance
@@ -133,9 +135,10 @@ export function calcCircuitosRows(viasDetalle, busqueda = '', sortKey = 'nombre'
       )
     : rows
 
+  const sk = sortKey === 'nombre' ? 'circuito' : sortKey
   return filtered.sort((a, b) => {
-    const va = a[sortKey] ?? ''
-    const vb = b[sortKey] ?? ''
+    const va = a[sk] ?? ''
+    const vb = b[sk] ?? ''
     const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es')
     return sortAsc ? cmp : -cmp
   })

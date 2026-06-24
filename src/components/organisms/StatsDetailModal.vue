@@ -64,7 +64,7 @@ function isExpandedMpio(key) { return expandedMunicipios.value.has(key) }
 // ── Acordeón de circuitos (vista vías) ────────────────────────────────────
 const expandedCircuitos = ref(new Set())
 watch(viasAgrupadas, (rows) => {
-  expandedCircuitos.value = new Set(rows.map(r => r.circuito))
+  expandedCircuitos.value = new Set(rows.map(r => r.circuito + '||' + r.subregion))
 }, { immediate: true })
 function toggleCircuito(key) {
   const s = new Set(expandedCircuitos.value)
@@ -76,21 +76,21 @@ function volarAlTramo(via) { emit('fly-via', via) }
 
 // ── Expandir / colapsar todo ───────────────────────────────────────────────
 const allExpanded = computed(() => {
-  if (props.tipo === 'vias')     return viasAgrupadas.value.length > 0    && viasAgrupadas.value.every(r => isExpanded(r.circuito))
+  if (props.tipo === 'vias')     return viasAgrupadas.value.length > 0    && viasAgrupadas.value.every(r => isExpanded(r.circuito + '||' + r.subregion))
   if (props.tipo === 'longitud') return longitudAgrupada.value.length > 0 && longitudAgrupada.value.every(r => isExpandedMpio(r.municipio))
   return false
 })
 function toggleExpandAll() {
   if (props.tipo === 'vias') {
-    expandedCircuitos.value = allExpanded.value ? new Set() : new Set(viasAgrupadas.value.map(r => r.circuito))
+    expandedCircuitos.value = allExpanded.value ? new Set() : new Set(viasAgrupadas.value.map(r => r.circuito + '||' + r.subregion))
   } else if (props.tipo === 'longitud') {
     expandedMunicipios.value = allExpanded.value ? new Set() : new Set(longitudAgrupada.value.map(r => r.municipio))
   }
 }
 
 // ── Abrir detalle de vía desde circuito (vista circuitos) ─────────────────
-function abrirDetalleCircuito(circuitoNombre) {
-  const via = props.viasDetalle.find(v => v.circuito === circuitoNombre)
+function abrirDetalleCircuito(circuitoNombre, subregionName) {
+  const via = props.viasDetalle.find(v => v.circuito === circuitoNombre && v.subregion === subregionName)
   if (via) emit('open-via', via)
 }
 
@@ -163,9 +163,9 @@ onUnmounted(() => {
                 </tr>
               </thead>
               <tbody>
-                <template v-for="(c, i) in viasAgrupadas" :key="c.circuito">
+                <template v-for="(c, i) in viasAgrupadas" :key="c.circuito + '||' + c.subregion">
                   <!-- Cabecera del circuito (acordeón) -->
-                  <tr class="circuit-header-row" @click="toggleCircuito(c.circuito)">
+                  <tr class="circuit-header-row" @click="toggleCircuito(c.circuito + '||' + c.subregion)">
                     <td class="circuit-num">{{ i + 1 }}</td>
                     <td colspan="4" class="circuit-title-cell">
                       <div class="circuit-title-wrap">
@@ -178,13 +178,13 @@ onUnmounted(() => {
                     </td>
                     <td class="td-num circuit-km-total">{{ c.km > 0 ? c.km + ' km' : '—' }}</td>
                     <td class="circuit-toggle-cell">
-                      <ChevronUp v-if="isExpanded(c.circuito)" :size="15" class="chevron-ic" />
+                      <ChevronUp v-if="isExpanded(c.circuito + '||' + c.subregion)" :size="15" class="chevron-ic" />
                       <ChevronDown v-else :size="15" class="chevron-ic" />
                     </td>
                   </tr>
                   <!-- Filas de vías (visibles cuando el circuito está expandido) -->
-                  <template v-if="isExpanded(c.circuito)">
-                    <tr v-for="v in c.vias" :key="(v.codigo || v.nombre) + c.circuito" class="via-row">
+                  <template v-if="isExpanded(c.circuito + '||' + c.subregion)">
+                    <tr v-for="v in c.vias" :key="(v.codigo || v.nombre) + c.circuito + '||' + c.subregion" class="via-row">
                       <td></td>
                       <td></td>
                       <td class="via-nombre-cell">
@@ -308,9 +308,9 @@ onUnmounted(() => {
                 </tr>
               </thead>
               <TransitionGroup name="row" tag="tbody">
-                <tr v-for="(c, i) in circuitosRows" :key="c.circuito" class="data-row data-row--dblclick"
+                <tr v-for="(c, i) in circuitosRows" :key="c.circuito + '||' + c.subregion" class="data-row data-row--dblclick"
                     :style="{ '--delay': Math.min(i * 30, 420) + 'ms' }"
-                    @dblclick="abrirDetalleCircuito(c.circuito)"
+                    @dblclick="abrirDetalleCircuito(c.circuito, c.subregion)"
                     title="Doble clic para ver detalle del tramo">
                   <td class="td-num td-idx">{{ i + 1 }}</td>
                   <td class="td-nombre">{{ c.circuito || '—' }}</td>
