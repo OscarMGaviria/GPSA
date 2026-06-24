@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAdminAuth } from '../composables/useAdminAuth.js'
 
 const logoSrc = '/images/escudo.png'
+const logoGobSrc = (import.meta.env.BASE_URL ?? '/') + 'Logo-gob-antioquia-ant.png'
 const { isAuthed, userName, userEmail, authErr, loading: authLoading, initAuth, login, logout, authHeaders } = useAdminAuth()
 
 // ── Entorno ───────────────────────────────────────────────────────────────────
@@ -423,20 +424,22 @@ function fmtSize(bytes) {
     <!-- LOGIN OVERLAY -->
     <div v-if="isProd && !isAuthed" class="login-overlay">
       <div class="login-card">
-        <img :src="logoSrc" alt="Gobernación" class="login-logo" @error="e => e.target.style.display='none'" />
+        <!-- Decorative top glow -->
+        <div class="card-glow"></div>
+        <img :src="logoGobSrc" alt="Gobernación de Antioquia" class="login-logo" @error="e => e.target.style.display='none'" />
         <h2 class="login-title">SIMEVA — Editor de Avances</h2>
         <p class="login-sub">Accede con tu cuenta corporativa de la Gobernación de Antioquia</p>
         <button class="btn-ms" @click="doLogin" :disabled="authLoading">
-          <svg width="20" height="20" viewBox="0 0 21 21" fill="none">
+          <svg width="18" height="18" viewBox="0 0 21 21" fill="none">
             <rect x="1"  y="1"  width="9" height="9" fill="#F25022"/>
             <rect x="11" y="1"  width="9" height="9" fill="#7FBA00"/>
             <rect x="1"  y="11" width="9" height="9" fill="#00A4EF"/>
             <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
           </svg>
-          {{ authLoading ? 'Iniciando sesión…' : 'Continuar con Microsoft' }}
+          <span>{{ authLoading ? 'Iniciando sesión…' : 'Continuar con Microsoft' }}</span>
         </button>
         <p v-if="loginErr" class="login-err">{{ loginErr }}</p>
-        <p v-if="authErr"  class="login-err" style="color:#86efac">MSAL: {{ authErr }}</p>
+        <p v-if="authErr"  class="login-info">MSAL: {{ authErr }}</p>
       </div>
     </div>
 
@@ -904,15 +907,139 @@ function fmtSize(bytes) {
 .shell { height: 100vh; display: flex; flex-direction: column; overflow: hidden; background: #f0f4f1; font-family: 'Prompt', sans-serif; color: #1a2e20 }
 
 /* ── Login ── */
-.login-overlay { position: fixed; inset: 0; z-index: 200; background: linear-gradient(135deg, #052318 0%, #0a4d38 60%, #1a7a56 100%); display: flex; align-items: center; justify-content: center; padding: 20px }
-.login-card { background: #fff; border-radius: 16px; padding: 36px 40px; width: 100%; max-width: 460px; box-shadow: 0 24px 60px rgba(0,0,0,.35); display: flex; flex-direction: column; gap: 14px; align-items: center }
-.login-logo  { height: 52px; width: auto; margin-bottom: 4px }
-.login-title { font-size: 17px; font-weight: 700; color: #0a4d38; text-align: center }
-.login-sub   { font-size: 12px; color: #6b9e80; text-align: center; line-height: 1.5 }
-.login-err   { font-size: 11px; color: #166534; align-self: flex-start }
-.btn-ms { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 11px 20px; border-radius: 9px; border: 1.5px solid #d1d5db; background: #fff; font-size: 14px; font-weight: 600; color: #1a1a1a; cursor: pointer; transition: background .15s; font-family: inherit }
-.btn-ms:hover:not(:disabled) { background: #f3f4f6 }
-.btn-ms:disabled { opacity: .6; cursor: not-allowed }
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 50%, #0c3e2b 0%, #051d13 100%);
+  padding: 20px;
+}
+.login-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 
+    0 10px 40px -10px rgba(11, 86, 64, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  animation: cardEntrance 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.card-glow {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(163, 217, 185, 0.45) 0%, rgba(163, 217, 185, 0) 70%);
+  pointer-events: none;
+}
+.login-logo {
+  height: 72px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(11, 86, 64, 0.15));
+  margin-bottom: 16px;
+}
+.login-title {
+  font-family: 'Prompt', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0b5640;
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+.login-sub {
+  font-family: 'Prompt', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+  margin: 0 0 24px;
+  text-align: center;
+  line-height: 1.5;
+}
+.login-err {
+  font-family: 'Prompt', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #b91c1c;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 8px 12px;
+  border-radius: 8px;
+  width: 100%;
+  margin-top: 14px;
+  text-align: center;
+}
+.login-info {
+  font-family: 'Prompt', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #15803d;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  width: 100%;
+  margin-top: 14px;
+  text-align: center;
+}
+.btn-ms {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  font-family: 'Prompt', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+.btn-ms:hover:not(:disabled) {
+  background-color: #f9fafb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.btn-ms:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn-ms:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 
 /* ── Header ── */
 .hdr { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 54px; flex-shrink: 0; background: #0f3d27 }

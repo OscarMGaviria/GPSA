@@ -822,11 +822,21 @@ const yTicks = computed(() => {
   .avance-card:active,
   .bar-col,
   .bar-col:active,
-  .bar-fill { transition: none; animation: none; }
-  @keyframes fadeSlideUp   { from { opacity: 1; transform: none; } }
-  @keyframes fadeSlideRight { from { opacity: 1; transform: none; } }
-  @keyframes barGrow       { from { transform: scaleY(1); opacity: 1; } }
-  @keyframes shimmer       { from { background-position: 0 0; } }
+  .bar-fill {
+    transition: none !important;
+    animation: none !important;
+  }
+  .cards-row > *,
+  .avance-row,
+  .chart-card {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  .bar-fill {
+    transform: scaleY(1) !important;
+    animation: none !important;
+  }
 }
 
 /* Mobile bottom sheet controls */

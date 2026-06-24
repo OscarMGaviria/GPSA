@@ -120,6 +120,126 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     setTimeout(() => { if (_coordMarker) { _coordMarker.remove(); _coordMarker = null } }, 8000)
   }
 
+  let _devMarker = null
+
+  function toggleDevMarker() {
+    if (!_map) return
+    if (_devMarker) {
+      _devMarker.remove()
+      _devMarker = null
+      return
+    }
+
+    const center = _map.getCenter()
+    
+    const getPopupElement = (lngLat) => {
+      const lat = lngLat.lat.toFixed(6)
+      const lng = lngLat.lng.toFixed(6)
+      
+      const container = document.createElement('div')
+      container.style.fontFamily = "'Prompt', sans-serif"
+      container.style.fontSize = "11px"
+      container.style.padding = "4px 6px"
+      container.style.color = "#1a2e20"
+      container.style.fontWeight = "600"
+      container.style.minWidth = "140px"
+      
+      container.innerHTML = `
+        <div style="color: #0b5640; font-weight: 800; font-size: 12px; margin-bottom: 2px;">Marcador de Desarrollo</div>
+        <div style="margin-bottom: 2px;">Lat: <code style="font-family: monospace; font-size: 11px; background: #f3f4f6; padding: 1px 3px; border-radius: 3px;">${lat}</code></div>
+        <div style="margin-bottom: 5px;">Lng: <code style="font-family: monospace; font-size: 11px; background: #f3f4f6; padding: 1px 3px; border-radius: 3px;">${lng}</code></div>
+        <button class="dev-copy-coords-btn" style="
+          width: 100%;
+          height: 24px;
+          border: 1px solid #0b5640;
+          background: #0b5640;
+          color: white;
+          border-radius: 6px;
+          font-family: 'Prompt', sans-serif;
+          font-size: 10px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: background 0.15s, transform 0.1s, border-color 0.15s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          outline: none;
+        ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10" style="flex-shrink: 0;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span>Copiar coordenadas</span>
+        </button>
+        <div style="font-size: 9px; color: #6b7280; margin-top: 5px; font-weight: 400; border-top: 1px solid #e5e7eb; padding-top: 4px; text-align: center;">
+          Arrastra para mover
+        </div>
+      `
+
+      const btn = container.querySelector('.dev-copy-coords-btn')
+      
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(`${lat}, ${lng}`)
+          const span = btn.querySelector('span')
+          const originalText = span.textContent
+          span.textContent = '¡Copiado!'
+          btn.style.background = '#2d8653'
+          btn.style.borderColor = '#2d8653'
+          setTimeout(() => {
+            span.textContent = originalText
+            btn.style.background = '#0b5640'
+            btn.style.borderColor = '#0b5640'
+          }, 1500)
+        } catch (err) {
+          console.error('No se pudo copiar al portapapeles:', err)
+        }
+      })
+
+      btn.addEventListener('mouseenter', () => {
+        if (btn.querySelector('span').textContent !== '¡Copiado!') {
+          btn.style.background = '#0d6f53'
+          btn.style.borderColor = '#0d6f53'
+        }
+      })
+      btn.addEventListener('mouseleave', () => {
+        if (btn.querySelector('span').textContent !== '¡Copiado!') {
+          btn.style.background = '#0b5640'
+          btn.style.borderColor = '#0b5640'
+        }
+      })
+      btn.addEventListener('mousedown', () => {
+        btn.style.transform = 'scale(0.96)'
+      })
+      btn.addEventListener('mouseup', () => {
+        btn.style.transform = 'none'
+      })
+
+      return container
+    }
+
+    const popup = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: 35,
+      className: 'dev-marker-popup'
+    })
+
+    _devMarker = new maplibregl.Marker({
+      color: '#0b5640',
+      draggable: true
+    })
+      .setLngLat(center)
+      .setPopup(popup)
+      .addTo(_map)
+
+    popup.setDOMContent(getPopupElement(center))
+    _devMarker.togglePopup()
+
+    _devMarker.on('drag', () => {
+      const lngLat = _devMarker.getLngLat()
+      popup.setDOMContent(getPopupElement(lngLat))
+    })
+  }
+
   return {
     activeBasemap, switcherOpen, terrainActive, switchBasemap, toggleTerrain,
     loading, loadError, fromCache, hoverLabel, viaHoverLabel, loadSimeva,
@@ -131,5 +251,6 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     flyToCoords,
     mapBearing,
     resetBearing,
+    toggleDevMarker,
   }
 }

@@ -322,11 +322,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           source: 'vias',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: {
-            'line-color': [
-              'case',
-              ['==', ['get', '_hasReport'], 0], '#ef4444',
-              ['coalesce', ['get', 'stroke'], '#ffaa00'],
-            ],
+            'line-color': '#ffaa00',
             'line-width':   4.25,
             'line-opacity': 1,
           },

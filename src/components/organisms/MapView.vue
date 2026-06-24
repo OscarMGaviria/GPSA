@@ -20,6 +20,7 @@ const {
   flyToCoords,
   mapBearing,
   resetBearing,
+  toggleDevMarker,
 } = useMapOrchestrator(mapContainer, () => store.activeFilters)
 
 defineExpose({ openVia, flyToVia })
@@ -100,6 +101,10 @@ function _onGlobalKey(e) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
     e.preventDefault()
     searchOpen.value ? closeSearch() : openSearch()
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+    e.preventDefault()
+    toggleDevMarker()
   }
 }
 
@@ -256,7 +261,7 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
       :style="{ transform: `rotate(${-mapBearing}deg)` }"
     >
       <svg viewBox="0 0 40 40" class="compass-svg">
-        <circle cx="20" cy="20" r="16" fill="rgba(255, 255, 255, 0.9)" stroke="#e2e8f0" stroke-width="1.5" />
+        <circle cx="20" cy="20" r="16" fill="rgba(255, 255, 255, 0.6)" stroke="rgba(200, 223, 208, 0.5)" stroke-width="1.5" />
         <path d="M20 7 L24 20 L20 17 Z" fill="#ef4444" />
         <path d="M20 7 L16 20 L20 17 Z" fill="#c2410c" />
         <path d="M20 33 L24 20 L20 23 Z" fill="#9ca3af" />
@@ -310,6 +315,17 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
       </button>
 
     </div>
+
+    <!-- Mensaje del Secretario -->
+    <div class="secre-mensaje">
+      <div class="secre-quote-text">
+        “La transformación de Antioquia no es un acto de audacia momentánea, es una certeza”.
+      </div>
+      <div class="secre-quote-author">
+        Luis Horacio Gallón Arango
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -389,25 +405,31 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   padding: 0;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(200, 223, 208, 0.5);
   border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    0 4px 12px rgba(11, 86, 64, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   cursor: pointer;
   outline: none;
-  transition: background 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+  transition: background 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out;
 }
 .compass-toggle:active {
-  transform: scale(0.93);
+  transform: scale(0.92);
 }
 @media (hover: hover) and (pointer: fine) {
   .compass-toggle:hover {
-    background: #f3f4f6;
-    border-color: #cbd5e1;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(45, 134, 83, 0.45);
+    box-shadow: 
+      0 6px 16px rgba(11, 86, 64, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
   }
 }
 .compass-svg {
@@ -425,32 +447,41 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   padding: 0;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(200, 223, 208, 0.5);
+  border-radius: 12px;
+  box-shadow: 
+    0 4px 12px rgba(11, 86, 64, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  color: #6b7280;
+  color: #4b5563;
   outline: none;
   transition: background 0.15s ease-out, border-color 0.15s ease-out, color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out;
 }
-.terrain-toggle:active { transform: scale(0.93); }
+.terrain-toggle:active { transform: scale(0.92); }
 @media (hover: hover) and (pointer: fine) {
   .terrain-toggle:hover {
-    background: #f3f4f6;
-    border-color: #cbd5e1;
-    color: #374151;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(45, 134, 83, 0.45);
+    color: #111827;
+    box-shadow: 
+      0 6px 16px rgba(11, 86, 64, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
   }
 }
 .terrain-toggle.is-active {
-  border-color: #2563eb;
-  background: #eff6ff;
-  color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: rgba(163, 217, 185, 0.8);
+  background: rgba(240, 253, 244, 0.9);
+  color: #0b5640;
+  box-shadow: 
+    0 4px 14px rgba(29, 114, 73, 0.16),
+    0 0 0 3px rgba(45, 134, 83, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 /* ── Basemap switcher ── */
@@ -469,44 +500,56 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   padding: 0;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(200, 223, 208, 0.5);
+  border-radius: 12px;
+  box-shadow: 
+    0 4px 12px rgba(11, 86, 64, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  color: #6b7280;
+  color: #4b5563;
   outline: none;
   transition: background 0.15s ease-out, border-color 0.15s ease-out, color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out;
 }
-.switcher-toggle:active { transform: scale(0.93); }
+.switcher-toggle:active { transform: scale(0.92); }
 @media (hover: hover) and (pointer: fine) {
   .switcher-toggle:hover {
-    background: #f3f4f6;
-    border-color: #cbd5e1;
-    color: #374151;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(45, 134, 83, 0.45);
+    color: #111827;
+    box-shadow: 
+      0 6px 16px rgba(11, 86, 64, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
   }
 }
 .switcher-toggle.is-open {
-  border-color: #16a34a;
-  background: #f0fdf4;
-  color: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+  border-color: rgba(163, 217, 185, 0.8);
+  background: rgba(240, 253, 244, 0.9);
+  color: #0b5640;
+  box-shadow: 
+    0 4px 14px rgba(29, 114, 73, 0.16),
+    0 0 0 3px rgba(45, 134, 83, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .switcher-panel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(200, 223, 208, 0.5);
+  border-radius: 16px;
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.14),
-    0 2px 8px rgba(0, 0, 0, 0.06);
+    0 10px 30px -10px rgba(11, 86, 64, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   padding: 6px;
-  min-width: 148px;
+  min-width: 154px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -517,9 +560,9 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 6px 8px;
+  padding: 7px 10px;
   border: 1.5px solid transparent;
-  border-radius: 7px;
+  border-radius: 10px;
   background: transparent;
   cursor: pointer;
   transition: background 0.12s ease-out, border-color 0.12s ease-out, transform 0.1s ease-out;
@@ -529,36 +572,37 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
 }
 .basemap-btn:active { transform: scale(0.97); }
 @media (hover: hover) and (pointer: fine) {
-  .basemap-btn:hover { background: #f3f4f6; }
+  .basemap-btn:hover { background: rgba(0, 0, 0, 0.03); }
 }
 .basemap-btn.is-active {
-  background: #f0fdf4;
-  border-color: #16a34a;
+  background: rgba(240, 253, 244, 0.7);
+  border-color: rgba(163, 217, 185, 0.8);
 }
 
 .bm-swatch {
   width: 20px;
   height: 20px;
-  border-radius: 5px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
 }
 
 .bm-swatch--none {
   background:
-    repeating-conic-gradient(#d1d5db 0% 25%, #ffffff 0% 50%)
+    repeating-conic-gradient(#cbd5e1 0% 25%, #ffffff 0% 50%)
     0 0 / 8px 8px;
 }
 
 .bm-label {
   font-size: 13px;
   font-family: 'Prompt', sans-serif;
-  color: #374151;
+  color: #4b5563;
+  font-weight: 500;
 }
 
 .basemap-btn.is-active .bm-label {
-  color: #166534;
-  font-weight: 500;
+  color: #0b5640;
+  font-weight: 700;
 }
 
 /* ── Animación: abre hacia arriba con spring ── */
@@ -791,7 +835,41 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
   width: auto;
   display: block;
   object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.22));
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.22));
+  animation: floatLogo 6s ease-in-out infinite;
+}
+
+/* ── Mensaje del Secretario ── */
+.secre-mensaje {
+  position: absolute;
+  top: 16px;
+  right: 62px;
+  z-index: 20;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: 'Prompt', sans-serif;
+  user-select: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+.secre-quote-text {
+  color: #0b5640;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: left;
+}
+.secre-quote-author {
+  color: #0b5640;
+  font-size: 11.5px;
+  font-weight: 800;
+  align-self: flex-end;
+  text-align: right;
+  letter-spacing: 0.02em;
 }
 /* ── Modal municipio ─────────────────────────────────────────────────────── */
 .mpio-modal-overlay {
@@ -1108,6 +1186,30 @@ onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
   }
   .atm-logo img {
     height: 60px;
+  }
+  .secre-mensaje {
+    top: 12px;
+    max-width: 250px;
+    padding: 0;
+  }
+  .secre-quote-text {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+  .secre-quote-author {
+    font-size: 9px;
+  }
+}
+
+@keyframes floatLogo {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
   }
 }
 </style>

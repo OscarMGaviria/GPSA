@@ -16,7 +16,12 @@ const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filte
 const router = isInternal ? useRouter() : null
 const isPanelOpen = ref(true)
 const showTour    = ref(localStorage.getItem('simeva-tour-done') !== '1')
-const showWelcome = ref(true)
+const showWelcome = ref(localStorage.getItem('simeva-welcome-done') !== '1')
+
+function closeWelcome() {
+  showWelcome.value = false
+  localStorage.setItem('simeva-welcome-done', '1')
+}
 const mapViewRef  = ref(null)
 
 const isMobile = ref(false)
@@ -74,7 +79,7 @@ watch(activeFilters, (f) => {
     </Transition>
 
     <AppTour v-if="showTour && !isMobile && !showWelcome" @close="showTour = false" />
-    <AppWelcome v-if="showWelcome" @close="showWelcome = false" />
+    <AppWelcome v-if="showWelcome" @close="closeWelcome" />
 
     <AppHeader
       @filter-change="store.setFilter"
