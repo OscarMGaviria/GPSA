@@ -6,14 +6,10 @@ import MapView    from './components/organisms/MapView.vue'
 import StatsPanel from './components/organisms/StatsPanel.vue'
 import AppTour    from './components/organisms/AppTour.vue'
 import AppWelcome from './components/organisms/AppWelcome.vue'
-import { useRouter } from 'vue-router'
 import { useMapStore } from './stores/useMapStore.js'
-
-const isInternal = import.meta.env.VITE_INTERNAL === 'true'
 
 const store = useMapStore()
 const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions, filteredCircuitoOptions } = storeToRefs(store)
-const router = isInternal ? useRouter() : null
 const isPanelOpen = ref(true)
 const showTour    = ref(localStorage.getItem('simeva-tour-done') !== '1')
 const showWelcome = ref(localStorage.getItem('simeva-welcome-done') !== '1')
@@ -86,7 +82,6 @@ watch(activeFilters, (f) => {
       :panel-open="isPanelOpen"
       @toggle-panel="isPanelOpen = !isPanelOpen"
       @start-tour="showTour = true"
-      @generate-report="router.push('/reporte')"
       :subregion-options="filterOptions.subregiones"
       :municipio-options="filteredMunicipioOptions"
       :circuito-options="filteredCircuitoOptions"

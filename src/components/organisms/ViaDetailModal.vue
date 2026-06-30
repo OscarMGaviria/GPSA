@@ -1,23 +1,7 @@
 <script setup>
-import { ref, computed, watch, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useCircuitoPhotos } from '../../composables/useCircuitoPhotos.js'
 import { parseAvancePct, getBarColor, getStatusLabel, getStatusClass } from '../../utils/via.js'
-
-const isInternal = import.meta.env.VITE_INTERNAL === 'true'
-let GanttMiniView    = null
-let CurvaSView       = null
-let ValorGanadoView  = null
-let ModuloResiliente = null
-let EnsayosView      = null
-let HitosView        = null
-if (import.meta.env.VITE_INTERNAL === 'true') {
-  GanttMiniView    = defineAsyncComponent(() => import('./GanttMiniView.vue'))
-  CurvaSView       = defineAsyncComponent(() => import('./CurvaSView.vue'))
-  ValorGanadoView  = defineAsyncComponent(() => import('./ValorGanadoView.vue'))
-  ModuloResiliente = defineAsyncComponent(() => import('./ModuloResiliente.vue'))
-  EnsayosView      = defineAsyncComponent(() => import('./EnsayosView.vue'))
-  HitosView        = defineAsyncComponent(() => import('./HitosView.vue'))
-}
 
 const props = defineProps({ via: { type: Object, required: true } })
 const emit  = defineEmits(['close'])
@@ -133,10 +117,6 @@ function countUpPct(target) {
   }(performance.now()))
 }
 
-// ── Main tabs: detalle | cronograma ─────────────────────────────────────────
-const mainTab = ref('detalle')
-function setMainTab(tab) { mainTab.value = tab }
-
 // ── Lightbox ─────────────────────────────────────────────────────────────────
 const lightboxOpen = ref(false)
 function openLightbox()  { lightboxOpen.value = true;  pauseAuto() }
@@ -241,70 +221,8 @@ function onLbTouchEnd(e) {
           <button class="btn-x" @click="requestClose" aria-label="Cerrar">✕</button>
         </header>
 
-        <!-- ── MAIN TABS (internal only) ── -->
-        <nav v-if="isInternal" class="main-tabs">
-          <button class="main-tab" :class="{ 'is-active': mainTab === 'detalle' }" @click="setMainTab('detalle')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Detalle
-          </button>
-          <button class="main-tab" :class="{ 'is-active': mainTab === 'hitos' }" @click="setMainTab('hitos')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-            Seguimiento
-          </button>
-          <button class="main-tab" :class="{ 'is-active': mainTab === 'cronograma' }" @click="setMainTab('cronograma')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Cronograma
-          </button>
-          <button class="main-tab" :class="{ 'is-active': mainTab === 'curvas' }" @click="setMainTab('curvas')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            Curva S
-          </button>
-          <button class="main-tab" :class="{ 'is-active': mainTab === 'valor-ganado' }" @click="setMainTab('valor-ganado')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Valor Ganado
-          </button>
-          <button class="main-tab" :class="{ 'is-active': mainTab === 'modulo' }" @click="setMainTab('modulo')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M5 20V10l7-7 7 7v10"/></svg>
-            Mód. Resiliente
-          </button>
-          <button class="main-tab" :class="{ 'is-active': mainTab === 'ensayos' }" @click="setMainTab('ensayos')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            Ensayos Lab.
-          </button>
-        </nav>
-
-        <!-- ── CRONOGRAMA FULL WIDTH ── -->
-        <div v-if="isInternal && mainTab === 'cronograma'" class="cronograma-full">
-          <component :is="GanttMiniView" :circuito="circuito" />
-        </div>
-
-        <!-- ── CURVA S ── -->
-        <div v-if="isInternal && mainTab === 'curvas'" class="cronograma-full">
-          <component :is="CurvaSView" :circuito="circuito" />
-        </div>
-
-        <!-- ── VALOR GANADO ── -->
-        <div v-if="isInternal && mainTab === 'valor-ganado'" class="cronograma-full">
-          <component :is="ValorGanadoView" :circuito="circuito" />
-        </div>
-
-        <!-- ── MÓDULO RESILIENTE ── -->
-        <div v-if="isInternal && mainTab === 'modulo'" class="cronograma-full">
-          <component :is="ModuloResiliente" :circuito="circuito" />
-        </div>
-
-        <!-- ── ENSAYOS DE LABORATORIO ── -->
-        <div v-if="isInternal && mainTab === 'ensayos'" class="cronograma-full">
-          <component :is="EnsayosView" :circuito="circuito" />
-        </div>
-
-        <!-- ── HITOS / SEGUIMIENTO DE CAMPO ── -->
-        <div v-if="isInternal && mainTab === 'hitos'" class="cronograma-full">
-          <component :is="HitosView" :circuito="circuito" />
-        </div>
-
         <!-- ── TWO COLUMNS ── -->
-        <div v-if="mainTab === 'detalle'" class="mcols">
+        <div class="mcols">
 
           <!-- LEFT: datos -->
           <div class="col-left">
@@ -621,49 +539,6 @@ function onLbTouchEnd(e) {
 .btn-x:active { transform: scale(0.93); }
 @media (hover: hover) and (pointer: fine) {
   .btn-x:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.55); color: #fff; }
-}
-
-/* ── Main tabs ── */
-.main-tabs {
-  display: flex;
-  gap: 2px;
-  padding: 10px 24px 0;
-  background: #fff;
-  border-bottom: 2px solid #f0f4f2;
-  flex-shrink: 0;
-}
-.main-tab {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 18px 11px;
-  border: none;
-  background: transparent;
-  font-family: 'Prompt', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: #9ca3af;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  border-radius: 8px 8px 0 0;
-  transition: color .15s ease-out, border-color .15s ease-out, background .12s ease-out;
-}
-.main-tab svg { width: 14px; height: 14px; flex-shrink: 0; }
-.main-tab:focus { outline: none; }
-@media (hover: hover) and (pointer: fine) {
-  .main-tab:hover:not(.is-active) { color: #374151; background: #f9fafb; }
-}
-.main-tab.is-active { color: #0b5640; border-bottom-color: #0b5640; }
-
-/* ── Cronograma full-width panel ── */
-.cronograma-full {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  padding: 20px 24px;
-  overflow: hidden;
 }
 
 /* ── Two columns ── */
@@ -1323,19 +1198,6 @@ span.desktop-only {
   .camera-icon-svg {
     width: 14px;
     height: 14px;
-  }
-  
-  .main-tabs {
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    -webkit-overflow-scrolling: touch !important;
-    gap: 8px !important;
-    padding: 10px 14px 0 !important;
-  }
-  .main-tab {
-    flex-shrink: 0 !important;
-    padding: 8px 12px !important;
-    font-size: 12px !important;
   }
   
   .mcols {

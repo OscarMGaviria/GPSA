@@ -3,9 +3,8 @@ import { createPinia } from 'pinia'
 import './style.css'
 
 async function bootstrap() {
-  const isInternal = import.meta.env.VITE_INTERNAL === 'true'
   const isAdminGeoJson = window.location.pathname.startsWith('/admin-geojson')
-  const useRoutes = isInternal || isAdminGeoJson
+  const useRoutes = isAdminGeoJson
   const isMsalRedirect = window.location.hash.includes('code=') || window.location.hash.includes('error=')
 
   // Si es una redirección de MSAL (regreso de Microsoft tras login/token),

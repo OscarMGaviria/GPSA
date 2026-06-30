@@ -1,9 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { PanelRightClose, PanelRightOpen, HelpCircle, FileText, SlidersHorizontal, X } from '@lucide/vue'
+import { PanelRightClose, PanelRightOpen, HelpCircle, SlidersHorizontal, X } from '@lucide/vue'
 import FilterBar from '../molecules/FilterBar.vue'
 
-const isInternal = import.meta.env.VITE_INTERNAL === 'true'
 const escudoSrc  = import.meta.env.BASE_URL + 'Escudo de armas.png'
 
 const props = defineProps({
@@ -16,7 +15,7 @@ const props = defineProps({
   activeFilters:    { type: Object,  default: null },
 })
 
-const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour', 'generate-report'])
+const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour'])
 
 const isMobileDrawerOpen = ref(false)
 
@@ -59,17 +58,6 @@ const activeFiltersCount = computed(() => {
       />
 
       <div class="header-sep"></div>
-
-      <div v-if="isInternal" class="btn-panel-wrapper">
-        <button
-          class="btn-panel btn-report"
-          @click="emit('generate-report')"
-          aria-label="Generar reporte PDF"
-        >
-          <FileText :size="15" />
-        </button>
-        <span class="btn-tooltip">Generar reporte PDF</span>
-      </div>
 
       <div class="btn-panel-wrapper">
         <button
@@ -239,8 +227,6 @@ const activeFiltersCount = computed(() => {
   color: #ffffff;
 }
 .btn-panel:active { background: rgba(255, 255, 255, 0.2); }
-.btn-report { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.35); color: #fff; }
-.btn-report:hover { background: rgba(255,255,255,0.22); }
 
 .btn-tooltip {
   position: absolute;
