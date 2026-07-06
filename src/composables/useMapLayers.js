@@ -134,8 +134,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             municipio: mpio,
             subregion: sub,
             km: Math.round(km * 100) / 100,
-            avance: Math.round((Number.parseFloat(p.AV_FISICO) || 0) * 100),
-            avanceFin: Math.round((Number.parseFloat(p.AV_FINAN) || 0) * 100),
+            avance: Math.round((Number.parseFloat(p.AV_FISICO) || 0) > 1 ? (Number.parseFloat(p.AV_FISICO) || 0) : (Number.parseFloat(p.AV_FISICO) || 0) * 100),
+            avanceFin: Math.round((Number.parseFloat(p.AV_FINAN) || 0) > 1 ? (Number.parseFloat(p.AV_FINAN) || 0) : (Number.parseFloat(p.AV_FINAN) || 0) * 100),
             estabilizado: Math.round((Number.parseFloat(p.ESTABILIZADO) || 0) * 100) / 100,
             contratista: p.CONTRATIST ?? '',
             contrato: p.CTO ?? '',
@@ -379,7 +379,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           if (!circuitDataMap[key]) circuitDataMap[key] = { km: 0, avanceKm: 0 }
           const km = Number.parseFloat(f.properties.Long_km) || 0
           circuitDataMap[key].km      += km
-          circuitDataMap[key].avanceKm += (Number.parseFloat(f.properties.AV_FISICO) || 0) * km
+          const fisDec = (Number.parseFloat(f.properties.AV_FISICO) || 0) > 1 ? (Number.parseFloat(f.properties.AV_FISICO) || 0) / 100 : (Number.parseFloat(f.properties.AV_FISICO) || 0)
+          circuitDataMap[key].avanceKm += fisDec * km
         }
         for (const c of Object.values(circuitDataMap)) {
           c.avance = c.km > 0 ? Math.round((c.avanceKm / c.km) * 100) : 0

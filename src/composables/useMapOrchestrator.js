@@ -78,7 +78,11 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     const municipios = [...new Set(feats.map(f => sentenceCase(f.properties.MPIO_NOMBR ?? '')).filter(Boolean))]
     const totalKm = feats.reduce((s, f) => s + (Number.parseFloat(f.properties.Long_km) || 0), 0)
     const avanceFisico = totalKm > 0
-      ? feats.reduce((s, f) => s + (Number.parseFloat(f.properties.AV_FISICO) || 0) * (Number.parseFloat(f.properties.Long_km) || 0), 0) / totalKm
+      ? feats.reduce((s, f) => {
+          const rawFis = Number.parseFloat(f.properties.AV_FISICO) || 0;
+          const fisDec = rawFis > 1 ? rawFis / 100 : rawFis;
+          return s + fisDec * (Number.parseFloat(f.properties.Long_km) || 0);
+        }, 0) / totalKm
       : 0
     selectedVia.value = {
       name: circuito || 'Circuito sin nombre',
