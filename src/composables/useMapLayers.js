@@ -4,8 +4,8 @@ import { pctTiempoTranscurrido } from '../utils/stats.js'
 import { useMapStore } from '../stores/useMapStore.js'
 import hitosData from '../data/hitos.json'
 
-const normStr = s => (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
-const normUp  = s => (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim()
+const normStr = s => (s ?? '').toLowerCase().normalize('NFD').replaceAll(/[̀-ͯ]/g, '').trim()
+const normUp  = s => (s ?? '').normalize('NFD').replaceAll(/[\u0300-\u036f]/g, '').toUpperCase().trim()
 const _circuitosConSeguimiento = new Set(Object.keys(hitosData).map(normStr))
 
 function sentenceCase(str) {
@@ -64,7 +64,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     }
 
     // Normaliza texto para comparar sin acentos ni mayúsculas
-    const norm = s => (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    const norm = s => (s ?? '').toLowerCase().normalize('NFD').replaceAll(/[̀-ͯ]/g, '').trim()
 
     const SUBREGIONES_FIJAS = [
       'Valle de aburrá', 'Oriente', 'Occidente', 'Norte',
@@ -77,100 +77,103 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       return idx !== -1 ? SUBREGIONES_FIJAS[idx] : sentenceCase(raw ?? '')
     }
 
-    // ── Opciones para filtros ─────────────────────────────────────────────────
-    const subregiones = geoMunicipios
-      ? [...new Set(geoMunicipios.features.map(f => canonicalSub(f.properties.SUBREGION)).filter(Boolean))].sort()
-      : []
-    // Solo municipios que tienen vías en localizacion.geojson
-    const municipioOpts = geoVias
-      ? [...new Set(geoVias.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))].sort()
-      : []
-    const circuitos = geoVias
-      ? [...new Set(geoVias.features.map(f => f.properties.CIRCUITO).filter(Boolean))].sort()
-      : []
-
-    // municipiosPorSubregion también solo con municipios que tienen vías
-    const municipiosConVias = new Set(
-      geoVias?.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean) ?? []
-    )
-    const municipiosPorSubregion = {}
-    if (geoMunicipios) {
-      for (const f of geoMunicipios.features) {
-        const sub  = canonicalSub(f.properties.SUBREGION)
-        const mpio = sentenceCase(f.properties.MPIO_NOMBR)
-        if (sub && mpio && municipiosConVias.has(mpio)) {
-          if (!municipiosPorSubregion[sub]) municipiosPorSubregion[sub] = []
-          if (!municipiosPorSubregion[sub].includes(mpio)) municipiosPorSubregion[sub].push(mpio)
+    function _extractFilterOptions(geoMunicipios, geoVias) {
+      const subregiones = geoMunicipios
+        ? [...new Set(geoMunicipios.features.map(f => canonicalSub(f.properties.SUBREGION)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
+        : []
+      const municipioOpts = geoVias
+        ? [...new Set(geoVias.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
+        : []
+      const circuitos = geoVias
+        ? [...new Set(geoVias.features.map(f => f.properties.CIRCUITO).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
+        : []
+      
+      const municipiosConVias = new Set(geoVias?.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean) ?? [])
+      const municipiosPorSubregion = {}
+      if (geoMunicipios) {
+        for (const f of geoMunicipios.features) {
+          const sub = canonicalSub(f.properties.SUBREGION)
+          const mpio = sentenceCase(f.properties.MPIO_NOMBR)
+          if (sub && mpio && municipiosConVias.has(mpio)) {
+            if (!municipiosPorSubregion[sub]) municipiosPorSubregion[sub] = []
+            if (!municipiosPorSubregion[sub].includes(mpio)) municipiosPorSubregion[sub].push(mpio)
+          }
         }
+        for (const k of Object.keys(municipiosPorSubregion)) municipiosPorSubregion[k].sort((a, b) => a.localeCompare(b, 'es'))
       }
-      for (const k of Object.keys(municipiosPorSubregion)) municipiosPorSubregion[k].sort()
+
+      onOptionsLoaded?.({
+        subregiones: ['Todas las subregiones', ...subregiones],
+        municipios: ['Todos los municipios', ...municipioOpts],
+        circuitos: ['Todos los circuitos', ...circuitos],
+        municipiosPorSubregion,
+      })
     }
 
-    onOptionsLoaded?.({
-      subregiones:           ['Todas las subregiones', ...subregiones],
-      municipios:            ['Todos los municipios',  ...municipioOpts],
-      circuitos:             ['Todos los circuitos',   ...circuitos],
-      municipiosPorSubregion,
-    })
+    _extractFilterOptions(geoMunicipios, geoVias)
 
     // ── Estadísticas desde propiedades directas del GeoJSON ──────────────────
-    const viasDetalle = []
-    let longitudTotal = 0
-    const kmPorSubregion = {}
+    function _calculateViasStats(geoVias) {
+      const viasDetalle = []
+      let longitudTotal = 0
+      const kmPorSubregion = {}
 
-    if (geoVias) {
-      for (const f of geoVias.features) {
-        const p    = f.properties
-        const km   = parseFloat(p.Long_km) || 0
-        const sub  = canonicalSub(p.SUBREGION) ?? 'Sin subregión'
-        const mpio = sentenceCase(p.MPIO_NOMBR ?? '')
+      if (geoVias) {
+        for (const f of geoVias.features) {
+          const p = f.properties
+          const km = Number.parseFloat(p.Long_km) || 0
+          const sub = canonicalSub(p.SUBREGION) ?? 'Sin subregión'
+          const mpio = sentenceCase(p.MPIO_NOMBR ?? '')
 
-        longitudTotal += km
-        if (km) kmPorSubregion[sub] = (kmPorSubregion[sub] ?? 0) + km
+          longitudTotal += km
+          if (km) kmPorSubregion[sub] = (kmPorSubregion[sub] ?? 0) + km
 
-        viasDetalle.push({
-          nombre:       p.NOMBRE_VIA ?? 'Sin nombre',
-          codigo:       p.CODIGO_VIA ?? '',
-          municipio:    mpio,
-          subregion:    sub,
-          km:           Math.round(km * 100) / 100,
-          avance:       Math.round((parseFloat(p.AV_FISICO) || 0) * 100),
-          avanceFin:    Math.round((parseFloat(p.AV_FINAN)  || 0) * 100),
-          estabilizado: Math.round((parseFloat(p.ESTABILIZADO) || 0) * 100) / 100,
-          contratista:  p.CONTRATIST ?? '',
-          contrato:     p.CTO ?? '',
-          interventor:  p.INTERV ?? '',
-          plazoMeses:   parseFloat(p.PLAZO_MESE) || 0,
-          plazo:        p.PLAZO_MESE ? `${p.PLAZO_MESE} meses` : '',
-          circuito:     p.CIRCUITO ?? '',
-          fechaIni:     p.FECHA_INI ?? '',
-        })
+          viasDetalle.push({
+            nombre: p.NOMBRE_VIA ?? 'Sin nombre',
+            codigo: p.CODIGO_VIA ?? '',
+            municipio: mpio,
+            subregion: sub,
+            km: Math.round(km * 100) / 100,
+            avance: Math.round((Number.parseFloat(p.AV_FISICO) || 0) * 100),
+            avanceFin: Math.round((Number.parseFloat(p.AV_FINAN) || 0) * 100),
+            estabilizado: Math.round((Number.parseFloat(p.ESTABILIZADO) || 0) * 100) / 100,
+            contratista: p.CONTRATIST ?? '',
+            contrato: p.CTO ?? '',
+            interventor: p.INTERV ?? '',
+            plazoMeses: Number.parseFloat(p.PLAZO_MESE) || 0,
+            plazo: p.PLAZO_MESE ? `${p.PLAZO_MESE} meses` : '',
+            circuito: p.CIRCUITO ?? '',
+            fechaIni: p.FECHA_INI ?? '',
+          })
+        }
       }
+
+      const totalKm = longitudTotal || 1
+      const subregionesStats = SUBREGIONES_FIJAS.map(name => {
+        const km = kmPorSubregion[name] ?? 0
+        return { name, km: Math.round(km * 100) / 100, pct: Math.round((km / totalKm) * 100) }
+      })
+
+      const uniqueVias = new Set(geoVias?.features.map(f => f.properties.NOMBRE_VIA).filter(Boolean)).size
+      const uniqueMunicipios = new Set(geoVias?.features.map(f => f.properties.MPIO_NOMBR).filter(Boolean)).size
+      const uniqueCircuitos = new Set(geoVias?.features.map(f => f.properties.CIRCUITO).filter(Boolean)).size
+
+      onStatsLoaded?.({
+        viasIntervenidas: uniqueVias,
+        longitudTotal: Math.round(longitudTotal * 100) / 100,
+        municipios: uniqueMunicipios,
+        circuitos: uniqueCircuitos,
+        subregiones: subregionesStats,
+        viasDetalle,
+      })
     }
 
-    const totalKm = longitudTotal || 1
-    const subregionesStats = SUBREGIONES_FIJAS.map(name => {
-      const km = kmPorSubregion[name] ?? 0
-      return { name, km: Math.round(km * 100) / 100, pct: Math.round((km / totalKm) * 100) }
-    })
-
-    const uniqueVias       = new Set(geoVias?.features.map(f => f.properties.NOMBRE_VIA).filter(Boolean)).size
-    const uniqueMunicipios = new Set(geoVias?.features.map(f => f.properties.MPIO_NOMBR).filter(Boolean)).size
-    const uniqueCircuitos  = new Set(geoVias?.features.map(f => f.properties.CIRCUITO).filter(Boolean)).size
-
-    onStatsLoaded?.({
-      viasIntervenidas: uniqueVias,
-      longitudTotal:    Math.round(longitudTotal * 100) / 100,
-      municipios:       uniqueMunicipios,
-      circuitos:        uniqueCircuitos,
-      subregiones:      subregionesStats,
-      viasDetalle,
-    })
+    _calculateViasStats(geoVias)
 
     if (destroyed) return
 
     // ── Capa municipios ───────────────────────────────────────────────────────
-    if (geoMunicipios) {
+    function _setupMunicipiosLayer(map, geoMunicipios, geoVias) {
       try {
         const municipiosConViasNorm = new Set(
           geoVias?.features.map(f => normUp(f.properties.MPIO_NOMBR)).filter(Boolean) ?? []
@@ -249,7 +252,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         map.on('click', 'municipios-fill', (e) => {
           const p = e.features[0].properties
           selectedMpio.value = {
-            nombre:    sentenceCase(p.MPIO_NOMBR ?? ''),
+            nombre: sentenceCase(p.MPIO_NOMBR ?? ''),
             subregion: canonicalSub(p.SUBREGION),
           }
         })
@@ -258,8 +261,12 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       }
     }
 
+    if (geoMunicipios) {
+      _setupMunicipiosLayer(map, geoMunicipios, geoVias)
+    }
+
     // ── Capa vías ─────────────────────────────────────────────────────────────
-    if (geoVias) {
+    function _setupViasLayer(map, geoVias) {
       try {
         const geoViasTagged = {
           ...geoVias,
@@ -335,7 +342,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           type: 'line',
           source: 'vias',
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: { 'line-color': '#000000', 'line-width': 24, 'line-opacity': 0.0 },
+          paint: { 'line-color': '#000000', 'line-width': 24, 'line-opacity': 0 },
         })
 
         const HOVER_FILTER_ON  = (circuito) => {
@@ -370,9 +377,9 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           const sub  = f.properties.SUBREGION ?? ''
           const key  = circ + '||' + sub
           if (!circuitDataMap[key]) circuitDataMap[key] = { km: 0, avanceKm: 0 }
-          const km = parseFloat(f.properties.Long_km) || 0
+          const km = Number.parseFloat(f.properties.Long_km) || 0
           circuitDataMap[key].km      += km
-          circuitDataMap[key].avanceKm += (parseFloat(f.properties.AV_FISICO) || 0) * km
+          circuitDataMap[key].avanceKm += (Number.parseFloat(f.properties.AV_FISICO) || 0) * km
         }
         for (const c of Object.values(circuitDataMap)) {
           c.avance = c.km > 0 ? Math.round((c.avanceKm / c.km) * 100) : 0
@@ -440,6 +447,10 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       } catch (err) {
         console.error('[SIMEVA] Error cargando vías:', err)
       }
+    }
+
+    if (geoVias) {
+      _setupViasLayer(map, geoVias)
     }
 
     loading.value = false

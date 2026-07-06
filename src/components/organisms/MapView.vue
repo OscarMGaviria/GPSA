@@ -35,7 +35,7 @@ function _parseCoords(raw) {
   const s = raw.trim()
 
   // DMS con símbolo de grado: 6°14'39"N 75°34'52"W  (segundos opcionales)
-  const dmsRe = /(\d+)\s*°\s*(\d+)\s*['’]\s*([0-9.]*)\s*["”]?\s*([NSns])\s*[,\s]+\s*(\d+)\s*°\s*(\d+)\s*['’]\s*([0-9.]*)\s*["”]?\s*([EWew])/
+  const dmsRe = /(\d+)\s*°\s*(\d+)\s*['’]\s*([0-9.]*)\s*["”]?\s*([NSns])[,\s]+(\d+)\s*°\s*(\d+)\s*['’]\s*([0-9.]*)\s*["”]?\s*([EWew])/
   const m = s.match(dmsRe)
   if (m) {
     const toD = (d, mn, sec, h) => {
@@ -46,7 +46,7 @@ function _parseCoords(raw) {
   }
 
   // DMS sin símbolo pero con N/S/E/W: 6 14 39.1 N 75 34 52 W
-  const dmsLoose = /(\d+)\s+(\d+)\s+([0-9.]+)\s*([NSns])\s*[,\s]+\s*(\d+)\s+(\d+)\s+([0-9.]+)\s*([EWew])/
+  const dmsLoose = /(\d+)\s+(\d+)\s+([0-9.]+)\s*([NSns])[,\s]+(\d+)\s+(\d+)\s+([0-9.]+)\s*([EWew])/
   const m2 = s.match(dmsLoose)
   if (m2) {
     const toD = (d, mn, sec, h) => {
@@ -59,9 +59,9 @@ function _parseCoords(raw) {
   // Grados decimales: "6.2442, -75.5812" o "-75.5812 6.2442"
   const parts = s.replace(/[,;]+/g, ' ').split(/\s+/).filter(Boolean)
   if (parts.length >= 2) {
-    const a = parseFloat(parts[0])
-    const b = parseFloat(parts[1])
-    if (!isNaN(a) && !isNaN(b)) {
+    const a = Number.parseFloat(parts[0])
+    const b = Number.parseFloat(parts[1])
+    if (!Number.isNaN(a) && !Number.isNaN(b)) {
       // Heurística: longitud Colombia ~-79 a -66, latitud ~-5 a 15
       if (b < -30 && a > -20 && a < 25) return { lat: a, lng: b }
       if (a < -30 && b > -20 && b < 25) return { lat: b, lng: a }
@@ -108,8 +108,8 @@ function _onGlobalKey(e) {
   }
 }
 
-onMounted(()  => window.addEventListener('keydown', _onGlobalKey))
-onUnmounted(() => window.removeEventListener('keydown', _onGlobalKey))
+onMounted(()  => globalThis.addEventListener('keydown', _onGlobalKey))
+onUnmounted(() => globalThis.removeEventListener('keydown', _onGlobalKey))
 </script>
 
 <template>

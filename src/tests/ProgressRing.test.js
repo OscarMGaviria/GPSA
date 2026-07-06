@@ -13,7 +13,7 @@ describe('ProgressRing — geometría SVG', () => {
     const expected = (120 - 9) / 2
     const wrapper = mount(ProgressRing, { props: { pct: 0 } })
     const circle = wrapper.findAll('circle')[0]
-    expect(parseFloat(circle.attributes('r'))).toBeCloseTo(expected, 1)
+    expect(Number.parseFloat(circle.attributes('r'))).toBeCloseTo(expected, 1)
   })
 
   it('el stroke-dasharray refleja el pct=50 correctamente', () => {
@@ -23,16 +23,16 @@ describe('ProgressRing — geometría SVG', () => {
     const wrapper = mount(ProgressRing, { props: { pct } })
     const arc = wrapper.find('.ring-arc')
     const dasharray = arc.attributes('stroke-dasharray')
-    const [d] = dasharray.split(' ').map(parseFloat)
+    const [d] = dasharray.split(' ').map(Number.parseFloat)
     expect(d).toBeCloseTo(expectedDash, 1)
-    const [, c] = dasharray.split(' ').map(parseFloat)
+    const [, c] = dasharray.split(' ').map(Number.parseFloat)
     expect(c).toBeCloseTo(expectedCirc, 1)
   })
 
   it('stroke-dasharray es 0 cuando pct=0', () => {
     const wrapper = mount(ProgressRing, { props: { pct: 0 } })
     const arc = wrapper.find('.ring-arc')
-    const [d] = arc.attributes('stroke-dasharray').split(' ').map(parseFloat)
+    const [d] = arc.attributes('stroke-dasharray').split(' ').map(Number.parseFloat)
     expect(d).toBeCloseTo(0, 1)
   })
 
@@ -40,7 +40,7 @@ describe('ProgressRing — geometría SVG', () => {
     const size = 160
     const wrapper = mount(ProgressRing, { props: { pct: 0, size } })
     const circle = wrapper.find('circle')
-    expect(parseFloat(circle.attributes('cx'))).toBeCloseTo(size / 2, 1)
+    expect(Number.parseFloat(circle.attributes('cx'))).toBeCloseTo(size / 2, 1)
   })
 })
 

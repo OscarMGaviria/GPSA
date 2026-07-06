@@ -45,7 +45,7 @@ export function useCallouts(getMap) {
           [z.x2 - lx1 + 4, 0], [-(lx2 - z.x1 + 4), 0],
           [0, z.y2 - ly1 + 4], [0, -(ly2 - z.y1 + 4)],
         ]
-        const [bx, by] = opts.reduce((a, b) => Math.hypot(...b) < Math.hypot(...a) ? b : a)
+        const [bx, by] = opts.reduce((a, b) => Math.hypot(...b) < Math.hypot(...a) ? b : a, opts[0])
         lx = Math.max(PAD.l + LW / 2, Math.min(W - PAD.r - LW / 2, lx + bx))
         ly = Math.max(PAD.t + LH / 2, Math.min(H - PAD.b - LH / 2, ly + by))
       }

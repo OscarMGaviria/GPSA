@@ -66,18 +66,18 @@ const hasActiveFilters = computed(() => {
 
 const isMobile = ref(false)
 const checkMobile = () => {
-  isMobile.value = window.innerWidth <= 1024
+  isMobile.value = globalThis.innerWidth <= 1024
 }
 
 const onKeydown = (e) => { if (e.key === 'Escape') clearFilters() }
 onMounted(()   => {
-  window.addEventListener('keydown', onKeydown)
+  globalThis.addEventListener('keydown', onKeydown)
   checkMobile()
-  window.addEventListener('resize', checkMobile)
+  globalThis.addEventListener('resize', checkMobile)
 })
 onUnmounted(() => {
-  window.removeEventListener('keydown', onKeydown)
-  window.removeEventListener('resize', checkMobile)
+  globalThis.removeEventListener('keydown', onKeydown)
+  globalThis.removeEventListener('resize', checkMobile)
 })
 </script>
 

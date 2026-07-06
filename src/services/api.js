@@ -188,12 +188,12 @@ export function extractKm(desc) {
   const kmKey = Object.keys(desc).find(k => /longitud|kilóm|^km$/i.test(k))
   if (kmKey) {
     const match = String(desc[kmKey]).replace(',', '.').match(/[\d.]+/)
-    if (match) return parseFloat(match[0])
+    if (match) return Number.parseFloat(match[0])
   }
   // Fallback: buscar patrón "X km" en cualquier valor
   for (const val of Object.values(desc)) {
-    const m = String(val).replace(',', '.').match(/([\d.]+)\s*km/i)
-    if (m) return parseFloat(m[1])
+    const m = String(val).replace(',', '.').match(/(\d+(?:\.\d+)?)\s*km/i)
+    if (m) return Number.parseFloat(m[1])
   }
   return null
 }

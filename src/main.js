@@ -3,9 +3,9 @@ import { createPinia } from 'pinia'
 import './style.css'
 
 async function bootstrap() {
-  const isAdminGeoJson = window.location.pathname.startsWith('/admin-geojson')
+  const isAdminGeoJson = globalThis.location.pathname.startsWith('/admin-geojson')
   const useRoutes = isAdminGeoJson
-  const isMsalRedirect = window.location.hash.includes('code=') || window.location.hash.includes('error=')
+  const isMsalRedirect = globalThis.location.hash.includes('code=') || globalThis.location.hash.includes('error=')
 
   // Si es una redirección de MSAL (regreso de Microsoft tras login/token),
   // procesamos la respuesta de autenticación, montamos la app con el router

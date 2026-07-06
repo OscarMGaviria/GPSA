@@ -22,14 +22,14 @@ const mapViewRef  = ref(null)
 
 const isMobile = ref(false)
 const checkMobile = () => {
-  isMobile.value = window.innerWidth <= 1024
+  isMobile.value = globalThis.innerWidth <= 1024
 }
 onMounted(() => {
   checkMobile()
-  window.addEventListener('resize', checkMobile)
+  globalThis.addEventListener('resize', checkMobile)
 })
 onUnmounted(() => {
-  window.removeEventListener('resize', checkMobile)
+  globalThis.removeEventListener('resize', checkMobile)
 })
 
 // Subregión activa en la gráfica: la seleccionada explícitamente,
@@ -54,7 +54,7 @@ watch(activeFilters, (f) => {
   if (f.municipio && f.municipio !== 'Todos los municipios')  p.set('municipio', f.municipio)
   if (f.circuito  && f.circuito  !== 'Todos los circuitos')   p.set('circuito',  f.circuito)
   const qs = p.toString()
-  window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
+  globalThis.history.replaceState(null, '', qs ? `?${qs}` : globalThis.location.pathname)
 }, { deep: true })
 </script>
 

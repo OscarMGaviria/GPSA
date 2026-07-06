@@ -136,7 +136,7 @@ export function useMapInit(mapContainer, { onMapCreated, onLoad } = {}) {
 
   onMounted(() => {
     const initial = BASEMAPS[0]
-    const isMobileDevice = window.innerWidth <= 1024
+    const isMobileDevice = globalThis.innerWidth <= 1024
 
     _map = new maplibregl.Map({
       container: mapContainer.value,

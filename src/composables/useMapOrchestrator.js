@@ -51,7 +51,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
   function _circuitFeats(nombre, subregion = '') {
     const foundProps = cachedVias.value.features.find(f => f.properties.NOMBRE_VIA === nombre)?.properties
     const circuito = foundProps?.CIRCUITO ?? ''
-    const norm = s => s?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() ?? ''
+    const norm = s => s?.toLowerCase().normalize('NFD').replaceAll(/[\u0300-\u036f]/g, '').trim() ?? ''
     const normSub = norm(subregion)
     const feats = cachedVias.value.features.filter(f => {
       if (f.properties.CIRCUITO !== circuito) return false
@@ -76,9 +76,9 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     const first = feats[0].properties
     const sentenceCase = s => s ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : ''
     const municipios = [...new Set(feats.map(f => sentenceCase(f.properties.MPIO_NOMBR ?? '')).filter(Boolean))]
-    const totalKm = feats.reduce((s, f) => s + (parseFloat(f.properties.Long_km) || 0), 0)
+    const totalKm = feats.reduce((s, f) => s + (Number.parseFloat(f.properties.Long_km) || 0), 0)
     const avanceFisico = totalKm > 0
-      ? feats.reduce((s, f) => s + (parseFloat(f.properties.AV_FISICO) || 0) * (parseFloat(f.properties.Long_km) || 0), 0) / totalKm
+      ? feats.reduce((s, f) => s + (Number.parseFloat(f.properties.AV_FISICO) || 0) * (Number.parseFloat(f.properties.Long_km) || 0), 0) / totalKm
       : 0
     selectedVia.value = {
       name: circuito || 'Circuito sin nombre',
@@ -184,11 +184,12 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
           span.textContent = '¡Copiado!'
           btn.style.background = '#2d8653'
           btn.style.borderColor = '#2d8653'
-          setTimeout(() => {
+          function resetBtnState() {
             span.textContent = originalText
             btn.style.background = '#0b5640'
             btn.style.borderColor = '#0b5640'
-          }, 1500)
+          }
+          setTimeout(resetBtnState, 1500)
         } catch (err) {
           console.error('No se pudo copiar al portapapeles:', err)
         }

@@ -47,3 +47,6 @@ __pycache__/
 # Fotos de circuitos y actividades (se almacenan en Azure Storage)
 public/images/actividades/
 public/images/circuitos/
+
+coverage/
+temp_excel/

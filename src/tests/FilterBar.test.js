@@ -3,8 +3,8 @@ import { mount } from '@vue/test-utils'
 import FilterBar from '../components/molecules/FilterBar.vue'
 
 beforeEach(() => {
-  window.innerWidth = 1280
-  window.dispatchEvent(new Event('resize'))
+  globalThis.innerWidth = 1280
+  globalThis.dispatchEvent(new Event('resize'))
 })
 
 const defaultProps = {

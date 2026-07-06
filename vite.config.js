@@ -313,6 +313,11 @@ export default defineConfig(({ mode }) => {
   test: {
     environment: 'jsdom',
     globals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'json', 'html'],
+      reportsDirectory: './coverage'
+    }
   },
   base: process.env.VITE_BASE_URL || env.VITE_BASE_URL || '/',
   build: {

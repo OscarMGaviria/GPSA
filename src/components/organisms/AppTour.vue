@@ -81,11 +81,11 @@ function onResize() {
 
 onMounted(() => {
   goTo(0)
-  window.addEventListener('resize', onResize)
+  globalThis.addEventListener('resize', onResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', onResize)
+  globalThis.removeEventListener('resize', onResize)
 })
 
 const step = computed(() => STEPS[currentStep.value])
@@ -95,8 +95,8 @@ const GAP = 14
 const tooltipStyle = computed(() => {
   if (!rect.value) return { display: 'none' }
   const r = rect.value
-  const W = window.innerWidth
-  const H = window.innerHeight
+  const W = globalThis.innerWidth
+  const H = globalThis.innerHeight
   const TW = 300
 
   if (step.value.position === 'bottom') {
@@ -124,8 +124,8 @@ const arrowClass = computed(() => {
 const overlays = computed(() => {
   if (!rect.value) return []
   const r = rect.value
-  const W = window.innerWidth
-  const H = window.innerHeight
+  const W = globalThis.innerWidth
+  const H = globalThis.innerHeight
   return [
     { top: 0,         left: 0,       width: W,         height: r.top },            // top
     { top: r.bottom,  left: 0,       width: W,         height: H - r.bottom },     // bottom

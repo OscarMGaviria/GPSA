@@ -15,7 +15,7 @@ export const ABREVIATURAS = {
  * Devuelve la abreviatura de una subregión, o el nombre original si no existe.
  */
 export function shortLabel(name) {
-  const key = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const key = name.toLowerCase().normalize('NFD').replaceAll(/[̀-ͯ]/g, '')
   return ABREVIATURAS[key] ?? name
 }
 
@@ -50,8 +50,8 @@ export function pctTiempoTranscurrido(fechaIni, plazoMeses, hoy = new Date()) {
   if (!fechaIni || !plazoMeses) return 0
   const parts = String(fechaIni).split('/')
   if (parts.length < 3) return 0
-  const inicio = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
-  const totalDias = parseFloat(plazoMeses) * 30
+  const inicio = new Date(Number.parseInt(parts[2]), Number.parseInt(parts[1]) - 1, Number.parseInt(parts[0]))
+  const totalDias = Number.parseFloat(plazoMeses) * 30
   if (!totalDias) return 0
   const diasTranscurridos = (hoy - inicio) / (1000 * 60 * 60 * 24)
   return Math.min(100, Math.max(0, Math.round((diasTranscurridos / totalDias) * 100)))

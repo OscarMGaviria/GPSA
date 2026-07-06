@@ -21,7 +21,7 @@ async function getMsal() {
     auth: {
       clientId:    CLIENT_ID,
       authority:   `https://login.microsoftonline.com/${TENANT_ID}`,
-      redirectUri: window.location.origin,
+      redirectUri: globalThis.location.origin,
     },
     cache: {
       cacheLocation:        'sessionStorage',
@@ -67,7 +67,7 @@ export function useAdminAuth() {
     if (accounts.length > 0) {
       _account.value = accounts[0]
     } else {
-      if (window.location.hash.includes('code=')) {
+      if (globalThis.location.hash.includes('code=')) {
          _authErr.value = 'URL tiene un token, pero no se pudo procesar.'
       }
     }
@@ -80,7 +80,7 @@ export function useAdminAuth() {
     _loading.value = true
     const msal = await getMsal()
     // Guardar la página actual para redirigir al volver de Microsoft
-    sessionStorage.setItem(RETURN_URL_KEY, window.location.pathname + window.location.search)
+    sessionStorage.setItem(RETURN_URL_KEY, globalThis.location.pathname + globalThis.location.search)
     await msal.loginRedirect({ scopes: ['openid', 'profile', 'email'] })
     // La página redirige — el código siguiente no se ejecuta
   }
@@ -92,7 +92,7 @@ export function useAdminAuth() {
     const msal = await getMsal()
     await msal.logoutRedirect({
       account: acct,
-      postLogoutRedirectUri: window.location.origin,
+      postLogoutRedirectUri: globalThis.location.origin,
     }).catch(() => {})
   }
 
@@ -106,7 +106,7 @@ export function useAdminAuth() {
     } catch (e) {
       if (e instanceof InteractionRequiredAuthError) {
         // Guardar URL de retorno y redirigir para obtener token interactivamente
-        sessionStorage.setItem(RETURN_URL_KEY, window.location.pathname + window.location.search)
+        sessionStorage.setItem(RETURN_URL_KEY, globalThis.location.pathname + globalThis.location.search)
         await msal.acquireTokenRedirect({ scopes: [API_SCOPE], account: _account.value })
         // La página redirige — no retorna
       }

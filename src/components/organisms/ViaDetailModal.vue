@@ -160,25 +160,26 @@ function onLbTouchStart(e) {
 }
 
 function onLbTouchEnd(e) {
-  if (e.changedTouches.length > 0 && allPhotos.value.length > 1) {
-    const deltaY = e.changedTouches[0].clientY - lbTouchStartY
-    const deltaX = e.changedTouches[0].clientX - lbTouchStartX
-    const duration = Date.now() - lbTouchStartTime
-    
-    if (duration < 350) {
-      const absX = Math.abs(deltaX)
-      const absY = Math.abs(deltaY)
-      
-      if (absX > 30 || absY > 30) {
-        if (absX >= absY) {
-          if (deltaX < 0) next()
-          else prev()
-        } else {
-          if (deltaY < 0) next()
-          else prev()
-        }
-      }
-    }
+  if (e.changedTouches.length === 0 || allPhotos.value.length <= 1) return
+
+  const deltaY = e.changedTouches[0].clientY - lbTouchStartY
+  const deltaX = e.changedTouches[0].clientX - lbTouchStartX
+  const duration = Date.now() - lbTouchStartTime
+  
+  if (duration >= 350) return
+
+  const absX = Math.abs(deltaX)
+  const absY = Math.abs(deltaY)
+  
+  if (absX <= 30 && absY <= 30) return
+
+  if (absX >= absY) {
+    if (deltaX < 0) next()
+    else prev()
+  } else if (deltaY < 0) {
+    next()
+  } else {
+    prev()
   }
 }
 </script>
@@ -237,7 +238,7 @@ function onLbTouchEnd(e) {
                 <tbody>
                   <tr v-for="([k, v], idx) in tableRows" :key="k"
                       :style="{ animationDelay: (300 + idx * 35) + 'ms' }">
-                    <td class="td-key">{{ k }}</td>
+                    <th scope="row" class="td-key">{{ k }}</th>
                     <td class="td-val" :class="{ 'td-val--bold': k === 'Contratista' }">{{ v }}</td>
                   </tr>
                 </tbody>
@@ -651,6 +652,7 @@ function onLbTouchEnd(e) {
   transform-origin: left;
   position: relative;
   overflow: hidden;
+  transition: transform 1.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .bar-ticks {
   display: flex;
@@ -668,7 +670,10 @@ function onLbTouchEnd(e) {
   border-collapse: collapse;
   font-family: 'Prompt', sans-serif;
 }
-.info-tbl tr { border-bottom: 1px solid #f9fafb; }
+.info-tbl tr { 
+  border-bottom: 1px solid #f9fafb; 
+  animation: rowSlideIn 0.22s ease-out both;
+}
 .info-tbl tr:last-child { border-bottom: none; }
 .td-key {
   padding: 7.5px 14px 7.5px 0;
@@ -710,9 +715,6 @@ function onLbTouchEnd(e) {
 .photo-watermark[data-phase="despues"] { background: rgba(16,185,129,.82); }
 
 /* ── Bar fill animación ── */
-.bar-fill {
-  transition: transform 1.4s cubic-bezier(0.23, 1, 0.32, 1);
-}
 .bar-fill::after {
   content: '';
   position: absolute;
@@ -743,9 +745,6 @@ function onLbTouchEnd(e) {
 @keyframes rowSlideIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
-}
-.info-tbl tr {
-  animation: rowSlideIn 0.22s ease-out both;
 }
 
 /* ── Photo wrapper — ocupa el espacio disponible ── */

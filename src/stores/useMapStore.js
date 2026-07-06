@@ -52,12 +52,12 @@ export const useMapStore = defineStore('map', () => {
       return true
     })
 
-    const lista = [...new Set(vias.map(v => v.circuito).filter(Boolean))].sort()
+    const lista = [...new Set(vias.map(v => v.circuito).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
     return ['Todos los circuitos', ...lista]
   })
 
   // Normaliza texto para comparar sin acentos ni mayúsculas
-  const norm = s => s?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() ?? ''
+  const norm = s => s?.toLowerCase().normalize('NFD').replaceAll(/[̀-ͯ]/g, '').trim() ?? ''
 
   const filteredStats = computed(() => {
     const { subregion, municipio, circuito, search } = activeFilters.value

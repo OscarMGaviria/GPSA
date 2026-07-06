@@ -37,29 +37,21 @@ function onTouchStart(e) {
 }
 
 function onTouchEnd(e) {
-  if (e.changedTouches.length > 0) {
-    const deltaY = e.changedTouches[0].clientY - touchStartY
-    const deltaX = e.changedTouches[0].clientX - touchStartX
-    const duration = Date.now() - touchStartTime
-    
-    // Quick swipe and vertical movement dominates
-    if (Math.abs(deltaY) > 40 && Math.abs(deltaY) > Math.abs(deltaX) && duration < 350) {
-      if (deltaY < 0) {
-        // Swipe up
-        if (mobileState.value === 'collapsed') {
-          mobileState.value = 'half'
-        } else if (mobileState.value === 'half') {
-          mobileState.value = 'expanded'
-        }
-      } else {
-        // Swipe down
-        if (mobileState.value === 'expanded') {
-          mobileState.value = 'half'
-        } else if (mobileState.value === 'half') {
-          mobileState.value = 'collapsed'
-        }
-      }
-    }
+  if (e.changedTouches.length === 0) return
+
+  const deltaY = e.changedTouches[0].clientY - touchStartY
+  const deltaX = e.changedTouches[0].clientX - touchStartX
+  const duration = Date.now() - touchStartTime
+  
+  if (Math.abs(deltaY) <= 40 || Math.abs(deltaY) <= Math.abs(deltaX) || duration >= 350) return
+
+  if (deltaY < 0) {
+    if (mobileState.value === 'collapsed') mobileState.value = 'half'
+    else if (mobileState.value === 'half') mobileState.value = 'expanded'
+  } else if (mobileState.value === 'expanded') {
+    mobileState.value = 'half'
+  } else if (mobileState.value === 'half') {
+    mobileState.value = 'collapsed'
   }
 }
 
@@ -169,7 +161,7 @@ watch(
 )
 
 function handleClickOutside(event) {
-  if (window.innerWidth > 1024) return
+  if (globalThis.innerWidth > 1024) return
   if (mobileState.value === 'collapsed') return
   if (panelRef.value && !panelRef.value.contains(event.target)) {
     mobileState.value = 'collapsed'
@@ -218,7 +210,7 @@ const radarAxes = computed(() => {
 // ── Bar chart helpers ─────────────────────────────────────────────────────────
 
 const subregionesFiltradas = computed(() =>
-  props.subregiones.filter(s => s.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') !== 'valle de aburra')
+  props.subregiones.filter(s => s.name.toLowerCase().normalize('NFD').replaceAll(/[̀-ͯ]/g, '') !== 'valle de aburra')
 )
 
 const maxKm = computed(() => Math.max(...subregionesFiltradas.value.map(s => s.km), 1))

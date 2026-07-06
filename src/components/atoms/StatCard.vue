@@ -117,8 +117,6 @@ defineProps({
   line-height: 1.4;
   padding: 5px 9px;
   border-radius: 7px;
-  white-space: nowrap;
-  max-width: 200px;
   white-space: normal;
   text-align: center;
   width: max-content;

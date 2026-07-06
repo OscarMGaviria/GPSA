@@ -80,6 +80,7 @@ async function load() {
     if (isProd) { await loadProd() } else { await loadLocal() }
     captureOriginals()
   } catch (e) {
+    console.error('Data load error:', e)
     toast('Error al cargar los datos.', 'err')
   }
   loading.value = false
@@ -150,7 +151,7 @@ async function loadProd() {
 onMounted(async () => { await initAuth(); load() })
 
 // ── Subregiones ───────────────────────────────────────────────────────────────
-const subregiones = computed(() => [...new Set(features.value.map(f => f.sub))].sort())
+const subregiones = computed(() => [...new Set(features.value.map(f => f.sub))].sort((a, b) => a.localeCompare(b, 'es')))
 
 const subregionStats = computed(() => {
   const map = {}
@@ -173,7 +174,7 @@ function backToSubregions()   { activeSubregion.value = null; search.value = '';
 // ── Tabla ─────────────────────────────────────────────────────────────────────
 const circuitos = computed(() => {
   if (!activeSubregion.value) return []
-  return [...new Set(features.value.filter(f => f.sub === activeSubregion.value).map(f => f.cir))].sort()
+  return [...new Set(features.value.filter(f => f.sub === activeSubregion.value).map(f => f.cir))].sort((a, b) => a.localeCompare(b, 'es'))
 })
 
 const tableRows = computed(() => {
@@ -396,8 +397,8 @@ function onEsc(e) {
     if (activeSubregion.value)  { backToSubregions() }
   }
 }
-onMounted(() => window.addEventListener('keydown', onEsc))
-onUnmounted(() => window.removeEventListener('keydown', onEsc))
+onMounted(() => globalThis.addEventListener('keydown', onEsc))
+onUnmounted(() => globalThis.removeEventListener('keydown', onEsc))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const avgFisGlobal   = computed(() => !features.value.length ? 0 : +(features.value.reduce((s, f) => s + f.fis, 0) / features.value.length).toFixed(1))
@@ -773,7 +774,7 @@ function fmtSize(bytes) {
                 <table class="confirm-table">
                   <tbody>
                     <tr v-for="d in item.diffs" :key="d.campo">
-                      <td class="conf-campo">{{ d.campo }}</td>
+                      <th scope="row" class="conf-campo">{{ d.campo }}</th>
                       <td class="conf-antes">{{ d.antes }}</td>
                       <td class="conf-arrow">→</td>
                       <td class="conf-despues">{{ d.despues }}</td>

@@ -8,7 +8,7 @@
  */
 export function parseAvancePct(description = {}) {
   const raw = description['Avance físico'] ?? description['Avance'] ?? description['avance'] ?? '0'
-  return Math.min(100, Math.max(0, parseFloat(String(raw).replace('%', '').replace(',', '.')) || 0))
+  return Math.min(100, Math.max(0, Number.parseFloat(String(raw).replace('%', '').replace(',', '.')) || 0))
 }
 
 /** Color de la barra según el porcentaje de avance. */
