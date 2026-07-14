@@ -24,11 +24,14 @@ beforeEach(() => {
   vi.resetModules()
   sessionStorage.clear()
   globalThis.location.hash = ''
+  vi.stubEnv('VITE_MSAL_CLIENT_ID', 'test-client-id')
+  vi.stubEnv('VITE_MSAL_TENANT_ID', 'test-tenant-id')
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
   vi.doUnmock('@azure/msal-browser')
+  vi.unstubAllEnvs()
 })
 
 describe('useAdminAuth — MSAL_ENABLED', () => {

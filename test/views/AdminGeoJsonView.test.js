@@ -74,6 +74,9 @@ function setInputValue(el, value) {
 let wrapper
 beforeEach(() => {
   vi.resetModules()
+  vi.stubEnv('VITE_ADMIN_API', 'https://apim-simeva-qa.azure-api.net/administracion')
+  vi.stubEnv('VITE_MSAL_CLIENT_ID', 'test')
+  vi.stubEnv('VITE_MSAL_TENANT_ID', 'test')
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -81,6 +84,7 @@ afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
   vi.doUnmock('@azure/msal-browser')
+  vi.unstubAllEnvs()
 })
 
 async function settle() {
