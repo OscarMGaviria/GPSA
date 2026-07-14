@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import StatCard from '../components/atoms/StatCard.vue'
+import StatCard from '../../../src/components/atoms/StatCard.vue'
 
 describe('StatCard', () => {
   it('muestra el título correctamente', () => {

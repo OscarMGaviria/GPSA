@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { shortLabel, mesesTranscurridos, calcAvanceKm } from '../utils/stats.js'
+import { shortLabel, mesesTranscurridos, calcAvanceKm } from '../../src/utils/stats.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // shortLabel

@@ -4,6 +4,43 @@ import { useMapStore } from '../stores/useMapStore.js'
 
 const normUp = s => (s ?? '').normalize('NFD').replaceAll(/[̀-ͯ]/g, '').toUpperCase()
 
+function _getMpioFillColor(isTerrain, isOnlySubregionActive) {
+  if (isTerrain) return isOnlySubregionActive ? ['case', ['==', ['get', '_hasVias'], 1], '#0369a1', '#0284c7'] : '#0284c7'
+  return isOnlySubregionActive ? ['case', ['==', ['get', '_hasVias'], 1], '#0b5640', '#2d8653'] : '#2d8653'
+}
+
+function _getMpioFillOpacity(isTerrain, isOnlySubregionActive) {
+  if (isTerrain) return isOnlySubregionActive
+    ? ['case', ['boolean', ['feature-state', 'hover'], false], 0.40, ['==', ['get', '_hasVias'], 1], 0.26, 0.06]
+    : ['case', ['boolean', ['feature-state', 'hover'], false], 0.3, 0.1]
+  return isOnlySubregionActive
+    ? ['case', ['boolean', ['feature-state', 'hover'], false], 0.35, ['==', ['get', '_hasVias'], 1], 0.22, 0.04]
+    : ['case', ['boolean', ['feature-state', 'hover'], false], 0.22, 0.07]
+}
+
+function _applyMpioStyle(map, { hasSub, hasMpio, search, circuito, sub, mpio }) {
+  if (!map.getLayer('municipios-fill')) return
+  const mpioFilter = ['all']
+  if (hasSub) mpioFilter.push(['==', ['get', '_subregionNorm'], normUp(sub)])
+  if (hasMpio) mpioFilter.push(['==', ['get', '_mpioNorm'], normUp(mpio)])
+  if (search && !circuito) mpioFilter.push(['>', ['index-of', search, ['downcase', ['coalesce', ['get', 'MPIO_NOMBR'], '']]], -1])
+  
+  const f = mpioFilter.length > 1 ? mpioFilter : null
+  map.setFilter('municipios-fill', f)
+  map.setFilter('municipios-outline', f)
+  if (map.getLayer('municipios-labels')) {
+    map.setFilter('municipios-labels', f)
+    const hasGeoFilter = hasSub || hasMpio || !!search
+    map.setLayoutProperty('municipios-labels', 'visibility', hasGeoFilter ? 'visible' : 'none')
+  }
+
+  const isTerrain = !!map.getTerrain()
+  const isOnlySubregionActive = hasSub && !hasMpio && !circuito && !search
+
+  map.setPaintProperty('municipios-fill', 'fill-color', _getMpioFillColor(isTerrain, isOnlySubregionActive))
+  map.setPaintProperty('municipios-fill', 'fill-opacity', _getMpioFillOpacity(isTerrain, isOnlySubregionActive))
+}
+
 export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias, center, zoom, refreshVisibleCallouts } = {}) {
   const store = useMapStore()
   const selectedSubregion = ref('')
@@ -38,42 +75,6 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     }
   }
 
-  function _applyMpioStyle(map, { hasSub, hasMpio, search, circuito, sub, mpio }) {
-    if (!map.getLayer('municipios-fill')) return
-    const mpioFilter = ['all']
-    if (hasSub) mpioFilter.push(['==', ['get', '_subregionNorm'], normUp(sub)])
-    if (hasMpio) mpioFilter.push(['==', ['get', '_mpioNorm'], normUp(mpio)])
-    if (search && !circuito) mpioFilter.push(['>', ['index-of', search, ['downcase', ['coalesce', ['get', 'MPIO_NOMBR'], '']]], -1])
-    
-    const f = mpioFilter.length > 1 ? mpioFilter : null
-    map.setFilter('municipios-fill', f)
-    map.setFilter('municipios-outline', f)
-    if (map.getLayer('municipios-labels')) {
-      map.setFilter('municipios-labels', f)
-      const hasGeoFilter = hasSub || hasMpio || !!search
-      map.setLayoutProperty('municipios-labels', 'visibility', hasGeoFilter ? 'visible' : 'none')
-    }
-
-    const isTerrain = !!map.getTerrain()
-    const isOnlySubregionActive = hasSub && !hasMpio && !circuito && !search
-
-    if (isOnlySubregionActive) {
-      map.setPaintProperty('municipios-fill', 'fill-color', isTerrain
-        ? ['case', ['==', ['get', '_hasVias'], 1], '#0369a1', '#0284c7']
-        : ['case', ['==', ['get', '_hasVias'], 1], '#0b5640', '#2d8653']
-      )
-      map.setPaintProperty('municipios-fill', 'fill-opacity', isTerrain
-        ? ['case', ['boolean', ['feature-state', 'hover'], false], 0.40, ['==', ['get', '_hasVias'], 1], 0.26, 0.06]
-        : ['case', ['boolean', ['feature-state', 'hover'], false], 0.35, ['==', ['get', '_hasVias'], 1], 0.22, 0.04]
-      )
-    } else {
-      map.setPaintProperty('municipios-fill', 'fill-color', isTerrain ? '#0284c7' : '#2d8653')
-      map.setPaintProperty('municipios-fill', 'fill-opacity', isTerrain
-        ? ['case', ['boolean', ['feature-state', 'hover'], false], 0.3, 0.1]
-        : ['case', ['boolean', ['feature-state', 'hover'], false], 0.22, 0.07]
-      )
-    }
-  }
 
   function _applyViasStyle(map, { hasAny, hasSub, hasMpio, hasCir, sub, mpio, circuito }) {
     if (!map.getLayer('vias-line')) return

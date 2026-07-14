@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { useMapStore } from '../stores/useMapStore.js'
-import MapSearch from '../components/molecules/MapSearch.vue'
-import { highlight, escapeRegex } from '../utils/via.js'
+import { useMapStore } from '../../../src/stores/useMapStore.js'
+import MapSearch from '../../../src/components/molecules/MapSearch.vue'
+import { highlight, escapeRegex } from '../../../src/utils/via.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // highlight (extraída en via.js)

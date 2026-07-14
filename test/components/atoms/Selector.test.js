@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import Selector from '../components/atoms/Selector.vue'
+import Selector from '../../../src/components/atoms/Selector.vue'
 
 const OPTIONS = ['Todas las subregiones', 'Norte', 'Oriente', 'Occidente', 'Suroeste']
 

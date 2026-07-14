@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import RadarChart from '../components/atoms/RadarChart.vue'
+import RadarChart from '../../../src/components/atoms/RadarChart.vue'
 
 const axes3 = [
   { label: 'Físico',     value: 80 },

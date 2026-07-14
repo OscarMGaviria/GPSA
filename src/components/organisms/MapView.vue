@@ -35,8 +35,9 @@ function _parseCoords(raw) {
   const s = raw.trim()
 
   // DMS con símbolo de grado: 6°14'39"N 75°34'52"W  (segundos opcionales)
-  const dmsRe = /(\d+)\s*°\s*(\d+)\s*['’]\s*([0-9.]*)\s*["”]?\s*([NSns])[,\s]+(\d+)\s*°\s*(\d+)\s*['’]\s*([0-9.]*)\s*["”]?\s*([EWew])/
-  const m = s.match(dmsRe)
+  const noSpace = s.replace(/\s+/g, '')
+  const dmsRe = /(\d+)°(\d+)['’]([0-9.]*)["”]?([NS]),?(\d+)°(\d+)['’]([0-9.]*)["”]?([EW])/i
+  const m = noSpace.match(dmsRe)
   if (m) {
     const toD = (d, mn, sec, h) => {
       const v = +d + +mn / 60 + (+sec || 0) / 3600
@@ -46,8 +47,9 @@ function _parseCoords(raw) {
   }
 
   // DMS sin símbolo pero con N/S/E/W: 6 14 39.1 N 75 34 52 W
-  const dmsLoose = /(\d+)\s+(\d+)\s+([0-9.]+)\s*([NSns])[,\s]+(\d+)\s+(\d+)\s+([0-9.]+)\s*([EWew])/
-  const m2 = s.match(dmsLoose)
+  const cleanS = s.replace(/[,\s]+/g, ' ').toUpperCase()
+  const dmsLoose = /(\d+) (\d+) ([0-9.]+) ([NS]) (\d+) (\d+) ([0-9.]+) ([EW])/
+  const m2 = cleanS.match(dmsLoose)
   if (m2) {
     const toD = (d, mn, sec, h) => {
       const v = +d + +mn / 60 + (+sec || 0) / 3600
@@ -178,7 +180,7 @@ onUnmounted(() => globalThis.removeEventListener('keydown', _onGlobalKey))
 
     <!-- Logo A Toda Máquina -->
     <div class="atm-logo">
-      <img src="/A toda maquina.png" alt="A Toda Máquina" />
+      <img :src="'/A toda maquina.png'" alt="A Toda Máquina" />
     </div>
 
     <!-- Tooltip hover vía -->

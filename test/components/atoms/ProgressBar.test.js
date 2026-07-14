@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ProgressBar from '../components/atoms/ProgressBar.vue'
+import ProgressBar from '../../../src/components/atoms/ProgressBar.vue'
 
 describe('ProgressBar', () => {
   it('muestra el porcentaje como texto cuando showLabel es true', () => {

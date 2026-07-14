@@ -26,7 +26,7 @@ function mockFetch(responseData, ok = true) {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('useCircuitoPhotos — modo local (manifest.json)', () => {
   it('retorna fotos vacías si idCircuito es null/vacío', async () => {
-    const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
+    const { useCircuitoPhotos } = await import('../../src/composables/useCircuitoPhotos.js')
     const idCircuito = ref('')
     const { photos, loading } = useCircuitoPhotos(idCircuito)
     await nextTick()
@@ -42,7 +42,7 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
     }
     mockFetch(circuitPhotos)
 
-    const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
+    const { useCircuitoPhotos } = await import('../../src/composables/useCircuitoPhotos.js')
     const idCircuito = ref('C-001')
     const { photos, loading, error } = useCircuitoPhotos(idCircuito)
 
@@ -64,7 +64,7 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
     }
     mockFetch(circuitPhotos)
 
-    const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
+    const { useCircuitoPhotos } = await import('../../src/composables/useCircuitoPhotos.js')
     const idCircuito = ref('C-002')
     const { photos } = useCircuitoPhotos(idCircuito)
 
@@ -79,7 +79,7 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
   it('retorna fotos vacías si el idCircuito no existe en el manifest', async () => {
     mockFetch({ antes: [], durante: [], despues: [] })
 
-    const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
+    const { useCircuitoPhotos } = await import('../../src/composables/useCircuitoPhotos.js')
     const idCircuito = ref('C-888')
     const { photos } = useCircuitoPhotos(idCircuito)
 
@@ -96,7 +96,7 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
       json: () => Promise.resolve({}),
     }))
 
-    const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
+    const { useCircuitoPhotos } = await import('../../src/composables/useCircuitoPhotos.js')
     const idCircuito = ref('C-001')
     const { photos, error } = useCircuitoPhotos(idCircuito)
 
@@ -111,7 +111,7 @@ describe('useCircuitoPhotos — modo local (manifest.json)', () => {
     const circuitPhotos = { antes: ['/images/circuitos/C-003/antes/a.jpg'], durante: [], despues: [] }
     mockFetch(circuitPhotos)
 
-    const { useCircuitoPhotos } = await import('../composables/useCircuitoPhotos.js')
+    const { useCircuitoPhotos } = await import('../../src/composables/useCircuitoPhotos.js')
     const idCircuito = ref('C-003')
     const { loading } = useCircuitoPhotos(idCircuito)
 

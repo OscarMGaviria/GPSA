@@ -1,11 +1,11 @@
-const fs = require('fs');
-const zlib = require('zlib');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require('node:fs');
+const zlib = require('node:zlib');
+const path = require('node:path');
+const { execSync } = require('node:child_process');
 
 // We will just read the xml directly by unzipping.
 try {
-  execSync('powershell -Command "Expand-Archive -Force -Path \'d:\\OMARQUEZG\\My Documents\\Aplicativos\\SIMEVA-GOB\\SIMEVA-FRONTEND\\Errores\\2026-06-30-SIMEVA-FRONTEND-issues-report (1).xlsx\' -DestinationPath ./temp_excel"');
+  execSync(String.raw`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command "Expand-Archive -Force -Path 'd:\OMARQUEZG\My Documents\Aplicativos\SIMEVA-GOB\SIMEVA-FRONTEND\Errores\2026-06-30-SIMEVA-FRONTEND-issues-report (1).xlsx' -DestinationPath ./temp_excel"`);
   const shared = fs.readFileSync('./temp_excel/xl/sharedStrings.xml', 'utf8');
   const sheet = fs.readFileSync('./temp_excel/xl/worksheets/sheet1.xml', 'utf8');
   
@@ -27,7 +27,7 @@ try {
     while ((cMatch = cRegex.exec(rowContent)) !== null) {
       const isString = cMatch[3] === 's';
       const val = cMatch[4];
-      cells.push(isString ? strings[parseInt(val)] : val);
+      cells.push(isString ? strings[Number.parseInt(val)] : val);
     }
     if (cells.some(c => c && (c.includes('S5852') || c.includes('S5843')))) {
       console.log(cells.join(' | '));

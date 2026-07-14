@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ProgressRing from '../components/atoms/ProgressRing.vue'
+import ProgressRing from '../../../src/components/atoms/ProgressRing.vue'
 
 // Fórmulas internas del componente
 const r    = (size, stroke) => (size - stroke) / 2

@@ -7,6 +7,8 @@ import { useMapInit, CENTER, ZOOM } from './useMapInit.js'
 import { useMapStore }              from '../stores/useMapStore.js'
 import { pctTiempoTranscurrido }    from '../utils/stats.js'
 
+const delay = ms => new Promise(r => setTimeout(r, ms))
+
 export function useMapOrchestrator(mapContainer, filtersGetter) {
   const store = useMapStore()
   let _map = null
@@ -188,12 +190,10 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
           span.textContent = '¡Copiado!'
           btn.style.background = '#2d8653'
           btn.style.borderColor = '#2d8653'
-          function resetBtnState() {
-            span.textContent = originalText
-            btn.style.background = '#0b5640'
-            btn.style.borderColor = '#0b5640'
-          }
-          setTimeout(resetBtnState, 1500)
+          await delay(1500)
+          span.textContent = originalText
+          btn.style.background = '#0b5640'
+          btn.style.borderColor = '#0b5640'
         } catch (err) {
           console.error('No se pudo copiar al portapapeles:', err)
         }

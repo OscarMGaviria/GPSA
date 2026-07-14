@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import FilterBar from '../components/molecules/FilterBar.vue'
+import FilterBar from '../../../src/components/molecules/FilterBar.vue'
 
 beforeEach(() => {
   globalThis.innerWidth = 1280

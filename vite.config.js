@@ -316,7 +316,9 @@ export default defineConfig(({ mode }) => {
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'json', 'html'],
-      reportsDirectory: './coverage'
+      reportsDirectory: './coverage',
+      all: true,
+      include: ['src/**/*.{js,vue}'],
     }
   },
   base: process.env.VITE_BASE_URL || env.VITE_BASE_URL || '/',

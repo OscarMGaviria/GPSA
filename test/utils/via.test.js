@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseAvancePct, getBarColor, getStatusLabel, getStatusClass } from '../utils/via.js'
+import { parseAvancePct, getBarColor, getStatusLabel, getStatusClass } from '../../src/utils/via.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // parseAvancePct

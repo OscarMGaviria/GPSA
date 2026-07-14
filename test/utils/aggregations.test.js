@@ -6,7 +6,7 @@ import {
   calcCircuitosRows,
   avanceBadge,
   avanceLabel,
-} from '../utils/aggregations.js'
+} from '../../src/utils/aggregations.js'
 
 const VIAS = [
   { nombre: 'El Botón - Frontino',  municipio: 'FRONTINO',  subregion: 'Occidente', circuito: 'Frontino - Nutibara', contratista: 'CONSORCIO A', km: 10,  avance: 20 },
