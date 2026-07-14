@@ -59,31 +59,27 @@ vi.mock('maplibre-gl', async () => {
   }
   FakeMap.instances = []
 
-  class FakeMarker {
-    constructor(opts) {
-      this.opts = opts
-      this.setLngLat = vi.fn().mockReturnThis()
-      this.setPopup = vi.fn().mockReturnThis()
-      this.addTo = vi.fn().mockReturnThis()
-      this.remove = vi.fn()
-      this.togglePopup = vi.fn()
-      this.getLngLat = vi.fn(() => ({ lat: 7.1, lng: -75.4 }))
-      this.on = vi.fn()
-      FakeMarker.instances.push(this)
-    }
+  function FakeMarker(opts) {
+    this.opts = opts
+    this.setLngLat = vi.fn().mockReturnThis()
+    this.setPopup = vi.fn().mockReturnThis()
+    this.addTo = vi.fn().mockReturnThis()
+    this.remove = vi.fn()
+    this.togglePopup = vi.fn()
+    this.getLngLat = vi.fn(() => ({ lat: 7.1, lng: -75.4 }))
+    this.on = vi.fn()
+    FakeMarker.instances.push(this)
   }
   FakeMarker.instances = []
 
-  class FakePopup {
-    constructor(opts) {
-      this.opts = opts
-      this.setDOMContent = vi.fn().mockReturnThis()
-    }
+  function FakePopup(opts) {
+    this.opts = opts
+    this.setDOMContent = vi.fn().mockReturnThis()
   }
 
-  class NavigationControl {}
-  class ScaleControl {}
-  class GeolocateControl {}
+  function NavigationControl() {}
+  function ScaleControl() {}
+  function GeolocateControl() {}
 
   return {
     default: {
@@ -138,7 +134,7 @@ function makeComponent(filtersRef) {
 
 beforeEach(() => {
   setActivePinia(createPinia())
-  globalThis.ResizeObserver = class { observe() {} disconnect() {} }
+  globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({ observe: vi.fn(), disconnect: vi.fn() }))
   globalThis.innerWidth = 1280
   maplibregl.Map.instances = []
   maplibregl.Marker.instances = []

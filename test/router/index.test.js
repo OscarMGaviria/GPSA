@@ -16,7 +16,7 @@ describe('router', () => {
   })
 
   it('solo define las 2 rutas esperadas', () => {
-    const paths = router.getRoutes().map(r => r.path).sort()
+    const paths = router.getRoutes().map(r => r.path).sort((a, b) => a.localeCompare(b))
     expect(paths).toEqual(['/', '/admin-geojson'])
   })
 

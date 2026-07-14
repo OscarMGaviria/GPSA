@@ -130,11 +130,9 @@ describe('useAdminAuth — getToken / authHeaders', () => {
   })
 
   it('getToken redirige y relanza el error cuando se requiere interacción', async () => {
-    let InteractionRequiredAuthError
     const acquireTokenRedirect = vi.fn().mockResolvedValue(undefined)
     vi.doMock('@azure/msal-browser', () => {
       class LocalInteractionRequiredAuthError extends Error {}
-      InteractionRequiredAuthError = LocalInteractionRequiredAuthError
       const instance = {
         initialize: vi.fn().mockResolvedValue(undefined),
         handleRedirectPromise: vi.fn().mockResolvedValue(null),

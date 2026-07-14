@@ -35,8 +35,8 @@ function _parseCoords(raw) {
   const s = raw.trim()
 
   // DMS con símbolo de grado: 6°14'39"N 75°34'52"W  (segundos opcionales)
-  const noSpace = s.replace(/\s+/g, '')
-  const dmsRe = /(\d+)°(\d+)['’]([0-9.]*)["”]?([NS]),?(\d+)°(\d+)['’]([0-9.]*)["”]?([EW])/i
+  const noSpace = s.replaceAll(/\s+/g, '')
+  const dmsRe = /(\d+)°(\d+)['’](\d+(?:\.\d+)?)?["”]?([NS]),?(\d+)°(\d+)['’](\d+(?:\.\d+)?)?["”]?([EW])/i
   const m = noSpace.match(dmsRe)
   if (m) {
     const toD = (d, mn, sec, h) => {
@@ -47,8 +47,8 @@ function _parseCoords(raw) {
   }
 
   // DMS sin símbolo pero con N/S/E/W: 6 14 39.1 N 75 34 52 W
-  const cleanS = s.replace(/[,\s]+/g, ' ').toUpperCase()
-  const dmsLoose = /(\d+) (\d+) ([0-9.]+) ([NS]) (\d+) (\d+) ([0-9.]+) ([EW])/
+  const cleanS = s.replaceAll(/[,\s]+/g, ' ').toUpperCase()
+  const dmsLoose = /(\d+) (\d+) (\d+(?:\.\d+)?) ([NS]) (\d+) (\d+) (\d+(?:\.\d+)?) ([EW])/
   const m2 = cleanS.match(dmsLoose)
   if (m2) {
     const toD = (d, mn, sec, h) => {
@@ -59,7 +59,7 @@ function _parseCoords(raw) {
   }
 
   // Grados decimales: "6.2442, -75.5812" o "-75.5812 6.2442"
-  const parts = s.replace(/[,;]+/g, ' ').split(/\s+/).filter(Boolean)
+  const parts = s.replaceAll(/[,;]+/g, ' ').split(/\s+/).filter(Boolean)
   if (parts.length >= 2) {
     const a = Number.parseFloat(parts[0])
     const b = Number.parseFloat(parts[1])

@@ -5,13 +5,15 @@ import { useMapStore } from '../stores/useMapStore.js'
 const normUp = s => (s ?? '').normalize('NFD').replaceAll(/[̀-ͯ]/g, '').toUpperCase()
 
 function _getMpioFillColor(isTerrain, isOnlySubregionActive) {
-  if (isTerrain) return isOnlySubregionActive ? ['case', ['==', ['get', '_hasVias'], 1], '#0369a1', '#0284c7'] : '#0284c7'
-  return isOnlySubregionActive ? ['case', ['==', ['get', '_hasVias'], 1], '#0b5640', '#2d8653'] : '#2d8653'
+  if (isTerrain) {
+    return isOnlySubregionActive ? ['case', ['==', ['get', '_hasVias'], 1], '#0369a1', '#0284c7'] : ['literal', '#0284c7']
+  }
+  return isOnlySubregionActive ? ['case', ['==', ['get', '_hasVias'], 1], '#0b5640', '#2d8653'] : ['literal', '#2d8653']
 }
 
 function _getMpioFillOpacity(isTerrain, isOnlySubregionActive) {
   if (isTerrain) return isOnlySubregionActive
-    ? ['case', ['boolean', ['feature-state', 'hover'], false], 0.40, ['==', ['get', '_hasVias'], 1], 0.26, 0.06]
+    ? ['case', ['boolean', ['feature-state', 'hover'], false], 0.4, ['==', ['get', '_hasVias'], 1], 0.26, 0.06]
     : ['case', ['boolean', ['feature-state', 'hover'], false], 0.3, 0.1]
   return isOnlySubregionActive
     ? ['case', ['boolean', ['feature-state', 'hover'], false], 0.35, ['==', ['get', '_hasVias'], 1], 0.22, 0.04]
@@ -100,32 +102,40 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     }
   }
 
+  function _flyToMpios(map, feats, filters) {
+    if (feats.length) flyToGeometries(feats.map(f => f.geometry), { padding: 60 })
+    map.once('moveend', () => refreshVisibleCallouts?.(filters))
+  }
+
   function _handleFlightAndLabels(map, filters, { hasAny, hasMpio, hasSub, hasCir, search, mpio, sub, circuito }) {
-    if (hasAny && cachedMunicipios.value) {
-      let feats = cachedMunicipios.value.features
-      if (hasMpio) {
-        feats = feats.filter(f => normUp(f.properties.MPIO_NOMBR) === normUp(mpio))
-      } else if (hasSub) {
-        feats = feats.filter(f => normUp(f.properties.SUBREGION) === normUp(sub))
-      } else if (hasCir && cachedVias.value) {
-        const via = cachedVias.value.features.find(f => f.properties.CIRCUITO === circuito)
-        if (via) flyToGeometries([via.geometry], { padding: 100 })
-        feats = []
-      } else if (search && cachedVias.value) {
-        const searchNames = new Set(store.filteredStats.viasDetalle.map(v => v.nombre))
-        const vias = cachedVias.value.features.filter(f => searchNames.has(f.properties.NOMBRE_VIA))
-        if (vias.length) flyToGeometries(vias.map(f => f.geometry), { padding: 100 })
-        feats = []
-      }
-      if (feats.length) flyToGeometries(feats.map(f => f.geometry), { padding: 60 })
-      map.once('moveend', () => refreshVisibleCallouts?.(filters))
-    } else {
+    if (!hasAny) {
       refreshVisibleCallouts?.(filters)
       if (cachedMunicipios && cachedMunicipios.value) {
         flyToGeometries(cachedMunicipios.value.features.map(f => f.geometry), { padding: 40 })
       } else {
         map.flyTo({ center, zoom, duration: 900 })
       }
+      return
+    }
+
+    if (!cachedMunicipios.value) return
+
+    let feats = cachedMunicipios.value.features
+    if (hasMpio) {
+      feats = feats.filter(f => normUp(f.properties.MPIO_NOMBR) === normUp(mpio))
+      _flyToMpios(map, feats, filters)
+    } else if (hasSub) {
+      feats = feats.filter(f => normUp(f.properties.SUBREGION) === normUp(sub))
+      _flyToMpios(map, feats, filters)
+    } else if (hasCir && cachedVias.value) {
+      const via = cachedVias.value.features.find(f => f.properties.CIRCUITO === circuito)
+      if (via) flyToGeometries([via.geometry], { padding: 100 })
+      map.once('moveend', () => refreshVisibleCallouts?.(filters))
+    } else if (search && cachedVias.value) {
+      const searchNames = new Set(store.filteredStats.viasDetalle.map(v => v.nombre))
+      const vias = cachedVias.value.features.filter(f => searchNames.has(f.properties.NOMBRE_VIA))
+      if (vias.length) flyToGeometries(vias.map(f => f.geometry), { padding: 100 })
+      map.once('moveend', () => refreshVisibleCallouts?.(filters))
     }
   }
 

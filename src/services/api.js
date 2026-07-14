@@ -192,7 +192,7 @@ export function extractKm(desc) {
   }
   // Fallback: buscar patrón "X km" en cualquier valor
   for (const val of Object.values(desc)) {
-    const m = String(val).replace(',', '.').match(/([0-9][0-9.]*)\s*km/i)
+    const m = String(val).replace(',', '.').match(/(\d+(?:\.\d+)?)\s*km/i)
     if (m) return Number.parseFloat(m[1])
   }
   return null

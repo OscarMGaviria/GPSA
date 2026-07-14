@@ -33,9 +33,9 @@ vi.mock('maplibre-gl', () => {
   }
   FakeMap.instances = []
 
-  class NavigationControl {}
-  class ScaleControl {}
-  class GeolocateControl {}
+  function NavigationControl() {}
+  function ScaleControl() {}
+  function GeolocateControl() {}
 
   return { default: { Map: FakeMap, NavigationControl, ScaleControl, GeolocateControl } }
 })
@@ -55,10 +55,7 @@ function makeComponent(opts = {}) {
 }
 
 beforeEach(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    disconnect() {}
-  }
+  globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({ observe: vi.fn(), disconnect: vi.fn() }))
   maplibregl.Map.instances = []
   globalThis.innerWidth = 1280
 })

@@ -55,26 +55,25 @@ vi.mock('maplibre-gl', async () => {
   }
   FakeMap.instances = []
 
-  class FakeMarker {
-    constructor(opts) {
-      this.opts = opts
-      this.setLngLat = vi.fn().mockReturnThis()
-      this.setPopup = vi.fn().mockReturnThis()
-      this.addTo = vi.fn().mockReturnThis()
-      this.remove = vi.fn()
-      this.togglePopup = vi.fn()
-      this.getLngLat = vi.fn(() => ({ lat: 7.1, lng: -75.4 }))
-      this.on = vi.fn()
-    }
+  function FakeMarker(opts) {
+    this.opts = opts
+    this.setLngLat = vi.fn().mockReturnThis()
+    this.setPopup = vi.fn().mockReturnThis()
+    this.addTo = vi.fn().mockReturnThis()
+    this.remove = vi.fn()
+    this.togglePopup = vi.fn()
+    this.getLngLat = vi.fn(() => ({ lat: 7.1, lng: -75.4 }))
+    this.on = vi.fn()
   }
 
-  class FakePopup {
-    constructor(opts) { this.opts = opts; this.setDOMContent = vi.fn().mockReturnThis() }
+  function FakePopup(opts) {
+    this.opts = opts
+    this.setDOMContent = vi.fn().mockReturnThis()
   }
 
-  class NavigationControl {}
-  class ScaleControl {}
-  class GeolocateControl {}
+  function NavigationControl() {}
+  function ScaleControl() {}
+  function GeolocateControl() {}
 
   return {
     default: {
@@ -91,7 +90,7 @@ import MapView from '../../../src/components/organisms/MapView.vue'
 
 beforeEach(() => {
   setActivePinia(createPinia())
-  globalThis.ResizeObserver = class { observe() {} disconnect() {} }
+  globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({ observe: vi.fn(), disconnect: vi.fn() }))
   globalThis.innerWidth = 1280
   maplibregl.Map.instances = []
   vi.mocked(getMunicipios).mockReset()
@@ -192,7 +191,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
   it('abre la barra de búsqueda con Ctrl+B y la cierra con Escape', async () => {
     const wrapper = mountMapView()
     expect(wrapper.find('.cs-wrap').exists()).toBe(false)
-    await globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
+    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
     await nextTick()
     expect(wrapper.find('.cs-wrap').exists()).toBe(true)
     await wrapper.find('.cs-input').trigger('keydown', { key: 'Escape' })
@@ -204,7 +203,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
   it('busca coordenadas decimales válidas y llama a map.flyTo', async () => {
     const wrapper = mountMapView()
     const map = maplibregl.Map.instances.at(-1)
-    await globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
+    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
     await nextTick()
     await wrapper.find('.cs-input').setValue('6.2442, -75.5812')
     await wrapper.find('.cs-go').trigger('click')
@@ -215,7 +214,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
 
   it('muestra un error si el formato de coordenadas no es reconocido', async () => {
     const wrapper = mountMapView()
-    await globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
+    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
     await nextTick()
     await wrapper.find('.cs-input').setValue('esto no son coordenadas')
     await wrapper.find('.cs-go').trigger('click')
