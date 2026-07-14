@@ -94,7 +94,7 @@ function click(el) {
 
 beforeEach(() => {
   setActivePinia(createPinia())
-  globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({ observe: vi.fn(), disconnect: vi.fn() }))
+  globalThis.ResizeObserver = vi.fn(function() { this.observe = vi.fn(); this.disconnect = vi.fn() })
   globalThis.innerWidth = 1280
   maplibregl.Map.instances = []
   localStorage.clear()

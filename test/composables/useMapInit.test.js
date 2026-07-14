@@ -55,7 +55,7 @@ function makeComponent(opts = {}) {
 }
 
 beforeEach(() => {
-  globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({ observe: vi.fn(), disconnect: vi.fn() }))
+  globalThis.ResizeObserver = vi.fn(function() { this.observe = vi.fn(); this.disconnect = vi.fn() })
   maplibregl.Map.instances = []
   globalThis.innerWidth = 1280
 })
