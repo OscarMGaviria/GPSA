@@ -75,6 +75,7 @@ let wrapper
 beforeEach(() => {
   vi.resetModules()
   vi.stubEnv('VITE_ADMIN_API', 'https://apim-simeva-qa.azure-api.net/administracion')
+  vi.stubEnv('VITE_API_LOCALIZACIONES', '/data/localizacion.geojson')
   vi.stubEnv('VITE_MSAL_CLIENT_ID', 'test')
   vi.stubEnv('VITE_MSAL_TENANT_ID', 'test')
 })

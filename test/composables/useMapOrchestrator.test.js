@@ -5,10 +5,14 @@ import { createPinia, setActivePinia } from 'pinia'
 
 vi.mock('maplibre-gl/dist/maplibre-gl.css', () => ({}))
 
-vi.mock('../../src/services/api.js', () => ({
-  getMunicipios: vi.fn(),
-  getLocalizaciones: vi.fn(),
-}))
+vi.mock('../../src/services/api.js', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    getMunicipios: vi.fn(),
+    getLocalizaciones: vi.fn(),
+  }
+})
 
 vi.mock('maplibre-gl', async () => {
   const actual = await vi.importActual('maplibre-gl')
