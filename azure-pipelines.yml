@@ -10,6 +10,7 @@ trigger:
       - index.html
       - vite.config.ts
       - package.json
+      - test/**
 
 pr:
   branches:
@@ -18,6 +19,7 @@ pr:
   paths:
     include:
       - src/**
+      - test/**
 
 resources:
   repositories:
