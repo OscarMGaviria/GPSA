@@ -3,6 +3,11 @@ import { defineComponent, ref, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
+// Mocks vacíos de los controles de MapLibre: no se testea su comportamiento interno.
+function NavigationControl() {}
+function ScaleControl() {}
+function GeolocateControl() {}
+
 vi.mock('maplibre-gl/dist/maplibre-gl.css', () => ({}))
 
 vi.mock('../../src/services/api.js', async (importOriginal) => {
@@ -76,10 +81,6 @@ vi.mock('maplibre-gl', async () => {
     this.opts = opts
     this.setDOMContent = vi.fn().mockReturnThis()
   }
-
-  function NavigationControl() {}
-  function ScaleControl() {}
-  function GeolocateControl() {}
 
   return {
     default: {

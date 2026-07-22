@@ -192,7 +192,9 @@ export function extractKm(desc) {
   }
   // Fallback: buscar patrón "X km" en cualquier valor
   for (const val of Object.values(desc)) {
-    const m = String(val).replace(',', '.').match(/(\d+(?:\.\d+)?)\s*km/i)
+    // Cuantificadores acotados (máx. 6 dígitos enteros, 3 decimales) para
+    // evitar backtracking super-lineal (SonarQube javascript:S5852).
+    const m = String(val).slice(0, 200).replace(',', '.').match(/(\d{1,6}(?:\.\d{1,3})?)\s*km/i)
     if (m) return Number.parseFloat(m[1])
   }
   return null

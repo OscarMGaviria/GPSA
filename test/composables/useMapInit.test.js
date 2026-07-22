@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 
+// Mocks vacíos de los controles de MapLibre: no se testea su comportamiento interno.
+function NavigationControl() {}
+function ScaleControl() {}
+function GeolocateControl() {}
+
 vi.mock('maplibre-gl/dist/maplibre-gl.css', () => ({}))
 
 vi.mock('maplibre-gl', () => {
@@ -32,10 +37,6 @@ vi.mock('maplibre-gl', () => {
     triggerLoad() { return this._handlers['load']?.() }
   }
   FakeMap.instances = []
-
-  function NavigationControl() {}
-  function ScaleControl() {}
-  function GeolocateControl() {}
 
   return { default: { Map: FakeMap, NavigationControl, ScaleControl, GeolocateControl } }
 })
