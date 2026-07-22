@@ -30,6 +30,22 @@ function canonicalSub(raw) {
   return idx !== -1 ? SUBREGIONES_FIJAS[idx] : sentenceCase(raw ?? '')
 }
 
+function _getMunicipiosPorSubregion(geoMunicipios, geoVias) {
+  if (!geoMunicipios) return {}
+  const municipiosConVias = new Set(geoVias?.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean) ?? [])
+  const map = {}
+  for (const f of geoMunicipios.features) {
+    const sub = canonicalSub(f.properties.SUBREGION)
+    const mpio = sentenceCase(f.properties.MPIO_NOMBR)
+    if (sub && mpio && municipiosConVias.has(mpio)) {
+      if (!map[sub]) map[sub] = []
+      if (!map[sub].includes(mpio)) map[sub].push(mpio)
+    }
+  }
+  for (const arr of Object.values(map)) arr.sort((a, b) => a.localeCompare(b, 'es'))
+  return map
+}
+
 export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { buildCallouts, updateCalloutPositions } = {}) {
   const store          = useMapStore()
   const loading          = ref(true)
@@ -45,22 +61,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
   onUnmounted(() => { destroyed = true })
 
-  function _getMunicipiosPorSubregion(geoMunicipios, geoVias) {
-    const municipiosPorSubregion = {}
-    const municipiosConVias = new Set(geoVias?.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean) ?? [])
-    if (geoMunicipios) {
-      for (const f of geoMunicipios.features) {
-        const sub = canonicalSub(f.properties.SUBREGION)
-        const mpio = sentenceCase(f.properties.MPIO_NOMBR)
-        if (sub && mpio && municipiosConVias.has(mpio)) {
-          if (!municipiosPorSubregion[sub]) municipiosPorSubregion[sub] = []
-          if (!municipiosPorSubregion[sub].includes(mpio)) municipiosPorSubregion[sub].push(mpio)
-        }
-      }
-      for (const k of Object.keys(municipiosPorSubregion)) municipiosPorSubregion[k].sort((a, b) => a.localeCompare(b, 'es'))
-    }
-    return municipiosPorSubregion
-  }
+
 
   function _extractFilterOptions(geoMunicipios, geoVias) {
     const subregiones = geoMunicipios
@@ -443,7 +444,6 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     }
 
     // Normaliza texto para comparar sin acentos ni mayúsculas
-    const norm = normStr
 
     _extractFilterOptions(geoMunicipios, geoVias)
 

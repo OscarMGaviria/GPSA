@@ -107,17 +107,17 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     map.once('moveend', () => refreshVisibleCallouts?.(filters))
   }
 
-  function _handleFlightAndLabels(map, filters, { hasAny, hasMpio, hasSub, hasCir, search, mpio, sub, circuito }) {
-    if (!hasAny) {
-      refreshVisibleCallouts?.(filters)
-      if (cachedMunicipios && cachedMunicipios.value) {
-        flyToGeometries(cachedMunicipios.value.features.map(f => f.geometry), { padding: 40 })
-      } else {
-        map.flyTo({ center, zoom, duration: 900 })
-      }
-      return
+  function _resetFlight(map, filters) {
+    refreshVisibleCallouts?.(filters)
+    if (cachedMunicipios?.value) {
+      flyToGeometries(cachedMunicipios.value.features.map(f => f.geometry), { padding: 40 })
+    } else {
+      map.flyTo({ center, zoom, duration: 900 })
     }
+  }
 
+  function _handleFlightAndLabels(map, filters, { hasAny, hasMpio, hasSub, hasCir, search, mpio, sub, circuito }) {
+    if (!hasAny) return _resetFlight(map, filters)
     if (!cachedMunicipios.value) return
 
     let feats = cachedMunicipios.value.features

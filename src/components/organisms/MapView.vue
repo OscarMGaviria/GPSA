@@ -32,23 +32,27 @@ const searchError = ref('')
 const searchInput = ref(null)
 
 function _parseCoords(raw) {
-  const s = raw.trim()
+  const s = raw.trim().slice(0, 100)
 
   // DMS con símbolo de grado: 6°14'39"N 75°34'52"W  (segundos opcionales)
+  // Cuantificadores acotados (grados ≤3 díg., min/seg ≤2 díg.) para evitar
+  // backtracking super-lineal (SonarQube javascript:S5852) en entradas largas.
   const noSpace = s.replaceAll(/\s+/g, '')
-  const dmsRe = /(\d+)°(\d+)['’](\d+(?:\.\d+)?)?["”]?([NS]),?(\d+)°(\d+)['’](\d+(?:\.\d+)?)?["”]?([EW])/i
-  const m = noSpace.match(dmsRe)
-  if (m) {
+  const dmsLat = /(\d{1,3})°(\d{1,2})['’](\d{1,2}(?:\.\d{1,6})?)?["”]?([NS])/i
+  const dmsLng = /(\d{1,3})°(\d{1,2})['’](\d{1,2}(?:\.\d{1,6})?)?["”]?([EW])/i
+  const mLat = noSpace.match(dmsLat)
+  const mLng = noSpace.match(dmsLng)
+  if (mLat && mLng) {
     const toD = (d, mn, sec, h) => {
       const v = +d + +mn / 60 + (+sec || 0) / 3600
       return /[SW]/i.test(h) ? -v : v
     }
-    return { lat: toD(m[1], m[2], m[3], m[4]), lng: toD(m[5], m[6], m[7], m[8]) }
+    return { lat: toD(mLat[1], mLat[2], mLat[3], mLat[4]), lng: toD(mLng[1], mLng[2], mLng[3], mLng[4]) }
   }
 
   // DMS sin símbolo pero con N/S/E/W: 6 14 39.1 N 75 34 52 W
   const cleanS = s.replaceAll(/[,\s]+/g, ' ').toUpperCase()
-  const dmsLoose = /(\d+) (\d+) (\d+(?:\.\d+)?) ([NS]) (\d+) (\d+) (\d+(?:\.\d+)?) ([EW])/
+  const dmsLoose = /(\d{1,3}) (\d{1,2}) (\d{1,2}(?:\.\d{1,6})?) ([NS]) (\d{1,3}) (\d{1,2}) (\d{1,2}(?:\.\d{1,6})?) ([EW])/
   const m2 = cleanS.match(dmsLoose)
   if (m2) {
     const toD = (d, mn, sec, h) => {
