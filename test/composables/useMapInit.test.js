@@ -3,9 +3,9 @@ import { defineComponent, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 
 // Mocks vacíos de los controles de MapLibre: no se testea su comportamiento interno.
-function NavigationControl() {}
-function ScaleControl() {}
-function GeolocateControl() {}
+function NavigationControl() { /* mock vacío intencional */ }
+function ScaleControl() { /* mock vacío intencional */ }
+function GeolocateControl() { /* mock vacío intencional */ }
 
 vi.mock('maplibre-gl/dist/maplibre-gl.css', () => ({}))
 

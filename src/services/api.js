@@ -194,7 +194,7 @@ export function extractKm(desc) {
   for (const val of Object.values(desc)) {
     // Cuantificadores acotados (máx. 6 dígitos enteros, 3 decimales) para
     // evitar backtracking super-lineal (SonarQube javascript:S5852).
-    const m = String(val).slice(0, 200).replace(',', '.').match(/(\d{1,6}(?:\.\d{1,3})?)\s*km/i)
+    const m = /(\d{1,6}(?:\.\d{1,3})?)\s*km/i.exec(String(val).slice(0, 200).replace(',', '.'))
     if (m) return Number.parseFloat(m[1])
   }
   return null
