@@ -1,6 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { jsonResponse, mockFetchRoutes, click, dblclick, setInputValue, settle } from '../helpers/testUtils.js'
+
+async function mountAdminView() {
+  const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
+  wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
+  await settle()
+}
+
+async function mountAndOpenFirstCard() {
+  await mountAdminView()
+  click(document.querySelectorAll('.subcard')[0])
+  await nextTick()
+}
 
 function mockMsal(overrides = {}) {
   vi.doMock('@azure/msal-browser', () => {
@@ -43,33 +56,7 @@ const FEATURES = [
 
 const ADMIN_API = 'https://apim-simeva-qa.azure-api.net/administracion'
 
-function jsonResponse(data, ok = true, status = 200) {
-  return {
-    ok, status,
-    headers: { get: () => 'application/json' },
-    json: () => Promise.resolve(data),
-    arrayBuffer: () => Promise.resolve(new TextEncoder().encode(JSON.stringify(data)).buffer),
-  }
-}
 
-function mockFetchRoutes(routes) {
-  vi.stubGlobal('fetch', vi.fn((url, opts) => {
-    const match = routes.find(r => (typeof r.match === 'string' ? url.startsWith(r.match) : r.match.test(url)))
-    if (!match) return Promise.reject(new Error('Unhandled fetch: ' + url))
-    return Promise.resolve(match.response(url, opts))
-  }))
-}
-
-function click(el) {
-  el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-}
-function dblclick(el) {
-  el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
-}
-function setInputValue(el, value) {
-  el.value = value
-  el.dispatchEvent(new Event('input', { bubbles: true }))
-}
 
 let wrapper
 beforeEach(() => {
@@ -88,18 +75,12 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-async function settle() {
-  await nextTick()
-  await new Promise(r => setTimeout(r, 20))
-  await nextTick()
-}
+
 
 describe('AdminGeoJsonView — pantalla de login', () => {
   it('muestra el overlay de login cuando no hay sesión autenticada', async () => {
     mockMsal({ getAllAccounts: vi.fn().mockReturnValue([]) })
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
+    await mountAdminView()
     expect(document.querySelector('.login-overlay')).not.toBeNull()
     expect(document.querySelector('.hdr')).toBeNull()
   })
@@ -115,35 +96,25 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('carga los datos y muestra las tarjetas de subregión', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
+    await mountAdminView()
     expect(document.querySelector('.login-overlay')).toBeNull()
     const cards = document.querySelectorAll('.subcard')
     expect(cards.length).toBe(2)
   })
 
   it('muestra el nombre del usuario autenticado en el header', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
+    await mountAdminView()
     expect(document.querySelector('.hdr-user-name').textContent).toBe('Juan Pérez')
   })
 
   it('navega a la tabla de un circuito al hacer clic en la subregión', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     expect(document.querySelector('.view-table')).not.toBeNull()
     expect(document.querySelectorAll('.tbl-row').length).toBe(1)
   })
 
   it('filtra la tabla con el buscador', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
+    await mountAdminView()
     click(document.querySelector('.bc-btn')) // asegurar estado subregiones
     click(document.querySelectorAll('.subcard')[0])
     await nextTick()
@@ -153,22 +124,14 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('vuelve a la vista de subregiones desde la tabla', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     click(document.querySelector('.btn-back'))
     await nextTick()
     expect(document.querySelector('.view-subregions')).not.toBeNull()
   })
 
   it('abre el modal de edición con doble clic y aplica un cambio', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     dblclick(document.querySelector('.tbl-row'))
     await nextTick()
     expect(document.querySelector('.edit-modal')).not.toBeNull()
@@ -189,11 +152,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
       { match: `${ADMIN_API}/circuits`, response: (url, opts) => (opts?.method === 'PUT' ? putSpy(url, opts) : jsonResponse({ circuits: [] })) },
       { match: /localizacion/, response: () => jsonResponse({ type: 'FeatureCollection', features: FEATURES }) },
     ])
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     dblclick(document.querySelector('.tbl-row'))
     await nextTick()
     setInputValue(document.querySelector('.num-field--fis'), '90')
@@ -225,9 +184,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
         InteractionRequiredAuthError: class extends Error {},
       }
     })
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
+    await mountAdminView()
     click(document.querySelector('.btn-logout'))
     await settle()
     expect(logoutRedirect).toHaveBeenCalled()
@@ -235,11 +192,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('abre el modal de imágenes y rechaza archivos que no son PNG/JPG', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     click(document.querySelector('.btn-cam'))
     await nextTick()
     expect(document.querySelector('.img-modal')).not.toBeNull()
@@ -261,11 +214,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
       { match: /images\/sas-token/, response: () => jsonResponse({ sasUrl: 'https://blob.example.com/container?sig=abc' }) },
       { match: /blob\.example\.com/, response: () => ({ ok: true, status: 200 }) },
     ])
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     click(document.querySelector('.btn-cam'))
     await nextTick()
 
@@ -285,11 +234,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   it('quita el archivo seleccionado con el botón ✕', async () => {
     URL.createObjectURL = vi.fn(() => 'blob:preview')
     URL.revokeObjectURL = vi.fn()
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     click(document.querySelector('.btn-cam'))
     await nextTick()
     const fileInput = document.querySelector('.file-input')
@@ -305,11 +250,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   it('selecciona un archivo válido soltándolo en la zona de carga (drag & drop)', async () => {
     URL.createObjectURL = vi.fn(() => 'blob:preview')
     URL.revokeObjectURL = vi.fn()
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     click(document.querySelector('.btn-cam'))
     await nextTick()
     const zone = document.querySelector('.img-upload-zone')
@@ -322,11 +263,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('rechaza un archivo inválido soltado en la zona de carga', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     click(document.querySelector('.btn-cam'))
     await nextTick()
     const zone = document.querySelector('.img-upload-zone')
@@ -339,11 +276,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('cambia de pestaña de foto y abre/cierra la vista previa (lightbox)', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     click(document.querySelector('.btn-cam'))
     await nextTick()
     const tabs = document.querySelectorAll('.img-tab')
@@ -361,11 +294,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('cierra el modal de imágenes con Escape', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     click(document.querySelector('.btn-cam'))
     await nextTick()
     globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
@@ -374,11 +303,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('cierra el modal de edición con Escape', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     dblclick(document.querySelector('.tbl-row'))
     await nextTick()
     globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
@@ -387,11 +312,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('ajusta el avance financiero y estabilizado desde los campos numéricos', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     dblclick(document.querySelector('.tbl-row'))
     await nextTick()
     setInputValue(document.querySelector('.num-field--fin'), '65')
@@ -402,11 +323,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('muestra errores de validación en el modal de edición cuando el estabilizado supera la longitud', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     dblclick(document.querySelector('.tbl-row'))
     await nextTick()
     setInputValue(document.querySelector('.num-field--est'), '999')
@@ -416,11 +333,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('vuelve a la vista de subregiones al presionar Escape desde la tabla', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     expect(document.querySelector('.view-table')).not.toBeNull()
     globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await nextTick()
@@ -446,11 +359,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
       { match: `${ADMIN_API}/circuits`, response: (url, opts) => (opts?.method === 'PUT' ? { ok: false, status: 401, json: () => Promise.resolve({}) } : jsonResponse({ circuits: [] })) },
       { match: /localizacion/, response: () => jsonResponse({ type: 'FeatureCollection', features: FEATURES }) },
     ])
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     dblclick(document.querySelector('.tbl-row'))
     await nextTick()
     setInputValue(document.querySelector('.num-field--fis'), '90')
@@ -472,11 +381,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
       { match: `${ADMIN_API}/circuits`, response: (url, opts) => (opts?.method === 'PUT' ? Promise.reject(new Error('network down')) : jsonResponse({ circuits: [] })) },
       { match: /localizacion/, response: () => jsonResponse({ type: 'FeatureCollection', features: FEATURES }) },
     ])
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     dblclick(document.querySelector('.tbl-row'))
     await nextTick()
     setInputValue(document.querySelector('.num-field--fis'), '90')
@@ -491,11 +396,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   })
 
   it('rechaza guardar si no hay cambios reales (aplica el mismo valor)', async () => {
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     dblclick(document.querySelector('.tbl-row'))
     await nextTick()
     // No cambiamos ningún valor; aplicamos igual (queda "pendiente" pero sin diffs reales)
@@ -509,9 +410,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   it('rechaza intentos de login con manejo de errores MSAL (código conocido)', async () => {
     const loginRedirect = vi.fn().mockRejectedValue({ errorCode: 'interaction_in_progress' })
     mockMsal({ getAllAccounts: vi.fn().mockReturnValue([]), loginRedirect })
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
+    await mountAdminView()
     click(document.querySelector('.btn-ms'))
     await settle()
     expect(document.querySelector('.login-err')?.textContent).toContain('inicio de sesión en curso')
@@ -520,9 +419,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   it('no muestra error de login cuando el usuario cancela (user_cancelled)', async () => {
     const loginRedirect = vi.fn().mockRejectedValue({ errorCode: 'user_cancelled' })
     mockMsal({ getAllAccounts: vi.fn().mockReturnValue([]), loginRedirect })
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
+    await mountAdminView()
     click(document.querySelector('.btn-ms'))
     await settle()
     expect(document.querySelector('.login-err')).toBeNull()
@@ -531,9 +428,7 @@ describe('AdminGeoJsonView — con sesión autenticada', () => {
   it('muestra un mensaje genérico de error de login para códigos desconocidos', async () => {
     const loginRedirect = vi.fn().mockRejectedValue({ errorCode: 'algo_raro' })
     mockMsal({ getAllAccounts: vi.fn().mockReturnValue([]), loginRedirect })
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
+    await mountAdminView()
     click(document.querySelector('.btn-ms'))
     await settle()
     expect(document.querySelector('.login-err')?.textContent).toContain('No se pudo iniciar sesión')
@@ -550,9 +445,7 @@ describe('AdminGeoJsonView — modo local (sin VITE_ADMIN_API)', () => {
     mockFetchRoutes([
       { match: /localizacion/, response: () => jsonResponse({ type: 'FeatureCollection', features: FEATURES }) },
     ])
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
+    await mountAdminView()
     expect(document.querySelector('.login-overlay')).toBeNull()
     expect(document.querySelectorAll('.subcard').length).toBe(2)
   })
@@ -561,9 +454,7 @@ describe('AdminGeoJsonView — modo local (sin VITE_ADMIN_API)', () => {
     mockFetchRoutes([
       { match: /localizacion/, response: () => ({ ok: false, status: 500 }) },
     ])
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
+    await mountAdminView()
     expect(document.querySelector('.toast--err')?.textContent).toContain('Error al cargar')
   })
 
@@ -573,11 +464,7 @@ describe('AdminGeoJsonView — modo local (sin VITE_ADMIN_API)', () => {
       { match: '/api/localizacion', response: (url, opts) => (opts?.method === 'POST' ? postSpy(url, opts) : jsonResponse({ type: 'FeatureCollection', features: FEATURES })) },
       { match: /localizacion/, response: () => jsonResponse({ type: 'FeatureCollection', features: FEATURES }) },
     ])
-    const { default: AdminGeoJsonView } = await import('../../src/views/AdminGeoJsonView.vue')
-    wrapper = mount(AdminGeoJsonView, { attachTo: document.body })
-    await settle()
-    click(document.querySelectorAll('.subcard')[0])
-    await nextTick()
+    await mountAndOpenFirstCard()
     dblclick(document.querySelector('.tbl-row'))
     await nextTick()
     setInputValue(document.querySelector('.num-field--fis'), '77')

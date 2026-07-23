@@ -2,6 +2,13 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useMapStore } from '../../src/stores/useMapStore.js'
 
+function initStore(filter = {}, vias = VIAS) {
+  const store = useMapStore()
+  store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: vias })
+  store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'Todos los municipios', circuito: 'Todos los circuitos', ...filter })
+  return store
+}
+
 const VIAS = [
   { nombre: 'El Botón - Frontino', municipio: 'FRONTINO', subregion: 'Occidente', circuito: 'Frontino - Nutibara', km: 10 },
   { nombre: 'Guarne - Yolombal',   municipio: 'GUARNE',    subregion: 'Oriente',   circuito: 'Guarne - Yolombal',  km: 12 },
@@ -107,16 +114,12 @@ describe('useMapStore — filteredCircuitoOptions', () => {
   })
 
   it('filtra circuitos según subregión activa usando viasDetalle', () => {
-    const store = useMapStore()
-    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: VIAS })
-    store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    const store = initStore({ subregion: 'Occidente' })
     expect(store.filteredCircuitoOptions).toEqual(['Todos los circuitos', 'Frontino - Nutibara'])
   })
 
   it('filtra circuitos según municipio activo usando viasDetalle', () => {
-    const store = useMapStore()
-    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: VIAS })
-    store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'GUARNE', circuito: 'Todos los circuitos' })
+    const store = initStore({ municipio: 'GUARNE' })
     expect(store.filteredCircuitoOptions).toEqual(['Todos los circuitos', 'Guarne - Yolombal'])
   })
 })
@@ -134,9 +137,7 @@ describe('useMapStore — filteredStats', () => {
   })
 
   it('filtra por subregión activa y recalcula totales', () => {
-    const store = useMapStore()
-    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: VIAS })
-    store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    const store = initStore({ subregion: 'Occidente' })
     const result = store.filteredStats
     expect(result.viasIntervenidas).toBe(1)
     expect(result.longitudTotal).toBe(10)
@@ -144,32 +145,26 @@ describe('useMapStore — filteredStats', () => {
   })
 
   it('filtra por texto de búsqueda (case/acento-insensible)', () => {
-    const store = useMapStore()
-    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: VIAS })
-    store.setFilter({ search: 'mutata', subregion: 'Todas las subregiones', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    const store = initStore({ search: 'mutata' })
     const result = store.filteredStats
     expect(result.viasDetalle.length).toBe(1)
     expect(result.viasDetalle[0].municipio).toBe('MUTATÁ')
   })
 
   it('filtra combinando municipio y circuito', () => {
-    const store = useMapStore()
-    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: VIAS })
-    store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'GUARNE', circuito: 'Guarne - Yolombal' })
+    const store = initStore({ municipio: 'GUARNE', circuito: 'Guarne - Yolombal' })
     const result = store.filteredStats
     expect(result.viasDetalle.length).toBe(1)
   })
 
   it('excluye vías del mismo municipio que no coinciden con el circuito activo', () => {
-    const store = useMapStore()
     const viasMismoMunicipio = [
       ...VIAS,
       { nombre: 'Guarne - Otro tramo', municipio: 'GUARNE', subregion: 'Oriente', circuito: 'Guarne - Otro circuito', km: 5 },
     ]
-    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: viasMismoMunicipio })
+    const store = initStore({ municipio: 'GUARNE' }, viasMismoMunicipio)
     // Dos llamadas: la primera fija el municipio (resetea circuito por el cascadeo de setFilter),
     // la segunda cambia solo el circuito para que no se vuelva a resetear.
-    store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'GUARNE', circuito: 'Todos los circuitos' })
     store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'GUARNE', circuito: 'Guarne - Yolombal' })
     const result = store.filteredStats
     expect(result.viasDetalle.length).toBe(1)
@@ -177,13 +172,11 @@ describe('useMapStore — filteredStats', () => {
   })
 
   it('maneja vías sin subregión al buscar por texto (nombre y municipio no matchean, cae a norm(subregion))', () => {
-    const store = useMapStore()
     const viasSinSubregion = [
       ...VIAS,
       { nombre: 'Tramo genérico', municipio: 'OTRO', subregion: undefined, circuito: 'X', km: 8 },
     ]
-    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: viasSinSubregion })
-    store.setFilter({ search: 'mutata', subregion: 'Todas las subregiones', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    const store = initStore({ search: 'mutata' }, viasSinSubregion)
     const result = store.filteredStats
     // Solo matchea la vía de Mutatá; la vía sin subregión no matchea ningún campo y queda excluida.
     expect(result.viasDetalle.length).toBe(1)
@@ -191,13 +184,11 @@ describe('useMapStore — filteredStats', () => {
   })
 
   it('omite del acumulado por subregión las vías sin campo subregion', () => {
-    const store = useMapStore()
     const viasSinSubregion = [
       ...VIAS,
       { nombre: 'Tramo sin subregion', municipio: 'OTRO', subregion: undefined, circuito: 'X', km: 8 },
     ]
-    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: viasSinSubregion })
-    store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'OTRO', circuito: 'Todos los circuitos' })
+    const store = initStore({ municipio: 'OTRO' }, viasSinSubregion)
     const result = store.filteredStats
     expect(result.viasDetalle.length).toBe(1)
     expect(result.longitudTotal).toBe(8)

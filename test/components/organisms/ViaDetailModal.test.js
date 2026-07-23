@@ -2,6 +2,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ViaDetailModal from '../../../src/components/organisms/ViaDetailModal.vue'
+import { click, settle as waitFetch } from '../../helpers/testUtils.js'
+
+async function mountModal(props = { via: VIA_PROP }) {
+  wrapper = mount(ViaDetailModal, { props, attachTo: document.body })
+  await waitFetch()
+}
 
 const VIA_PROP = {
   name: 'Frontino - Nutibara',
@@ -30,9 +36,7 @@ function mockFetch(responseData, ok = true) {
   }))
 }
 
-function click(el) {
-  el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-}
+
 
 let wrapper
 afterEach(() => {
@@ -42,11 +46,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-async function waitFetch() {
-  await nextTick()
-  await new Promise(r => setTimeout(r, 20))
-  await nextTick()
-}
+
 
 describe('ViaDetailModal — datos e información', () => {
   beforeEach(() => {
@@ -54,8 +54,7 @@ describe('ViaDetailModal — datos e información', () => {
   })
 
   it('muestra el nombre del tramo y la tabla de información', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     expect(document.querySelector('.mhead-name').textContent).toContain('Frontino - Nutibara')
     const rows = [...document.querySelectorAll('.info-tbl tr')].map(tr => tr.querySelector('.td-key').textContent)
     expect(rows).toContain('Contratista')
@@ -63,15 +62,13 @@ describe('ViaDetailModal — datos e información', () => {
   })
 
   it('calcula el porcentaje, color y estado de avance', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     expect(document.querySelector('.status-pill').textContent).toBe('En obra')
     expect(document.querySelector('.status-pill').className).toContain('pill--active')
   })
 
   it('muestra "Sin registro fotográfico" si no hay fotos', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     expect(document.querySelector('.no-photos')).not.toBeNull()
   })
 
@@ -84,8 +81,7 @@ describe('ViaDetailModal — datos e información', () => {
         'Campo Extra': 'valor extra',
       },
     }
-    wrapper = mount(ViaDetailModal, { props: { via: viaIncompleta }, attachTo: document.body })
-    await waitFetch()
+    await mountModal({ via: viaIncompleta })
     expect(document.querySelector('.mhead-chip')).toBeNull()
     const rows = [...document.querySelectorAll('.info-tbl tr')].map(tr => tr.querySelector('.td-key').textContent)
     expect(rows).toContain('Campo Extra')
@@ -102,46 +98,40 @@ describe('ViaDetailModal — galería de fotos', () => {
   })
 
   it('muestra la imagen activa y el contador', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     expect(document.querySelector('.photo-ctr').textContent).toBe('1 / 3')
   })
 
   it('avanza a la siguiente foto con el botón de navegación', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     click(document.querySelector('.pnav--r'))
     await nextTick()
     expect(document.querySelector('.photo-ctr').textContent).toBe('2 / 3')
   })
 
   it('retrocede con el botón anterior (circular)', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     click(document.querySelector('.pnav--l'))
     await nextTick()
     expect(document.querySelector('.photo-ctr').textContent).toBe('3 / 3')
   })
 
   it('navega con las miniaturas', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     click(document.querySelectorAll('.thumb')[2])
     await nextTick()
     expect(document.querySelector('.photo-ctr').textContent).toBe('3 / 3')
   })
 
   it('navega con las flechas del teclado', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
     await nextTick()
     expect(document.querySelector('.photo-ctr').textContent).toBe('2 / 3')
   })
 
   it('abre y cierra el lightbox', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     expect(document.querySelector('.lb-backdrop')).toBeNull()
     click(document.querySelector('.photo-expand-btn'))
     await nextTick()
@@ -152,8 +142,7 @@ describe('ViaDetailModal — galería de fotos', () => {
   })
 
   it('quita una foto de la galería si falla su carga', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     const mainImg = document.querySelector('.photo-img')
     mainImg.dispatchEvent(new Event('error'))
     await nextTick()
@@ -161,16 +150,14 @@ describe('ViaDetailModal — galería de fotos', () => {
   })
 
   it('navega hacia atrás con la flecha izquierda del teclado', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
     await nextTick()
     expect(document.querySelector('.photo-ctr').textContent).toBe('3 / 3')
   })
 
   it('pausa el auto-avance al pasar el mouse y lo reanuda al salir', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     const stage = document.querySelector('.phase-wrap')
     stage.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await nextTick()
@@ -181,8 +168,7 @@ describe('ViaDetailModal — galería de fotos', () => {
   })
 
   it('navega con los botones del lightbox y con gestos táctiles (swipe)', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     click(document.querySelector('.photo-expand-btn'))
     await nextTick()
     expect(document.querySelector('.lb-ctr').textContent).toBe('1 / 3')
@@ -214,8 +200,7 @@ describe('ViaDetailModal — galería de fotos', () => {
   })
 
   it('cierra el modal completo con Escape cuando el lightbox está cerrado', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await nextTick()
     await new Promise(r => setTimeout(r, 300))
@@ -272,8 +257,7 @@ describe('ViaDetailModal — cierre', () => {
   })
 
   it('oculta el modal al hacer clic en ✕', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     click(document.querySelector('.btn-x'))
     await nextTick()
     await new Promise(r => setTimeout(r, 300))
@@ -282,8 +266,7 @@ describe('ViaDetailModal — cierre', () => {
   })
 
   it('oculta el modal al hacer clic en "Cerrar"', async () => {
-    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
-    await waitFetch()
+    await mountModal()
     click(document.querySelector('.btn-cerrar'))
     await nextTick()
     await new Promise(r => setTimeout(r, 300))

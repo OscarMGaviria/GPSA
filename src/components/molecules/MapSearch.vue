@@ -61,7 +61,8 @@ function clear() {
 
 function highlight(text, q) {
   if (!text || !q) return text ?? ''
-  const re = new RegExp(`(${q.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)})`, 'gi')
+  const escapeStr = String.raw`\$&`
+  const re = new RegExp(`(${q.replaceAll(/[.*+?^${}()|[\]\\]/g, escapeStr)})`, 'gi')
   return text.replaceAll(re, '<mark>$1</mark>')
 }
 </script>
@@ -81,9 +82,6 @@ function highlight(text, q) {
         @input="onInput"
         @keydown="onKeydown"
         aria-label="Buscar tramo vial"
-        :aria-expanded="showDropdown"
-        aria-controls="search-listbox"
-        role="combobox"
       />
       <button v-if="query" class="search-clear" @click="clear" tabindex="-1" aria-label="Limpiar búsqueda">
         <X :size="13" />
@@ -91,13 +89,12 @@ function highlight(text, q) {
     </div>
 
     <Transition name="dropdown">
-      <ul v-if="showDropdown" id="search-listbox" class="search-dropdown" role="listbox">
+      <ul v-if="showDropdown" id="search-listbox" class="search-dropdown">
         <li
           v-for="(via, i) in results"
           :key="via.nombre + i"
           class="search-item"
           :class="{ 'is-active': activeIdx === i }"
-          role="option"
           :aria-selected="activeIdx === i"
           @mousedown.prevent="select(via)"
         >

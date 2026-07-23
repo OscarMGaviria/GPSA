@@ -1,6 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import StatsPanel from '../../../src/components/organisms/StatsPanel.vue'
+import { settle } from '../../helpers/testUtils.js'
+
+async function mountPanel(props = { viasDetalle: VIAS_DETALLE }, attachToBody = false) {
+  const options = { props }
+  if (attachToBody) options.attachTo = document.body
+  const wrapper = mount(StatsPanel, options)
+  await settle(400)
+  return wrapper
+}
 
 const VIAS_DETALLE = [
   { nombre: 'Via A', municipio: 'FRONTINO', subregion: 'Occidente', circuito: 'C1', km: 10, estabilizado: 5, avance: 50, avanceFin: 40, fechaIni: '2024-01-01', plazoMeses: 12 },
@@ -23,9 +32,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-async function waitAnimation() {
-  await new Promise(r => setTimeout(r, 400))
-}
+
 
 describe('StatsPanel — renderizado de KPIs', () => {
   it('muestra el skeleton cuando loading es true', () => {
@@ -35,10 +42,7 @@ describe('StatsPanel — renderizado de KPIs', () => {
   })
 
   it('muestra los valores de las 4 cards tras la animación de conteo', async () => {
-    const wrapper = mount(StatsPanel, {
-      props: { viasIntervenidas: 47, longitudTotal: 634.43, municipios: 42, circuitos: 29 },
-    })
-    await waitAnimation()
+    const wrapper = await mountPanel({ viasIntervenidas: 47, longitudTotal: 634.43, municipios: 42, circuitos: 29 })
     expect(wrapper.findAll('.stat-card').length).toBe(4)
     expect(wrapper.text()).toContain('47')
     expect(wrapper.text()).toContain('42')
@@ -49,15 +53,13 @@ describe('StatsPanel — renderizado de KPIs', () => {
 
 describe('StatsPanel — modal de detalle', () => {
   it('abre el modal correspondiente al hacer clic en la card de vías', async () => {
-    const wrapper = mount(StatsPanel, { props: { viasDetalle: VIAS_DETALLE } })
-    await waitAnimation()
+    const wrapper = await mountPanel()
     await wrapper.findAll('.stat-card')[0].trigger('click')
     expect(wrapper.findComponent({ name: 'StatsDetailModal' }).exists()).toBe(true)
   })
 
   it('cierra el modal al emitir close', async () => {
-    const wrapper = mount(StatsPanel, { props: { viasDetalle: VIAS_DETALLE } })
-    await waitAnimation()
+    const wrapper = await mountPanel()
     await wrapper.findAll('.stat-card')[0].trigger('click')
     await wrapper.findComponent({ name: 'StatsDetailModal' }).vm.$emit('close')
     await wrapper.vm.$nextTick()
@@ -65,8 +67,7 @@ describe('StatsPanel — modal de detalle', () => {
   })
 
   it('reenvía open-via cerrando el modal', async () => {
-    const wrapper = mount(StatsPanel, { props: { viasDetalle: VIAS_DETALLE } })
-    await waitAnimation()
+    const wrapper = await mountPanel()
     await wrapper.findAll('.stat-card')[0].trigger('click')
     const modal = wrapper.findComponent({ name: 'StatsDetailModal' })
     await modal.vm.$emit('open-via', { nombre: 'Via A' })
@@ -76,8 +77,7 @@ describe('StatsPanel — modal de detalle', () => {
   })
 
   it('reenvía fly-via cerrando el modal', async () => {
-    const wrapper = mount(StatsPanel, { props: { viasDetalle: VIAS_DETALLE } })
-    await waitAnimation()
+    const wrapper = await mountPanel()
     await wrapper.findAll('.stat-card')[0].trigger('click')
     const modal = wrapper.findComponent({ name: 'StatsDetailModal' })
     await modal.vm.$emit('fly-via', { nombre: 'Via B' })
@@ -85,8 +85,7 @@ describe('StatsPanel — modal de detalle', () => {
   })
 
   it('abre el modal correspondiente para longitud, municipios y circuitos', async () => {
-    const wrapper = mount(StatsPanel, { props: { viasDetalle: VIAS_DETALLE } })
-    await waitAnimation()
+    const wrapper = await mountPanel()
     const cards = wrapper.findAll('.stat-card')
     await cards[1].trigger('click')
     expect(wrapper.findComponent({ name: 'StatsDetailModal' }).props('tipo')).toBe('longitud')
@@ -105,15 +104,13 @@ describe('StatsPanel — modal de detalle', () => {
 
 describe('StatsPanel — radar y avance en km', () => {
   it('calcula los ejes del radar a partir de viasDetalle', async () => {
-    const wrapper = mount(StatsPanel, { props: { viasDetalle: VIAS_DETALLE } })
-    await waitAnimation()
+    const wrapper = await mountPanel()
     expect(wrapper.text()).toContain('Físico')
     expect(wrapper.text()).toContain('Financiero')
   })
 
   it('muestra el porcentaje de avance en km calculado', async () => {
-    const wrapper = mount(StatsPanel, { props: { viasDetalle: VIAS_DETALLE } })
-    await waitAnimation()
+    const wrapper = await mountPanel()
     // (5 + 20) / (10 + 20) = 83.33% redondeado
     expect(wrapper.find('.km-pct-label').text()).toContain('83')
   })
@@ -121,8 +118,7 @@ describe('StatsPanel — radar y avance en km', () => {
 
 describe('StatsPanel — gráfica por subregión', () => {
   it('excluye "Valle de Aburra" de las barras', async () => {
-    const wrapper = mount(StatsPanel, { props: { subregiones: SUBREGIONES } })
-    await waitAnimation()
+    const wrapper = await mountPanel({ subregiones: SUBREGIONES })
     const labels = wrapper.findAll('.bar-label').map(l => l.attributes('title'))
     expect(labels).toContain('Occidente')
     expect(labels).toContain('Oriente')
@@ -130,33 +126,29 @@ describe('StatsPanel — gráfica por subregión', () => {
   })
 
   it('emite filter-subregion al hacer clic en una barra', async () => {
-    const wrapper = mount(StatsPanel, { props: { subregiones: SUBREGIONES, activeSubregion: '' } })
-    await waitAnimation()
+    const wrapper = await mountPanel({ subregiones: SUBREGIONES, activeSubregion: '' })
     await wrapper.findAll('.bar-col')[0].trigger('click')
     expect(wrapper.emitted('filter-subregion')?.[0]).toEqual(['Occidente'])
   })
 
   it('quita el filtro si la subregión ya estaba activa', async () => {
-    const wrapper = mount(StatsPanel, { props: { subregiones: SUBREGIONES, activeSubregion: 'Occidente' } })
-    await waitAnimation()
+    const wrapper = await mountPanel({ subregiones: SUBREGIONES, activeSubregion: 'Occidente' })
     await wrapper.findAll('.bar-col')[0].trigger('click')
     expect(wrapper.emitted('filter-subregion')?.[0]).toEqual(['Todas las subregiones'])
   })
 
   it('permite activar una barra con teclado (Enter y Space)', async () => {
-    const wrapper = mount(StatsPanel, { props: { subregiones: SUBREGIONES, activeSubregion: '' } })
-    await waitAnimation()
-    await wrapper.findAll('.bar-col')[0].trigger('keydown.enter')
+    const wrapper = await mountPanel({ subregiones: SUBREGIONES, activeSubregion: '' })
+    await wrapper.findAll('.bar-col')[0].trigger('keydown', { key: 'Enter' })
     expect(wrapper.emitted('filter-subregion')?.[0]).toEqual(['Occidente'])
-    await wrapper.findAll('.bar-col')[1].trigger('keydown.space')
+    await wrapper.findAll('.bar-col')[1].trigger('keydown', { key: ' ' })
     expect(wrapper.emitted('filter-subregion')?.[1]).toEqual(['Oriente'])
   })
 })
 
 describe('StatsPanel — bottom sheet móvil', () => {
   it('cicla el estado del panel móvil al hacer clic en el handle', async () => {
-    const wrapper = mount(StatsPanel)
-    await waitAnimation()
+    const wrapper = await mountPanel({})
     expect(wrapper.classes()).toContain('mobile-collapsed')
     await wrapper.find('.bottom-sheet-handle-wrapper').trigger('click')
     expect(wrapper.classes()).toContain('mobile-half')
@@ -167,8 +159,7 @@ describe('StatsPanel — bottom sheet móvil', () => {
   })
 
   it('un swipe hacia arriba avanza el estado del panel', async () => {
-    const wrapper = mount(StatsPanel)
-    await waitAnimation()
+    const wrapper = await mountPanel({})
     const handle = wrapper.find('.bottom-sheet-handle-wrapper')
     await handle.trigger('touchstart', { touches: [{ clientY: 500, clientX: 100 }] })
     await handle.trigger('touchend', { changedTouches: [{ clientY: 400, clientX: 100 }] }) // sube 100px
@@ -176,8 +167,7 @@ describe('StatsPanel — bottom sheet móvil', () => {
   })
 
   it('un swipe hacia abajo retrocede el estado del panel', async () => {
-    const wrapper = mount(StatsPanel)
-    await waitAnimation()
+    const wrapper = await mountPanel({})
     const handle = wrapper.find('.bottom-sheet-handle-wrapper')
     // Primero lo llevamos a "expanded"
     await handle.trigger('click')
@@ -190,8 +180,7 @@ describe('StatsPanel — bottom sheet móvil', () => {
   })
 
   it('ignora swipes cortos, diagonales o lentos', async () => {
-    const wrapper = mount(StatsPanel)
-    await waitAnimation()
+    const wrapper = await mountPanel({})
     const handle = wrapper.find('.bottom-sheet-handle-wrapper')
     await handle.trigger('touchstart', { touches: [{ clientY: 500, clientX: 100 }] })
     await handle.trigger('touchend', { changedTouches: [{ clientY: 510, clientX: 100 }] }) // solo 10px
@@ -199,8 +188,7 @@ describe('StatsPanel — bottom sheet móvil', () => {
   })
 
   it('ignora touchend sin changedTouches', async () => {
-    const wrapper = mount(StatsPanel)
-    await waitAnimation()
+    const wrapper = await mountPanel({})
     const handle = wrapper.find('.bottom-sheet-handle-wrapper')
     await handle.trigger('touchstart', { touches: [{ clientY: 500, clientX: 100 }] })
     await handle.trigger('touchend', { changedTouches: [] })
@@ -212,8 +200,7 @@ describe('StatsPanel — cierre al hacer clic fuera en móvil', () => {
   it('colapsa el panel al hacer clic fuera cuando está expandido en móvil', async () => {
     const original = globalThis.innerWidth
     globalThis.innerWidth = 800
-    const wrapper = mount(StatsPanel, { attachTo: document.body })
-    await waitAnimation()
+    const wrapper = await mountPanel({}, true)
     await wrapper.find('.bottom-sheet-handle-wrapper').trigger('click') // half
     expect(wrapper.classes()).toContain('mobile-half')
 
@@ -227,8 +214,7 @@ describe('StatsPanel — cierre al hacer clic fuera en móvil', () => {
 
   it('no hace nada al hacer clic fuera en escritorio', async () => {
     globalThis.innerWidth = 1280
-    const wrapper = mount(StatsPanel, { attachTo: document.body })
-    await waitAnimation()
+    const wrapper = await mountPanel({}, true)
     await wrapper.find('.bottom-sheet-handle-wrapper').trigger('click') // half
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await wrapper.vm.$nextTick()
@@ -239,8 +225,7 @@ describe('StatsPanel — cierre al hacer clic fuera en móvil', () => {
 
 describe('StatsPanel — animación al abrir/cerrar el panel', () => {
   it('resetea los contadores cuando isOpen pasa a false', async () => {
-    const wrapper = mount(StatsPanel, { props: { isOpen: true, viasIntervenidas: 10 } })
-    await waitAnimation()
+    const wrapper = await mountPanel({ isOpen: true, viasIntervenidas: 10 })
     await wrapper.setProps({ isOpen: false })
     await wrapper.vm.$nextTick()
     expect(wrapper.classes()).not.toContain('open')

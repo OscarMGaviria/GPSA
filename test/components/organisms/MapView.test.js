@@ -34,8 +34,23 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+import { settle } from '../../helpers/testUtils.js'
+
 function mountMapView() {
   return mount(MapView, { attachTo: document.body })
+}
+
+async function mountAndLoadMap() {
+  const wrapper = mountMapView()
+  const map = maplibregl.Map.instances.at(-1)
+  await map.triggerLoad()
+  await settle(10)
+  return { wrapper, map }
+}
+
+async function triggerShortcut(key) {
+  globalThis.dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey: true }))
+  await nextTick()
 }
 
 describe('MapView — renderizado inicial', () => {
@@ -51,12 +66,7 @@ describe('MapView — renderizado inicial', () => {
   it('muestra el overlay de error si ambas peticiones fallan', async () => {
     vi.mocked(getMunicipios).mockRejectedValue(new Error('fail'))
     vi.mocked(getLocalizaciones).mockRejectedValue(new Error('fail'))
-    const wrapper = mountMapView()
-    const map = maplibregl.Map.instances.at(-1)
-    await map.triggerLoad()
-    await nextTick()
-    await new Promise(r => setTimeout(r, 10))
-    await nextTick()
+    const { wrapper, map } = await mountAndLoadMap()
     expect(wrapper.find('.map-error').exists()).toBe(true)
     wrapper.unmount()
   })
@@ -64,12 +74,7 @@ describe('MapView — renderizado inicial', () => {
   it('el botón "Reintentar" vuelve a llamar a loadSimeva', async () => {
     vi.mocked(getMunicipios).mockRejectedValue(new Error('fail'))
     vi.mocked(getLocalizaciones).mockRejectedValue(new Error('fail'))
-    const wrapper = mountMapView()
-    const map = maplibregl.Map.instances.at(-1)
-    await map.triggerLoad()
-    await nextTick()
-    await new Promise(r => setTimeout(r, 10))
-    await nextTick()
+    const { wrapper, map } = await mountAndLoadMap()
     vi.mocked(getMunicipios).mockResolvedValue({ data: { type: 'FeatureCollection', features: [] }, fromCache: false })
     vi.mocked(getLocalizaciones).mockResolvedValue({ data: { type: 'FeatureCollection', features: [] }, fromCache: false })
     await wrapper.find('.error-retry').trigger('click')
@@ -124,8 +129,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
   it('abre la barra de búsqueda con Ctrl+B y la cierra con Escape', async () => {
     const wrapper = mountMapView()
     expect(wrapper.find('.cs-wrap').exists()).toBe(false)
-    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
-    await nextTick()
+    await triggerShortcut('b')
     expect(wrapper.find('.cs-wrap').exists()).toBe(true)
     await wrapper.find('.cs-input').trigger('keydown', { key: 'Escape' })
     await nextTick()
@@ -136,8 +140,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
   it('busca coordenadas decimales válidas y llama a map.flyTo', async () => {
     const wrapper = mountMapView()
     const map = maplibregl.Map.instances.at(-1)
-    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
-    await nextTick()
+    await triggerShortcut('b')
     await wrapper.find('.cs-input').setValue('6.2442, -75.5812')
     await wrapper.find('.cs-go').trigger('click')
     expect(map.flyTo).toHaveBeenCalledWith({ center: [-75.5812, 6.2442], zoom: 15, duration: 900, essential: true })
@@ -147,8 +150,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
 
   it('muestra un error si el formato de coordenadas no es reconocido', async () => {
     const wrapper = mountMapView()
-    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
-    await nextTick()
+    await triggerShortcut('b')
     await wrapper.find('.cs-input').setValue('esto no son coordenadas')
     await wrapper.find('.cs-go').trigger('click')
     await nextTick()
@@ -158,8 +160,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
 
   it('Ctrl+B alterna abrir/cerrar la barra de búsqueda', async () => {
     const wrapper = mountMapView()
-    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
-    await nextTick()
+    await triggerShortcut('b')
     expect(wrapper.find('.cs-wrap').exists()).toBe(true)
     globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true })) // cierra
     await nextTick()
@@ -170,8 +171,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
   it('busca coordenadas en formato DMS con símbolo de grado', async () => {
     const wrapper = mountMapView()
     const map = maplibregl.Map.instances.at(-1)
-    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
-    await nextTick()
+    await triggerShortcut('b')
     await wrapper.find('.cs-input').setValue(`6°14'39"N 75°34'52"W`)
     await wrapper.find('.cs-go').trigger('click')
     expect(map.flyTo).toHaveBeenCalled()
@@ -184,8 +184,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
   it('busca coordenadas en formato DMS sin símbolo (espacios)', async () => {
     const wrapper = mountMapView()
     const map = maplibregl.Map.instances.at(-1)
-    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
-    await nextTick()
+    await triggerShortcut('b')
     await wrapper.find('.cs-input').setValue('6 14 39 N 75 34 52 W')
     await wrapper.find('.cs-go').trigger('click')
     expect(map.flyTo).toHaveBeenCalled()
@@ -195,8 +194,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
   it('detecta e intercambia lat/lng cuando el primer número es la longitud', async () => {
     const wrapper = mountMapView()
     const map = maplibregl.Map.instances.at(-1)
-    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
-    await nextTick()
+    await triggerShortcut('b')
     await wrapper.find('.cs-input').setValue('-75.5812, 6.2442')
     await wrapper.find('.cs-go').trigger('click')
     expect(map.flyTo).toHaveBeenCalledWith({ center: [-75.5812, 6.2442], zoom: 15, duration: 900, essential: true })
@@ -206,8 +204,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
   it('no hace nada si se busca con el campo vacío', async () => {
     const wrapper = mountMapView()
     const map = maplibregl.Map.instances.at(-1)
-    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }))
-    await nextTick()
+    await triggerShortcut('b')
     await wrapper.find('.cs-go').trigger('click')
     expect(map.flyTo).not.toHaveBeenCalled()
     wrapper.unmount()
@@ -215,8 +212,7 @@ describe('MapView — búsqueda de coordenadas (Ctrl+B)', () => {
 
   it('alterna el marcador de desarrollo con Ctrl+D', async () => {
     const wrapper = mountMapView()
-    globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', ctrlKey: true }))
-    await nextTick()
+    await triggerShortcut('d')
     // No lanza error y el atajo se procesa (cubre la rama Ctrl/Cmd+D de _onGlobalKey)
     expect(wrapper.find('.map-container').exists()).toBe(true)
     wrapper.unmount()
@@ -232,12 +228,7 @@ describe('MapView — modal de municipio y letreros de subregión', () => {
       fromCache: false,
     })
     vi.mocked(getLocalizaciones).mockResolvedValue({ data: { type: 'FeatureCollection', features: [] }, fromCache: false })
-    const wrapper = mountMapView()
-    const map = maplibregl.Map.instances.at(-1)
-    await map.triggerLoad()
-    await nextTick()
-    await new Promise(r => setTimeout(r, 10))
-    await nextTick()
+    const { wrapper, map } = await mountAndLoadMap()
 
     map._handlers['click|municipios-fill']({ features: [{ properties: { MPIO_NOMBR: 'FRONTINO', SUBREGION: 'OCCIDENTE' } }] })
     await nextTick()
@@ -257,12 +248,7 @@ describe('MapView — modal de municipio y letreros de subregión', () => {
       fromCache: false,
     })
     vi.mocked(getLocalizaciones).mockResolvedValue({ data: { type: 'FeatureCollection', features: [] }, fromCache: false })
-    const wrapper = mountMapView()
-    const map = maplibregl.Map.instances.at(-1)
-    await map.triggerLoad()
-    await nextTick()
-    await new Promise(r => setTimeout(r, 10))
-    await nextTick()
+    const { wrapper, map } = await mountAndLoadMap()
 
     const store = useMapStore()
     store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })

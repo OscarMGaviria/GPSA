@@ -21,10 +21,15 @@ import { getMunicipios, getLocalizaciones } from '../src/services/api.js'
 import { useMapStore } from '../src/stores/useMapStore.js'
 import StatsPanel from '../src/components/organisms/StatsPanel.vue'
 import App from '../src/App.vue'
+import { click } from './helpers/testUtils.js'
 
-function click(el) {
-  el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+async function mountApp() {
+  const wrapper = mount(App, { attachTo: document.body })
+  await nextTick()
+  return wrapper
 }
+
+
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -49,22 +54,19 @@ describe('App — pantallas iniciales', () => {
   })
 
   it('muestra AppWelcome si no se ha marcado como visto', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     expect(document.querySelector('.welcome-card')).not.toBeNull()
     wrapper.unmount()
   })
 
   it('no muestra AppTour mientras AppWelcome está visible', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     expect(document.querySelector('.tour-tooltip')).toBeNull()
     wrapper.unmount()
   })
 
   it('al cerrar AppWelcome, guarda la marca y muestra AppTour', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     click(document.querySelector('.btn-start'))
     await nextTick()
     expect(localStorage.getItem('simeva-welcome-done')).toBe('1')
@@ -76,8 +78,7 @@ describe('App — pantallas iniciales', () => {
   it('no muestra AppWelcome ni AppTour si ya se marcaron como vistos', async () => {
     localStorage.setItem('simeva-welcome-done', '1')
     localStorage.setItem('simeva-tour-done', '1')
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     expect(document.querySelector('.welcome-card')).toBeNull()
     expect(document.querySelector('.tour-tooltip')).toBeNull()
     wrapper.unmount()
@@ -101,8 +102,7 @@ describe('App — carga de datos', () => {
 
 describe('App — panel de estadísticas', () => {
   it('alterna el panel de estadísticas desde el header', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     localStorage.setItem('simeva-welcome-done', '1')
     expect(document.querySelector('.stats-side').className).toContain('open')
     await wrapper.find('.btn-panel[aria-label="Colapsar panel"]').trigger('click')
@@ -113,8 +113,7 @@ describe('App — panel de estadísticas', () => {
 
 describe('App — sincronización de filtros con la URL', () => {
   it('actualiza el query string al aplicar un filtro de búsqueda', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     const searchInput = document.querySelector('.desktop-only .search-input')
     searchInput.value = 'Frontino'
     searchInput.dispatchEvent(new Event('input', { bubbles: true }))
@@ -124,8 +123,7 @@ describe('App — sincronización de filtros con la URL', () => {
   })
 
   it('agrega subregion, municipio y circuito al query string cuando están activos', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     const store = useMapStore()
     // setFilter resetea municipio/circuito en cascada cuando cambia subregion,
     // así que se aplican en llamadas sucesivas para dejarlos activos a la vez.
@@ -142,8 +140,7 @@ describe('App — sincronización de filtros con la URL', () => {
 
 describe('App — activeChartSubregion', () => {
   it('usa la subregión activa directamente cuando está definida', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     const store = useMapStore()
     store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
     await nextTick()
@@ -153,8 +150,7 @@ describe('App — activeChartSubregion', () => {
   })
 
   it('infiere la subregión desde el municipio activo usando municipiosPorSubregion', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     const store = useMapStore()
     store.setFilterOptions({ ...store.filterOptions, municipiosPorSubregion: { Occidente: ['Frontino'] } })
     store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'Frontino', circuito: 'Todos los circuitos' })
@@ -165,8 +161,7 @@ describe('App — activeChartSubregion', () => {
   })
 
   it('retorna cadena vacía si el municipio activo no está en ninguna subregión mapeada', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     const store = useMapStore()
     store.setFilterOptions({ ...store.filterOptions, municipiosPorSubregion: { Occidente: ['Frontino'] } })
     store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'Municipio Desconocido', circuito: 'Todos los circuitos' })
@@ -181,8 +176,7 @@ describe('App — vista móvil', () => {
   it('no muestra el tour en pantallas móviles aunque no se haya visto', async () => {
     localStorage.setItem('simeva-welcome-done', '1')
     globalThis.innerWidth = 800
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     globalThis.dispatchEvent(new Event('resize'))
     await nextTick()
     expect(document.querySelector('.tour-tooltip')).toBeNull()
@@ -193,8 +187,7 @@ describe('App — vista móvil', () => {
 
 describe('App — eventos de StatsPanel', () => {
   it('filtra por subregión al recibir filter-subregion desde StatsPanel', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await nextTick()
+    const wrapper = await mountApp()
     const store = useMapStore()
     const statsPanel = wrapper.findComponent(StatsPanel)
     statsPanel.vm.$emit('filter-subregion', 'Oriente')

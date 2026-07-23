@@ -5,6 +5,11 @@ function NavigationControl() { /* mock vacío intencional */ }
 function ScaleControl() { /* mock vacío intencional */ }
 function GeolocateControl() { /* mock vacío intencional */ }
 
+function FakePopup(opts) {
+  this.opts = opts
+  this.setDOMContent = vi.fn().mockReturnThis()
+}
+
 /**
  * Factory compartida del mock de `maplibre-gl` usada por los tests que montan
  * MapView/App/useMapOrchestrator. Reduce la duplicación entre archivos (antes
@@ -66,10 +71,6 @@ export function createMaplibreMock(actual) {
   }
   FakeMarker.instances = []
 
-  function FakePopup(opts) {
-    this.opts = opts
-    this.setDOMContent = vi.fn().mockReturnThis()
-  }
 
   return {
     default: {
