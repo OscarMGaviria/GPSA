@@ -137,13 +137,6 @@ describe('StatsPanel — gráfica por subregión', () => {
     expect(wrapper.emitted('filter-subregion')?.[0]).toEqual(['Todas las subregiones'])
   })
 
-  it('permite activar una barra con teclado (Enter y Space)', async () => {
-    const wrapper = await mountPanel({ subregiones: SUBREGIONES, activeSubregion: '' })
-    await wrapper.findAll('.bar-col')[0].trigger('keydown', { key: 'Enter' })
-    expect(wrapper.emitted('filter-subregion')?.[0]).toEqual(['Occidente'])
-    await wrapper.findAll('.bar-col')[1].trigger('keydown', { key: ' ' })
-    expect(wrapper.emitted('filter-subregion')?.[1]).toEqual(['Oriente'])
-  })
 })
 
 describe('StatsPanel — bottom sheet móvil', () => {

@@ -220,13 +220,6 @@ function toggleSubregion(name) {
   emit('filter-subregion', next)
 }
 
-function handleBarKeydown(e, name) {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault()
-    toggleSubregion(name)
-  }
-}
-
 const yTicks = computed(() => {
   const max  = maxKm.value
   const step = Math.ceil(max / 4 / 10) * 10
@@ -371,15 +364,12 @@ const yTicks = computed(() => {
               <div v-for="tick in yTicks" :key="tick" class="grid-line" />
             </div>
 
-            <div
+            <button
               v-for="(s, i) in subregionesFiltradas"
               :key="s.name"
               class="bar-col"
               :class="{ 'bar-col--active': activeSubregion === s.name, 'bar-col--dimmed': activeSubregion && activeSubregion !== s.name }"
               @click="toggleSubregion(s.name)"
-              @keydown="handleBarKeydown($event, s.name)"
-              role="button"
-              tabindex="0"
               :aria-pressed="activeSubregion === s.name"
               :title="activeSubregion === s.name ? `Quitar filtro: ${s.name}` : `Filtrar por ${s.name}`"
             >
@@ -396,7 +386,7 @@ const yTicks = computed(() => {
                 </div>
               </div>
               <span class="bar-label" :title="s.name">{{ shortLabel(s.name) }}</span>
-            </div>
+            </button>
           </div>
 
         </div>
@@ -691,6 +681,12 @@ const yTicks = computed(() => {
   cursor: pointer;
   position: relative;
   z-index: 1;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  outline: none;
 }
 .bar-col--active .bar-fill {
   background: linear-gradient(180deg, #3fad72 0%, #0b5640 100%) !important;
