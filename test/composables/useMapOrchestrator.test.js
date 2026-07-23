@@ -259,4 +259,57 @@ describe('useMapOrchestrator — toggleDevMarker', () => {
     expect(marker.remove).toHaveBeenCalled()
     wrapper.unmount()
   })
+
+  it('actualiza el contenido del popup al arrastrar el marcador', async () => {
+    const { wrapper } = await mountAndLoad()
+    wrapper.vm.toggleDevMarker()
+    const marker = maplibregl.Marker.instances.at(-1)
+    const dragHandler = marker.on.mock.calls.find(([event]) => event === 'drag')[1]
+    expect(() => dragHandler()).not.toThrow()
+    wrapper.unmount()
+  })
+
+  it('el botón "Copiar coordenadas" copia al portapapeles y actualiza el texto', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    const { wrapper } = await mountAndLoad()
+    wrapper.vm.toggleDevMarker()
+    const marker = maplibregl.Marker.instances.at(-1)
+    const container = marker.setPopup.mock.calls[0][0].setDOMContent.mock.calls[0][0]
+    const btn = container.querySelector('.dev-copy-coords-btn')
+    const span = btn.querySelector('span')
+
+    btn.dispatchEvent(new MouseEvent('mousedown'))
+    expect(btn.style.transform).toBe('scale(0.96)')
+    btn.dispatchEvent(new MouseEvent('mouseup'))
+    expect(btn.style.transform).toBe('none')
+
+    btn.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(btn.style.background).toBe('rgb(13, 111, 83)')
+    btn.dispatchEvent(new MouseEvent('mouseleave'))
+    expect(btn.style.background).toBe('rgb(11, 86, 64)')
+
+    btn.dispatchEvent(new MouseEvent('click'))
+    await new Promise(r => setTimeout(r, 0))
+    expect(writeText).toHaveBeenCalled()
+    expect(span.textContent).toBe('¡Copiado!')
+    wrapper.unmount()
+    vi.unstubAllGlobals()
+  })
+
+  it('registra el error si falla la copia al portapapeles', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denegado'))
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { wrapper } = await mountAndLoad()
+    wrapper.vm.toggleDevMarker()
+    const marker = maplibregl.Marker.instances.at(-1)
+    const container = marker.setPopup.mock.calls[0][0].setDOMContent.mock.calls[0][0]
+    const btn = container.querySelector('.dev-copy-coords-btn')
+    btn.dispatchEvent(new MouseEvent('click'))
+    await new Promise(r => setTimeout(r, 0))
+    expect(errSpy).toHaveBeenCalled()
+    wrapper.unmount()
+    vi.unstubAllGlobals()
+  })
 })

@@ -68,8 +68,7 @@ function recoverFeatureCollection(text) {
   let escaped = false
 
   for (let i = arrStart + 1; i < text.length; i++) {
-    const ch   = text[i]
-    const code = text.charCodeAt(i)
+    const ch = text[i]
 
     if (escaped)              { escaped = false; continue }
     if (ch === '\\' && inStr) { escaped = true;  continue }

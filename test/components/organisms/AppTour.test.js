@@ -38,6 +38,28 @@ afterEach(() => {
   removeTargets()
 })
 
+describe('AppTour — selector de paso ausente en el DOM', () => {
+  it('no falla si el elemento objetivo del paso no existe', async () => {
+    removeTargets()
+    const wrapper = mount(AppTour, { attachTo: document.body })
+    await settle()
+    expect(document.querySelector('.tt-step').textContent).toBe('1 / 5')
+    wrapper.unmount()
+    addTargets()
+  })
+})
+
+describe('AppTour — resize', () => {
+  it('recalcula la posición resaltada cuando la ventana cambia de tamaño', async () => {
+    const wrapper = mount(AppTour, { attachTo: document.body })
+    await nextTick()
+    globalThis.dispatchEvent(new Event('resize'))
+    await nextTick()
+    expect(document.querySelector('.tt-step').textContent).toBe('1 / 5')
+    wrapper.unmount()
+  })
+})
+
 describe('AppTour — navegación de pasos', () => {
   it('muestra el primer paso al montar', async () => {
     const wrapper = mount(AppTour, { attachTo: document.body })

@@ -208,6 +208,46 @@ describe('useMapInit — toggleTerrain', () => {
     expect(() => wrapper.vm.toggleTerrain()).not.toThrow()
     wrapper.unmount()
   })
+
+  it('no vuelve a agregar hillshade ni llama a setSky si el mapa no lo soporta o ya existe', () => {
+    const wrapper = mount(makeComponent())
+    const map = maplibregl.Map.instances.at(-1)
+    map._layers.set('hillshade', {})
+    map.getStyle.mockReturnValueOnce({}) // sin `layers`, ejercita el fallback `|| []`
+    map.setSky = undefined // simula un mapa sin soporte de cielo atmosférico
+
+    wrapper.vm.toggleTerrain() // activa: hillshade ya existe → no vuelve a agregarlo
+    expect(map.addLayer).not.toHaveBeenCalled()
+
+    wrapper.vm.toggleTerrain() // desactiva: hillshade existe → se remueve
+    expect(map.removeLayer).toHaveBeenCalledWith('hillshade')
+    wrapper.unmount()
+  })
+
+  it('actualiza los colores de las capas de municipios si ya existen al activar/desactivar', () => {
+    const wrapper = mount(makeComponent())
+    const map = maplibregl.Map.instances.at(-1)
+    map._layers.set('municipios-fill', {})
+    map._layers.set('municipios-outline', {})
+
+    wrapper.vm.toggleTerrain() // activa
+    expect(map.setPaintProperty).toHaveBeenCalledWith('municipios-fill', 'fill-color', expect.any(Array))
+    expect(map.setPaintProperty).toHaveBeenCalledWith('municipios-outline', 'line-color', '#0284c7')
+
+    wrapper.vm.toggleTerrain() // desactiva
+    expect(map.setPaintProperty).toHaveBeenCalledWith('municipios-fill', 'fill-color', expect.arrayContaining(['case']))
+    expect(map.setPaintProperty).toHaveBeenCalledWith('municipios-outline', 'line-color', '#2d8653')
+    wrapper.unmount()
+  })
+})
+
+describe('useMapInit — getMap', () => {
+  it('retorna la instancia interna del mapa', () => {
+    const wrapper = mount(makeComponent())
+    const map = maplibregl.Map.instances.at(-1)
+    expect(wrapper.vm.getMap()).toBe(map)
+    wrapper.unmount()
+  })
 })
 
 describe('useMapInit — desmontaje', () => {

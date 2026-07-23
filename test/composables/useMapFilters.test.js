@@ -145,4 +145,78 @@ describe('useMapFilters', () => {
       cachedMunicipios, cachedVias, center: [-75, 6], zoom: 7, refreshVisibleCallouts,
     })).not.toThrow()
   })
+
+  it('aplica el filtro de búsqueda por nombre de municipio cuando hay search y circuito vacío', async () => {
+    cachedMunicipios.value = MUNICIPIOS_FC
+    filtersRef.value = { search: 'front', subregion: 'Todas las subregiones', municipio: 'Todos los municipios', circuito: '' }
+    setup()
+    await nextTick()
+    expect(map.setFilter).toHaveBeenCalledWith('municipios-fill', expect.any(Array))
+  })
+
+  it('actualiza la capa de etiquetas de municipios cuando existe en el mapa', async () => {
+    map._layers.add('municipios-labels')
+    cachedMunicipios.value = MUNICIPIOS_FC
+    filtersRef.value = { search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' }
+    setup()
+    await nextTick()
+    expect(map.setFilter).toHaveBeenCalledWith('municipios-labels', expect.any(Array))
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('municipios-labels', 'visibility', 'visible')
+  })
+
+  it('excluye todas las vías del filtro cuando la búsqueda no matchea ninguna (viasDetalle vacío)', async () => {
+    cachedMunicipios.value = MUNICIPIOS_FC
+    const store = useMapStore()
+    store.setFilter({ search: 'zzz-inexistente', subregion: 'Todas las subregiones', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    filtersRef.value = { search: 'zzz-inexistente', subregion: 'Todas las subregiones', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' }
+    setup()
+    await nextTick()
+    expect(map.setFilter).toHaveBeenCalledWith('vias-line', expect.arrayContaining([['==', ['literal', false], ['literal', true]]]))
+  })
+
+  it('actualiza también vias-hit-target cuando existe esa capa', async () => {
+    map._layers.add('vias-hit-target')
+    cachedMunicipios.value = MUNICIPIOS_FC
+    filtersRef.value = { search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' }
+    setup()
+    await nextTick()
+    expect(map.setFilter).toHaveBeenCalledWith('vias-hit-target', expect.anything())
+  })
+
+  it('vuela a los municipios de la subregión activa cuando solo hay subregión (sin municipio)', async () => {
+    cachedMunicipios.value = MUNICIPIOS_FC
+    filtersRef.value = { search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' }
+    setup()
+    await nextTick()
+    expect(map.fitBounds).toHaveBeenCalled()
+    expect(refreshVisibleCallouts).toHaveBeenCalled()
+  })
+
+  it('noResults queda en false cuando hay vías cacheadas pero ningún filtro de texto activo', async () => {
+    cachedMunicipios.value = MUNICIPIOS_FC
+    cachedVias.value = VIAS_FC
+    const { noResults } = setup()
+    await nextTick()
+    expect(noResults.value).toBe(false)
+  })
+
+  it('usa los colores de terreno 3D cuando el mapa tiene relieve activo', async () => {
+    map.getTerrain = vi.fn(() => ({ source: 'terrainSource' }))
+    cachedMunicipios.value = MUNICIPIOS_FC
+    filtersRef.value = { search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' }
+    setup()
+    await nextTick()
+    expect(map.setPaintProperty).toHaveBeenCalledWith('municipios-fill', 'fill-color', expect.any(Array))
+  })
+
+  it('vuela a las vías que matchean el texto de búsqueda libre', async () => {
+    cachedMunicipios.value = MUNICIPIOS_FC
+    cachedVias.value = VIAS_FC
+    const store = useMapStore()
+    store.setFilter({ search: 'boton', subregion: 'Todas las subregiones', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    filtersRef.value = { search: 'boton', subregion: 'Todas las subregiones', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' }
+    setup()
+    await nextTick()
+    expect(map.fitBounds).toHaveBeenCalled()
+  })
 })

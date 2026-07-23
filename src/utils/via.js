@@ -37,7 +37,7 @@ export function getStatusClass(pct) {
  * Extraído de la función highlight de MapSearch.
  */
 export function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 /**
@@ -46,5 +46,5 @@ export function escapeRegex(str) {
 export function highlight(text, q) {
   if (!text || !q) return text ?? ''
   const re = new RegExp(`(${escapeRegex(q)})`, 'gi')
-  return text.replace(re, '<mark>$1</mark>')
+  return text.replaceAll(re, '<mark>$1</mark>')
 }

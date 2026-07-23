@@ -118,6 +118,53 @@ describe('MapSearch — filtrado con store', () => {
     }
   })
 
+  it('no hace nada con las flechas si el dropdown está cerrado', async () => {
+    const wrapper = mount(MapSearch)
+    await wrapper.find('.search-input').trigger('keydown', { key: 'ArrowDown' })
+    expect(wrapper.find('.search-dropdown').exists()).toBe(false)
+  })
+
+  it('navega los resultados con ArrowDown/ArrowUp y selecciona con Enter', async () => {
+    const wrapper = mount(MapSearch)
+    await wrapper.find('.search-input').trigger('focus')
+    await wrapper.find('.search-input').setValue('frontino')
+    await wrapper.vm.$nextTick()
+    const input = wrapper.find('.search-input')
+
+    await input.trigger('keydown', { key: 'ArrowDown' })
+    await input.trigger('keydown', { key: 'ArrowDown' })
+    expect(wrapper.findAll('.search-item.is-active').length).toBe(1)
+
+    await input.trigger('keydown', { key: 'ArrowUp' })
+    await input.trigger('keydown', { key: 'ArrowUp' })
+    await input.trigger('keydown', { key: 'ArrowUp' }) // no debe bajar de -1
+
+    await input.trigger('keydown', { key: 'ArrowDown' })
+    await input.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('open-via')).toBeTruthy()
+  })
+
+  it('Escape limpia la búsqueda', async () => {
+    const wrapper = mount(MapSearch)
+    await wrapper.find('.search-input').trigger('focus')
+    await wrapper.find('.search-input').setValue('frontino')
+    await wrapper.vm.$nextTick()
+    await wrapper.find('.search-input').trigger('keydown', { key: 'Escape' })
+    expect(wrapper.find('.search-input').element.value).toBe('')
+  })
+
+  it('cierra el dropdown al perder el foco (blur)', async () => {
+    const wrapper = mount(MapSearch)
+    await wrapper.find('.search-input').trigger('focus')
+    await wrapper.find('.search-input').setValue('frontino')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.search-dropdown').exists()).toBe(true)
+    await wrapper.find('.search-input').trigger('blur')
+    await new Promise(r => setTimeout(r, 160))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.search-dropdown').exists()).toBe(false)
+  })
+
   it('el botón clear limpia la búsqueda', async () => {
     const wrapper = mount(MapSearch)
     await wrapper.find('.search-input').setValue('frontino')

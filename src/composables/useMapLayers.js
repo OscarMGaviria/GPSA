@@ -14,11 +14,6 @@ function sentenceCase(str) {
   return lower.charAt(0).toUpperCase() + lower.slice(1)
 }
 
-function capitalize(str) {
-  if (!str) return str
-  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
-}
-
 const SUBREGIONES_FIJAS = [
   'Valle de aburrá', 'Oriente', 'Occidente', 'Norte',
   'Nordeste', 'Urabá', 'Bajo cauca', 'Magdalena medio', 'Suroeste',

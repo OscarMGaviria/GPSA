@@ -9,7 +9,7 @@ export function slugifyActividad(nombre) {
     .toLowerCase()
     .normalize('NFD')
     .replaceAll(/[̀-ͯ]/g, '')
-    .replace(/\s+/g, '-')
+    .replaceAll(/\s+/g, '-')
     .replaceAll(/[^a-z0-9-]/g, '')
     .replaceAll(/-+/g, '-')
     .trim()

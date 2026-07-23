@@ -93,4 +93,23 @@ describe('AppHeader — drawer móvil y badge de filtros', () => {
     await wrapper.find('.drawer-close').trigger('click')
     expect(wrapper.find('.drawer-backdrop').exists()).toBe(false)
   })
+
+  it('cierra el drawer al hacer clic en el fondo (backdrop)', async () => {
+    const wrapper = mount(AppHeader, { props: defaultProps })
+    await wrapper.find('.btn-mobile-filter').trigger('click')
+    await wrapper.find('.drawer-backdrop').trigger('click')
+    expect(wrapper.find('.drawer-backdrop').exists()).toBe(false)
+  })
+
+  it('cierra el drawer desde el botón "Aplicar" del FilterBar móvil', async () => {
+    // El FilterBar interno decide su propio layout móvil según el ancho real de ventana.
+    globalThis.innerWidth = 800
+    const wrapper = mount(AppHeader, { props: defaultProps })
+    await wrapper.find('.btn-mobile-filter').trigger('click')
+    await wrapper.vm.$nextTick()
+
+    await wrapper.find('.drawer-content .btn-apply-mobile').trigger('click')
+    expect(wrapper.find('.drawer-backdrop').exists()).toBe(false)
+    globalThis.innerWidth = 1280
+  })
 })

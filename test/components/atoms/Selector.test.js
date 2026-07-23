@@ -32,6 +32,36 @@ describe('Selector — renderizado y toggle', () => {
     await wrapper.find('.select-trigger').trigger('click')
     expect(wrapper.find('.dropdown-panel').exists()).toBe(false)
   })
+
+  it('enfoca el buscador al abrir en pantallas de escritorio (ancho > 1024)', async () => {
+    const original = globalThis.innerWidth
+    globalThis.innerWidth = 1280
+    const wrapper = mount(Selector, { props: { options: OPTIONS, modelValue: '' }, attachTo: document.body })
+    await wrapper.find('.select-trigger').trigger('click')
+    await new Promise(r => setTimeout(r, 0))
+    expect(document.activeElement).toBe(wrapper.find('.search-input').element)
+    wrapper.unmount()
+    globalThis.innerWidth = original
+  })
+
+  it('se cierra al hacer click fuera del contenedor', async () => {
+    const wrapper = mount(Selector, { props: { options: OPTIONS, modelValue: '' }, attachTo: document.body })
+    await wrapper.find('.select-trigger').trigger('click')
+    expect(wrapper.find('.dropdown-panel').exists()).toBe(true)
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.dropdown-panel').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('no se cierra al hacer click dentro del contenedor', async () => {
+    const wrapper = mount(Selector, { props: { options: OPTIONS, modelValue: '' }, attachTo: document.body })
+    await wrapper.find('.select-trigger').trigger('click')
+    wrapper.find('.select-container').element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.dropdown-panel').exists()).toBe(true)
+    wrapper.unmount()
+  })
 })
 
 describe('Selector — listado de opciones', () => {

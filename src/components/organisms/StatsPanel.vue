@@ -370,7 +370,10 @@ const yTicks = computed(() => {
               class="bar-col"
               :class="{ 'bar-col--active': activeSubregion === s.name, 'bar-col--dimmed': activeSubregion && activeSubregion !== s.name }"
               @click="toggleSubregion(s.name)"
+              @keydown.enter="toggleSubregion(s.name)"
+              @keydown.space.prevent="toggleSubregion(s.name)"
               role="button"
+              tabindex="0"
               :aria-pressed="activeSubregion === s.name"
               :title="activeSubregion === s.name ? `Quitar filtro: ${s.name}` : `Filtrar por ${s.name}`"
             >

@@ -29,8 +29,12 @@ async function getMsal() {
     },
   })
   await _msal.initialize()
-  // Procesa la respuesta de redirección si existe (regreso de Microsoft)
-  _redirectPromise = _msal.handleRedirectPromise().catch(() => null)
+  // Procesa la respuesta de redirección si existe (regreso de Microsoft).
+  // El error, si lo hay, lo captura y reporta initAuth(); este catch aparte
+  // solo evita el warning de "unhandled rejection" si initAuth() nunca llega
+  // a esperar la promesa (p. ej. login()/logout() se llaman primero).
+  _redirectPromise = _msal.handleRedirectPromise()
+  _redirectPromise.catch(() => {})
   return _msal
 }
 

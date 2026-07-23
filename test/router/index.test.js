@@ -15,6 +15,13 @@ describe('router', () => {
     expect(typeof admin.components.default).toBe('function')
   })
 
+  it('el loader lazy de /admin-geojson resuelve el componente de la vista', async () => {
+    const routes = router.getRoutes()
+    const admin = routes.find(r => r.path === '/admin-geojson')
+    const mod = await admin.components.default()
+    expect(mod.default).toBeDefined()
+  })
+
   it('solo define las 2 rutas esperadas', () => {
     const paths = router.getRoutes().map(r => r.path).sort((a, b) => a.localeCompare(b))
     expect(paths).toEqual(['/', '/admin-geojson'])

@@ -27,6 +27,10 @@ const showDropdown = computed(() => focused.value && results.value.length > 0)
 
 function onInput() { activeIdx.value = -1 }
 
+// `setTimeout` no está en la lista de globals que Vue resuelve dentro de
+// expresiones inline de template, así que se llama desde el script.
+function onBlur() { setTimeout(() => { focused.value = false }, 150) }
+
 function onKeydown(e) {
   if (!showDropdown.value) return
   if (e.key === 'ArrowDown') {
@@ -57,8 +61,8 @@ function clear() {
 
 function highlight(text, q) {
   if (!text || !q) return text ?? ''
-  const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-  return text.replace(re, '<mark>$1</mark>')
+  const re = new RegExp(`(${q.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  return text.replaceAll(re, '<mark>$1</mark>')
 }
 </script>
 
@@ -73,11 +77,12 @@ function highlight(text, q) {
         placeholder="Buscar vía, municipio o subregión…"
         autocomplete="off"
         @focus="focused = true"
-        @blur="setTimeout(() => focused = false, 150)"
+        @blur="onBlur"
         @input="onInput"
         @keydown="onKeydown"
         aria-label="Buscar tramo vial"
         :aria-expanded="showDropdown"
+        aria-controls="search-listbox"
         role="combobox"
       />
       <button v-if="query" class="search-clear" @click="clear" tabindex="-1" aria-label="Limpiar búsqueda">
@@ -86,7 +91,7 @@ function highlight(text, q) {
     </div>
 
     <Transition name="dropdown">
-      <ul v-if="showDropdown" class="search-dropdown" role="listbox">
+      <ul v-if="showDropdown" id="search-listbox" class="search-dropdown" role="listbox">
         <li
           v-for="(via, i) in results"
           :key="via.nombre + i"

@@ -74,6 +74,22 @@ describe('ViaDetailModal — datos e información', () => {
     await waitFetch()
     expect(document.querySelector('.no-photos')).not.toBeNull()
   })
+
+  it('omite los chips de cabecera y agrega filas extra cuando faltan/sobran campos', async () => {
+    const viaIncompleta = {
+      name: 'Tramo X',
+      idCircuito: 'C-002',
+      description: {
+        Contrato: 'C2',
+        'Campo Extra': 'valor extra',
+      },
+    }
+    wrapper = mount(ViaDetailModal, { props: { via: viaIncompleta }, attachTo: document.body })
+    await waitFetch()
+    expect(document.querySelector('.mhead-chip')).toBeNull()
+    const rows = [...document.querySelectorAll('.info-tbl tr')].map(tr => tr.querySelector('.td-key').textContent)
+    expect(rows).toContain('Campo Extra')
+  })
 })
 
 describe('ViaDetailModal — galería de fotos', () => {
@@ -142,6 +158,92 @@ describe('ViaDetailModal — galería de fotos', () => {
     mainImg.dispatchEvent(new Event('error'))
     await nextTick()
     expect(document.querySelector('.photo-ctr').textContent).toBe('1 / 2')
+  })
+
+  it('navega hacia atrás con la flecha izquierda del teclado', async () => {
+    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
+    await waitFetch()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    await nextTick()
+    expect(document.querySelector('.photo-ctr').textContent).toBe('3 / 3')
+  })
+
+  it('pausa el auto-avance al pasar el mouse y lo reanuda al salir', async () => {
+    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
+    await waitFetch()
+    const stage = document.querySelector('.phase-wrap')
+    stage.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await nextTick()
+    stage.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    await nextTick()
+    // No debe lanzar error y el contador sigue mostrando la foto activa.
+    expect(document.querySelector('.photo-ctr').textContent).toBe('1 / 3')
+  })
+
+  it('navega con los botones del lightbox y con gestos táctiles (swipe)', async () => {
+    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
+    await waitFetch()
+    click(document.querySelector('.photo-expand-btn'))
+    await nextTick()
+    expect(document.querySelector('.lb-ctr').textContent).toBe('1 / 3')
+
+    click(document.querySelector('.lb-nav--r'))
+    await nextTick()
+    expect(document.querySelector('.lb-ctr').textContent).toBe('2 / 3')
+
+    click(document.querySelector('.lb-nav--l'))
+    await nextTick()
+    expect(document.querySelector('.lb-ctr').textContent).toBe('1 / 3')
+
+    const backdrop = document.querySelector('.lb-backdrop')
+    function touch(type, points) {
+      const ev = new Event(type, { bubbles: true })
+      ev.touches = points
+      ev.changedTouches = points
+      backdrop.dispatchEvent(ev)
+    }
+    touch('touchstart', [{ clientX: 200, clientY: 100 }])
+    touch('touchend', [{ clientX: 50, clientY: 100 }]) // swipe izq → next
+    await nextTick()
+    expect(document.querySelector('.lb-ctr').textContent).toBe('2 / 3')
+
+    touch('touchstart', [{ clientX: 50, clientY: 100 }])
+    touch('touchend', [{ clientX: 200, clientY: 100 }]) // swipe der → prev
+    await nextTick()
+    expect(document.querySelector('.lb-ctr').textContent).toBe('1 / 3')
+  })
+
+  it('cierra el modal completo con Escape cuando el lightbox está cerrado', async () => {
+    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
+    await waitFetch()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await nextTick()
+    await new Promise(r => setTimeout(r, 300))
+    await nextTick()
+    expect(document.querySelector('.backdrop')).toBeNull()
+  })
+})
+
+describe('ViaDetailModal — auto-avance de la galería', () => {
+  beforeEach(() => {
+    mockFetch({
+      antes: ['https://x.com/antes1.jpg'],
+      durante: ['https://x.com/durante1.jpg'],
+      despues: ['https://x.com/despues1.jpg'],
+    })
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('avanza automáticamente de foto cada 5 segundos', async () => {
+    wrapper = mount(ViaDetailModal, { props: { via: VIA_PROP }, attachTo: document.body })
+    await vi.advanceTimersByTimeAsync(20)
+    await vi.advanceTimersByTimeAsync(5000)
+    await nextTick()
+    expect(document.querySelector('.photo-ctr').textContent).toBe('2 / 3')
   })
 })
 

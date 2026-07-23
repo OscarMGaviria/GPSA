@@ -76,6 +76,18 @@ describe('useMapStore — filteredMunicipioOptions', () => {
     store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
     expect(store.filteredMunicipioOptions).toEqual(['Todos los municipios', 'Frontino'])
   })
+
+  it('devuelve solo "Todos los municipios" si la subregión activa no tiene entrada en municipiosPorSubregion', () => {
+    const store = useMapStore()
+    store.setFilterOptions({
+      subregiones: ['Todas las subregiones', 'Nordeste'],
+      municipios: ['Todos los municipios', 'Frontino'],
+      circuitos: ['Todos los circuitos'],
+      municipiosPorSubregion: {},
+    })
+    store.setFilter({ search: '', subregion: 'Nordeste', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    expect(store.filteredMunicipioOptions).toEqual(['Todos los municipios'])
+  })
 })
 
 describe('useMapStore — filteredCircuitoOptions', () => {
@@ -146,6 +158,49 @@ describe('useMapStore — filteredStats', () => {
     store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'GUARNE', circuito: 'Guarne - Yolombal' })
     const result = store.filteredStats
     expect(result.viasDetalle.length).toBe(1)
+  })
+
+  it('excluye vías del mismo municipio que no coinciden con el circuito activo', () => {
+    const store = useMapStore()
+    const viasMismoMunicipio = [
+      ...VIAS,
+      { nombre: 'Guarne - Otro tramo', municipio: 'GUARNE', subregion: 'Oriente', circuito: 'Guarne - Otro circuito', km: 5 },
+    ]
+    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: viasMismoMunicipio })
+    // Dos llamadas: la primera fija el municipio (resetea circuito por el cascadeo de setFilter),
+    // la segunda cambia solo el circuito para que no se vuelva a resetear.
+    store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'GUARNE', circuito: 'Todos los circuitos' })
+    store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'GUARNE', circuito: 'Guarne - Yolombal' })
+    const result = store.filteredStats
+    expect(result.viasDetalle.length).toBe(1)
+    expect(result.viasDetalle[0].circuito).toBe('Guarne - Yolombal')
+  })
+
+  it('maneja vías sin subregión al buscar por texto (nombre y municipio no matchean, cae a norm(subregion))', () => {
+    const store = useMapStore()
+    const viasSinSubregion = [
+      ...VIAS,
+      { nombre: 'Tramo genérico', municipio: 'OTRO', subregion: undefined, circuito: 'X', km: 8 },
+    ]
+    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: viasSinSubregion })
+    store.setFilter({ search: 'mutata', subregion: 'Todas las subregiones', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    const result = store.filteredStats
+    // Solo matchea la vía de Mutatá; la vía sin subregión no matchea ningún campo y queda excluida.
+    expect(result.viasDetalle.length).toBe(1)
+    expect(result.viasDetalle[0].municipio).toBe('MUTATÁ')
+  })
+
+  it('omite del acumulado por subregión las vías sin campo subregion', () => {
+    const store = useMapStore()
+    const viasSinSubregion = [
+      ...VIAS,
+      { nombre: 'Tramo sin subregion', municipio: 'OTRO', subregion: undefined, circuito: 'X', km: 8 },
+    ]
+    store.setMapStats({ viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [], viasDetalle: viasSinSubregion })
+    store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'OTRO', circuito: 'Todos los circuitos' })
+    const result = store.filteredStats
+    expect(result.viasDetalle.length).toBe(1)
+    expect(result.longitudTotal).toBe(8)
   })
 
   it('no rompe si longitudTotal es 0 (evita división por cero)', () => {

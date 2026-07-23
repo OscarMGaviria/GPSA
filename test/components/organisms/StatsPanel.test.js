@@ -83,6 +83,24 @@ describe('StatsPanel — modal de detalle', () => {
     await modal.vm.$emit('fly-via', { nombre: 'Via B' })
     expect(wrapper.emitted('fly-via')?.[0]).toEqual([{ nombre: 'Via B' }])
   })
+
+  it('abre el modal correspondiente para longitud, municipios y circuitos', async () => {
+    const wrapper = mount(StatsPanel, { props: { viasDetalle: VIAS_DETALLE } })
+    await waitAnimation()
+    const cards = wrapper.findAll('.stat-card')
+    await cards[1].trigger('click')
+    expect(wrapper.findComponent({ name: 'StatsDetailModal' }).props('tipo')).toBe('longitud')
+    await wrapper.findComponent({ name: 'StatsDetailModal' }).vm.$emit('close')
+    await wrapper.vm.$nextTick()
+
+    await cards[2].trigger('click')
+    expect(wrapper.findComponent({ name: 'StatsDetailModal' }).props('tipo')).toBe('municipios')
+    await wrapper.findComponent({ name: 'StatsDetailModal' }).vm.$emit('close')
+    await wrapper.vm.$nextTick()
+
+    await cards[3].trigger('click')
+    expect(wrapper.findComponent({ name: 'StatsDetailModal' }).props('tipo')).toBe('circuitos')
+  })
 })
 
 describe('StatsPanel — radar y avance en km', () => {
@@ -124,6 +142,15 @@ describe('StatsPanel — gráfica por subregión', () => {
     await wrapper.findAll('.bar-col')[0].trigger('click')
     expect(wrapper.emitted('filter-subregion')?.[0]).toEqual(['Todas las subregiones'])
   })
+
+  it('permite activar una barra con teclado (Enter y Space)', async () => {
+    const wrapper = mount(StatsPanel, { props: { subregiones: SUBREGIONES, activeSubregion: '' } })
+    await waitAnimation()
+    await wrapper.findAll('.bar-col')[0].trigger('keydown.enter')
+    expect(wrapper.emitted('filter-subregion')?.[0]).toEqual(['Occidente'])
+    await wrapper.findAll('.bar-col')[1].trigger('keydown.space')
+    expect(wrapper.emitted('filter-subregion')?.[1]).toEqual(['Oriente'])
+  })
 })
 
 describe('StatsPanel — bottom sheet móvil', () => {
@@ -137,5 +164,85 @@ describe('StatsPanel — bottom sheet móvil', () => {
     expect(wrapper.classes()).toContain('mobile-expanded')
     await wrapper.find('.bottom-sheet-handle-wrapper').trigger('click')
     expect(wrapper.classes()).toContain('mobile-collapsed')
+  })
+
+  it('un swipe hacia arriba avanza el estado del panel', async () => {
+    const wrapper = mount(StatsPanel)
+    await waitAnimation()
+    const handle = wrapper.find('.bottom-sheet-handle-wrapper')
+    await handle.trigger('touchstart', { touches: [{ clientY: 500, clientX: 100 }] })
+    await handle.trigger('touchend', { changedTouches: [{ clientY: 400, clientX: 100 }] }) // sube 100px
+    expect(wrapper.classes()).toContain('mobile-half')
+  })
+
+  it('un swipe hacia abajo retrocede el estado del panel', async () => {
+    const wrapper = mount(StatsPanel)
+    await waitAnimation()
+    const handle = wrapper.find('.bottom-sheet-handle-wrapper')
+    // Primero lo llevamos a "expanded"
+    await handle.trigger('click')
+    await handle.trigger('click')
+    expect(wrapper.classes()).toContain('mobile-expanded')
+
+    await handle.trigger('touchstart', { touches: [{ clientY: 400, clientX: 100 }] })
+    await handle.trigger('touchend', { changedTouches: [{ clientY: 500, clientX: 100 }] }) // baja 100px
+    expect(wrapper.classes()).toContain('mobile-half')
+  })
+
+  it('ignora swipes cortos, diagonales o lentos', async () => {
+    const wrapper = mount(StatsPanel)
+    await waitAnimation()
+    const handle = wrapper.find('.bottom-sheet-handle-wrapper')
+    await handle.trigger('touchstart', { touches: [{ clientY: 500, clientX: 100 }] })
+    await handle.trigger('touchend', { changedTouches: [{ clientY: 510, clientX: 100 }] }) // solo 10px
+    expect(wrapper.classes()).toContain('mobile-collapsed')
+  })
+
+  it('ignora touchend sin changedTouches', async () => {
+    const wrapper = mount(StatsPanel)
+    await waitAnimation()
+    const handle = wrapper.find('.bottom-sheet-handle-wrapper')
+    await handle.trigger('touchstart', { touches: [{ clientY: 500, clientX: 100 }] })
+    await handle.trigger('touchend', { changedTouches: [] })
+    expect(wrapper.classes()).toContain('mobile-collapsed')
+  })
+})
+
+describe('StatsPanel — cierre al hacer clic fuera en móvil', () => {
+  it('colapsa el panel al hacer clic fuera cuando está expandido en móvil', async () => {
+    const original = globalThis.innerWidth
+    globalThis.innerWidth = 800
+    const wrapper = mount(StatsPanel, { attachTo: document.body })
+    await waitAnimation()
+    await wrapper.find('.bottom-sheet-handle-wrapper').trigger('click') // half
+    expect(wrapper.classes()).toContain('mobile-half')
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.classes()).toContain('mobile-collapsed')
+
+    wrapper.unmount()
+    globalThis.innerWidth = original
+  })
+
+  it('no hace nada al hacer clic fuera en escritorio', async () => {
+    globalThis.innerWidth = 1280
+    const wrapper = mount(StatsPanel, { attachTo: document.body })
+    await waitAnimation()
+    await wrapper.find('.bottom-sheet-handle-wrapper').trigger('click') // half
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.classes()).toContain('mobile-half')
+    wrapper.unmount()
+  })
+})
+
+describe('StatsPanel — animación al abrir/cerrar el panel', () => {
+  it('resetea los contadores cuando isOpen pasa a false', async () => {
+    const wrapper = mount(StatsPanel, { props: { isOpen: true, viasIntervenidas: 10 } })
+    await waitAnimation()
+    await wrapper.setProps({ isOpen: false })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.classes()).not.toContain('open')
   })
 })

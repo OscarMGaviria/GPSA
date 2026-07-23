@@ -198,6 +198,28 @@ describe('useMapLayers — loadSimeva con éxito', () => {
     expect(wrapper.vm.viaHoverLabel.visible).toBe(false)
     wrapper.unmount()
   })
+
+  it('resalta el municipio en mousemove y lo quita en mouseleave sobre municipios-fill', async () => {
+    const wrapper = mount(makeComponent(() => map, { onOptionsLoaded, onStatsLoaded }, { buildCallouts, updateCalloutPositions }))
+    await wrapper.vm.loadSimeva()
+    map.handlers['mousemove|municipios-fill']({ features: [{ id: 1, properties: MUNICIPIOS_FC.features[0].properties }] })
+    expect(map.setFeatureState).toHaveBeenCalledWith({ source: 'municipios', id: 1 }, { hover: true })
+    // Segundo mousemove sobre otro municipio: debe apagar el hover del anterior
+    map.handlers['mousemove|municipios-fill']({ features: [{ id: 2, properties: MUNICIPIOS_FC.features[1].properties }] })
+    expect(map.setFeatureState).toHaveBeenCalledWith({ source: 'municipios', id: 1 }, { hover: false })
+    map.handlers['mouseleave|municipios-fill']()
+    expect(map.setFeatureState).toHaveBeenCalledWith({ source: 'municipios', id: 2 }, { hover: false })
+    wrapper.unmount()
+  })
+
+  it('selecciona el municipio al hacer click sobre municipios-fill', async () => {
+    const wrapper = mount(makeComponent(() => map, { onOptionsLoaded, onStatsLoaded }, { buildCallouts, updateCalloutPositions }))
+    await wrapper.vm.loadSimeva()
+    map.handlers['click|municipios-fill']({ features: [{ properties: MUNICIPIOS_FC.features[0].properties }] })
+    expect(wrapper.vm.selectedMpio.nombre).toBe('Frontino')
+    expect(wrapper.vm.selectedMpio.subregion).toBe('Occidente')
+    wrapper.unmount()
+  })
 })
 
 describe('useMapLayers — loadSimeva con errores', () => {

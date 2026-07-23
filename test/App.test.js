@@ -87,6 +87,8 @@ vi.mock('maplibre-gl', async () => {
 
 import maplibregl from 'maplibre-gl'
 import { getMunicipios, getLocalizaciones } from '../src/services/api.js'
+import { useMapStore } from '../src/stores/useMapStore.js'
+import StatsPanel from '../src/components/organisms/StatsPanel.vue'
 import App from '../src/App.vue'
 
 function click(el) {
@@ -187,6 +189,111 @@ describe('App — sincronización de filtros con la URL', () => {
     searchInput.dispatchEvent(new Event('input', { bubbles: true }))
     await nextTick()
     expect(globalThis.location.search).toContain('search=Frontino')
+    wrapper.unmount()
+  })
+
+  it('agrega subregion, municipio y circuito al query string cuando están activos', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await nextTick()
+    const store = useMapStore()
+    // setFilter resetea municipio/circuito en cascada cuando cambia subregion,
+    // así que se aplican en llamadas sucesivas para dejarlos activos a la vez.
+    store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Frontino', circuito: 'Todos los circuitos' })
+    store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Frontino', circuito: 'Frontino - Nutibara' })
+    await nextTick()
+    expect(globalThis.location.search).toContain('subregion=Occidente')
+    expect(globalThis.location.search).toContain('municipio=Frontino')
+    expect(globalThis.location.search).toContain('circuito=Frontino')
+    wrapper.unmount()
+  })
+})
+
+describe('App — activeChartSubregion', () => {
+  it('usa la subregión activa directamente cuando está definida', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await nextTick()
+    const store = useMapStore()
+    store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    await nextTick()
+    const statsPanel = wrapper.findComponent(StatsPanel)
+    expect(statsPanel.props('activeSubregion')).toBe('Occidente')
+    wrapper.unmount()
+  })
+
+  it('infiere la subregión desde el municipio activo usando municipiosPorSubregion', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await nextTick()
+    const store = useMapStore()
+    store.setFilterOptions({ ...store.filterOptions, municipiosPorSubregion: { Occidente: ['Frontino'] } })
+    store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'Frontino', circuito: 'Todos los circuitos' })
+    await nextTick()
+    const statsPanel = wrapper.findComponent(StatsPanel)
+    expect(statsPanel.props('activeSubregion')).toBe('Occidente')
+    wrapper.unmount()
+  })
+
+  it('retorna cadena vacía si el municipio activo no está en ninguna subregión mapeada', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await nextTick()
+    const store = useMapStore()
+    store.setFilterOptions({ ...store.filterOptions, municipiosPorSubregion: { Occidente: ['Frontino'] } })
+    store.setFilter({ search: '', subregion: 'Todas las subregiones', municipio: 'Municipio Desconocido', circuito: 'Todos los circuitos' })
+    await nextTick()
+    const statsPanel = wrapper.findComponent(StatsPanel)
+    expect(statsPanel.props('activeSubregion')).toBe('')
+    wrapper.unmount()
+  })
+})
+
+describe('App — vista móvil', () => {
+  it('no muestra el tour en pantallas móviles aunque no se haya visto', async () => {
+    localStorage.setItem('simeva-welcome-done', '1')
+    globalThis.innerWidth = 800
+    const wrapper = mount(App, { attachTo: document.body })
+    await nextTick()
+    globalThis.dispatchEvent(new Event('resize'))
+    await nextTick()
+    expect(document.querySelector('.tour-tooltip')).toBeNull()
+    wrapper.unmount()
+    globalThis.innerWidth = 1280
+  })
+})
+
+describe('App — eventos de StatsPanel', () => {
+  it('filtra por subregión al recibir filter-subregion desde StatsPanel', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await nextTick()
+    const store = useMapStore()
+    const statsPanel = wrapper.findComponent(StatsPanel)
+    statsPanel.vm.$emit('filter-subregion', 'Oriente')
+    await nextTick()
+    expect(store.activeFilters.subregion).toBe('Oriente')
+    expect(store.activeFilters.municipio).toBe('Todos los municipios')
+    wrapper.unmount()
+  })
+
+  it('delega open-via y fly-via al MapView', async () => {
+    const openVia = vi.fn()
+    const flyToVia = vi.fn()
+    const wrapper = mount(App, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          MapView: {
+            template: '<div class="map-view-stub" />',
+            methods: { openVia, flyToVia },
+          },
+        },
+      },
+    })
+    await nextTick()
+    const statsPanel = wrapper.findComponent(StatsPanel)
+    const via = { nombre: 'El Botón - Frontino', subregion: 'Occidente' }
+    statsPanel.vm.$emit('open-via', via)
+    statsPanel.vm.$emit('fly-via', via)
+    expect(openVia).toHaveBeenCalledWith(via)
+    expect(flyToVia).toHaveBeenCalledWith(via)
     wrapper.unmount()
   })
 })

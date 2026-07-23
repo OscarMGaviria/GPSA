@@ -96,6 +96,42 @@ describe('useCallouts — refreshVisibleCallouts', () => {
     buildCallouts([FEATURE_A])
     expect(() => refreshVisibleCallouts({ search: 'algo', subregion: '', municipio: '', circuito: '' })).not.toThrow()
   })
+
+  it('excluye callouts cuya latitud supera el límite norte visible', () => {
+    store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    const featureMuyAlNorte = {
+      properties: { name: 'Via A', description: '' },
+      geometry: { type: 'LineString', coordinates: [[-76, 50], [-76.1, 50.1]] }, // lat > getNorth() (10)
+    }
+    const { buildCallouts, refreshVisibleCallouts, visibleCallouts } = useCallouts(() => map)
+    buildCallouts([featureMuyAlNorte])
+    refreshVisibleCallouts({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    expect(visibleCallouts.value).toEqual([])
+  })
+
+  it('separa etiquetas superpuestas usando fuerzas de repulsión', () => {
+    store.setMapStats({
+      viasIntervenidas: 0, longitudTotal: 0, municipios: 0, circuitos: 0, subregiones: [],
+      viasDetalle: [
+        { nombre: 'Via A', municipio: 'FRONTINO', subregion: 'Occidente', circuito: 'C1', km: 5 },
+        { nombre: 'Via C', municipio: 'FRONTINO', subregion: 'Occidente', circuito: 'C3', km: 2 },
+      ],
+    })
+    store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    // Dos features con el mismo centroide exacto → sus etiquetas se proyectan al mismo
+    // punto y deben separarse mediante el bucle de fuerzas de repulsión de layoutAndPlace.
+    const featureCercana = {
+      properties: { name: 'Via C', description: '' },
+      geometry: { type: 'LineString', coordinates: [[-76, 6], [-76.1, 6.1]] },
+    }
+    const { buildCallouts, refreshVisibleCallouts, visibleCallouts } = useCallouts(() => map)
+    buildCallouts([FEATURE_A, featureCercana])
+    refreshVisibleCallouts({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })
+    expect(visibleCallouts.value.length).toBe(2)
+    const [l1, l2] = visibleCallouts.value
+    const dist = Math.hypot(l1.labelX - l2.labelX, l1.labelY - l2.labelY)
+    expect(dist).toBeGreaterThan(0)
+  })
 })
 
 describe('useCallouts — updateCalloutPositions', () => {

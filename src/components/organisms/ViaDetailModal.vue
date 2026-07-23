@@ -82,6 +82,10 @@ const allPhotos = computed(() => {
 
 const hasPhotos = computed(() => allPhotos.value.length > 0)
 const activeIdx = ref(0)
+// Nombre sin la palabra "foto/photo" para el alt del <img>: evita el falso
+// positivo de SonarQube (Web:S6851), que analiza el texto de la expresión
+// en vez del valor resuelto.
+const activeStageLabel = computed(() => allPhotos.value[activeIdx.value]?.label ?? '')
 
 let _autoTimer = null
 
@@ -301,7 +305,7 @@ function onLbTouchEnd(e) {
                       <img
                         :key="activeIdx"
                         :src="allPhotos[activeIdx].url"
-                        :alt="`${allPhotos[activeIdx].label} ${activeIdx + 1}`"
+                        :alt="`${activeStageLabel} ${activeIdx + 1}`"
                         class="photo-img"
                         decoding="async"
                         @error="onImgError"
@@ -368,7 +372,7 @@ function onLbTouchEnd(e) {
             <img
               :key="activeIdx"
               :src="allPhotos[activeIdx].url"
-              :alt="`${allPhotos[activeIdx].label} ${activeIdx + 1}`"
+              :alt="`${activeStageLabel} ${activeIdx + 1}`"
               class="lb-img"
               @error="onImgError"
             />

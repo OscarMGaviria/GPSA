@@ -76,7 +76,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     if (!feats.length) return
     _fitCircuit(feats)
     const first = feats[0].properties
-    const sentenceCase = s => s ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : ''
+    const sentenceCase = s => s ? s.toLowerCase().replaceAll(/\b\w/g, c => c.toUpperCase()) : ''
     const municipios = [...new Set(feats.map(f => sentenceCase(f.properties.MPIO_NOMBR ?? '')).filter(Boolean))]
     const totalKm = feats.reduce((s, f) => s + (Number.parseFloat(f.properties.Long_km) || 0), 0)
     const avanceFisico = totalKm > 0

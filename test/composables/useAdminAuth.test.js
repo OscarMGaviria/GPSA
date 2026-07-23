@@ -78,6 +78,26 @@ describe('useAdminAuth — initAuth', () => {
     await initAuth()
     expect(authErr.value).toContain('token')
   })
+
+  it('no hace nada si MSAL_ENABLED es false (faltan variables de entorno)', async () => {
+    vi.stubEnv('VITE_MSAL_CLIENT_ID', '')
+    vi.stubEnv('VITE_MSAL_TENANT_ID', '')
+    mockMsal()
+    const { useAdminAuth, MSAL_ENABLED } = await import('../../src/composables/useAdminAuth.js')
+    expect(MSAL_ENABLED).toBe(false)
+    const { initAuth, isAuthed } = useAdminAuth()
+    await initAuth()
+    expect(isAuthed.value).toBe(false)
+  })
+
+  it('marca authErr con el mensaje del error cuando handleRedirectPromise rechaza', async () => {
+    mockMsal({ handleRedirectPromise: vi.fn().mockRejectedValue(new Error('boom')) })
+    const { useAdminAuth } = await import('../../src/composables/useAdminAuth.js')
+    const { initAuth, authErr } = useAdminAuth()
+    await initAuth()
+    expect(authErr.value).toContain('Error en redirect')
+    expect(authErr.value).toContain('boom')
+  })
 })
 
 describe('useAdminAuth — login', () => {
@@ -88,6 +108,15 @@ describe('useAdminAuth — login', () => {
     await login()
     expect(loading.value).toBe(true)
     expect(sessionStorage.getItem('simeva-auth-return')).not.toBeNull()
+  })
+
+  it('lanza error si MSAL_ENABLED es false', async () => {
+    vi.stubEnv('VITE_MSAL_CLIENT_ID', '')
+    vi.stubEnv('VITE_MSAL_TENANT_ID', '')
+    mockMsal()
+    const { useAdminAuth } = await import('../../src/composables/useAdminAuth.js')
+    const { login } = useAdminAuth()
+    await expect(login()).rejects.toThrow('MSAL no configurado')
   })
 })
 

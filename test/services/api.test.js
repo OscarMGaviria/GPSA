@@ -38,6 +38,13 @@ describe('extractPhotos', () => {
     const html = '<div><img src="/local/a.jpg"><img src="data:image/png;base64,xxx"></div>'
     expect(extractPhotos(html)).toEqual([])
   })
+
+  it('retorna [] si el parseo del HTML falla', async () => {
+    const spy = vi.spyOn(DOMParser.prototype, 'parseFromString').mockImplementation(() => { throw new Error('boom') })
+    const { extractPhotos } = await import('../../src/services/api.js')
+    expect(extractPhotos('<div></div>')).toEqual([])
+    spy.mockRestore()
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -203,5 +210,23 @@ describe('getLocalizaciones — fetch y parseo', () => {
     expect(fromCache).toBe(false)
     expect(data.type).toBe('FeatureCollection')
     expect(data.features.length).toBe(2)
+  })
+
+  it('usa la caché si el JSON es inválido y no se puede recuperar ningún feature', async () => {
+    mockFetchOnce(JSON.stringify({ type: 'FeatureCollection', features: [{ id: 1 }] }))
+    const { getLocalizaciones } = await import('../../src/services/api.js')
+    await getLocalizaciones() // popula la caché en memoria
+
+    // Clave "features" no vacía pero con contenido no parseable como JSON válido
+    mockFetchOnce('{"type":"FeatureCollection","features":[{id:1}]')
+    const { data, fromCache } = await getLocalizaciones()
+    expect(fromCache).toBe(true)
+    expect(data.features).toEqual([{ id: 1 }])
+  })
+
+  it('lanza error si el JSON es inválido, no recuperable y no hay caché', async () => {
+    mockFetchOnce('{"type":"FeatureCollection","features":[{id:1}]')
+    const { getLocalizaciones } = await import('../../src/services/api.js')
+    await expect(getLocalizaciones()).rejects.toThrow('No se pudo parsear')
   })
 })
