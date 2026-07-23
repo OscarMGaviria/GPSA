@@ -4,8 +4,8 @@ import { nextTick } from 'vue'
 import ViaDetailModal from '../../../src/components/organisms/ViaDetailModal.vue'
 import { click, settle as waitFetch } from '../../helpers/testUtils.js'
 
-async function mountModal(props = { via: VIA_PROP }) {
-  wrapper = mount(ViaDetailModal, { props, attachTo: document.body })
+async function mountModal(props = null) {
+  wrapper = mount(ViaDetailModal, { props: props || { via: VIA_PROP }, attachTo: document.body })
   await waitFetch()
 }
 

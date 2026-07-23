@@ -66,7 +66,7 @@ describe('MapView — renderizado inicial', () => {
   it('muestra el overlay de error si ambas peticiones fallan', async () => {
     vi.mocked(getMunicipios).mockRejectedValue(new Error('fail'))
     vi.mocked(getLocalizaciones).mockRejectedValue(new Error('fail'))
-    const { wrapper, map } = await mountAndLoadMap()
+    const { wrapper } = await mountAndLoadMap()
     expect(wrapper.find('.map-error').exists()).toBe(true)
     wrapper.unmount()
   })
@@ -74,7 +74,7 @@ describe('MapView — renderizado inicial', () => {
   it('el botón "Reintentar" vuelve a llamar a loadSimeva', async () => {
     vi.mocked(getMunicipios).mockRejectedValue(new Error('fail'))
     vi.mocked(getLocalizaciones).mockRejectedValue(new Error('fail'))
-    const { wrapper, map } = await mountAndLoadMap()
+    const { wrapper } = await mountAndLoadMap()
     vi.mocked(getMunicipios).mockResolvedValue({ data: { type: 'FeatureCollection', features: [] }, fromCache: false })
     vi.mocked(getLocalizaciones).mockResolvedValue({ data: { type: 'FeatureCollection', features: [] }, fromCache: false })
     await wrapper.find('.error-retry').trigger('click')
@@ -248,7 +248,7 @@ describe('MapView — modal de municipio y letreros de subregión', () => {
       fromCache: false,
     })
     vi.mocked(getLocalizaciones).mockResolvedValue({ data: { type: 'FeatureCollection', features: [] }, fromCache: false })
-    const { wrapper, map } = await mountAndLoadMap()
+    const { wrapper } = await mountAndLoadMap()
 
     const store = useMapStore()
     store.setFilter({ search: '', subregion: 'Occidente', municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })

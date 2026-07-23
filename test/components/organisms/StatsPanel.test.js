@@ -3,8 +3,8 @@ import { mount } from '@vue/test-utils'
 import StatsPanel from '../../../src/components/organisms/StatsPanel.vue'
 import { settle } from '../../helpers/testUtils.js'
 
-async function mountPanel(props = { viasDetalle: VIAS_DETALLE }, attachToBody = false) {
-  const options = { props }
+async function mountPanel(props = null, attachToBody = false) {
+  const options = { props: props || { viasDetalle: VIAS_DETALLE } }
   if (attachToBody) options.attachTo = document.body
   const wrapper = mount(StatsPanel, options)
   await settle(400)
