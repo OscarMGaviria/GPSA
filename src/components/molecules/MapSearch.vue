@@ -61,7 +61,7 @@ function clear() {
 
 function highlight(text, q) {
   if (!text || !q) return text ?? ''
-  const re = new RegExp(`(${q.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  const re = new RegExp(`(${q.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)})`, 'gi')
   return text.replaceAll(re, '<mark>$1</mark>')
 }
 </script>

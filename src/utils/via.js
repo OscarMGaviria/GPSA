@@ -37,7 +37,7 @@ export function getStatusClass(pct) {
  * Extraído de la función highlight de MapSearch.
  */
 export function escapeRegex(str) {
-  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
 }
 
 /**
