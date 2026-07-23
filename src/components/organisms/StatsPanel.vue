@@ -220,6 +220,13 @@ function toggleSubregion(name) {
   emit('filter-subregion', next)
 }
 
+function handleBarKeydown(e, name) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    toggleSubregion(name)
+  }
+}
+
 const yTicks = computed(() => {
   const max  = maxKm.value
   const step = Math.ceil(max / 4 / 10) * 10
@@ -370,7 +377,7 @@ const yTicks = computed(() => {
               class="bar-col"
               :class="{ 'bar-col--active': activeSubregion === s.name, 'bar-col--dimmed': activeSubregion && activeSubregion !== s.name }"
               @click="toggleSubregion(s.name)"
-              @keydown="e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSubregion(s.name) } }"
+              @keydown="handleBarKeydown($event, s.name)"
               role="button"
               tabindex="0"
               :aria-pressed="activeSubregion === s.name"
