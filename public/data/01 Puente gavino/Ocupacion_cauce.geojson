@@ -6,15 +6,31 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -75.7864,
-          5.5826
+          -75.2006,
+          6.5701
         ]
       },
       "properties": {
-        "Resolucion": "Res 123-2023",
-        "Caudal_Asignado": "2.5 L/s",
-        "Uso": "Industrial",
-        "Documento_permiso": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+        "Proyecto": "Puente Gabino",
+        "Resolucion": "Resolucion otorgamiento POC Gavino",
+        "Uso": "Ocupación de cauce",
+        "Documento_permiso": "/data/01 Puente gavino/Resolucion otorgamiento POC Gavino.pdf"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.7495,
+          5.9617
+        ]
+      },
+      "properties": {
+        "Proyecto": "Mi Casita Venecia",
+        "Resolucion": "Res otorgamiento POC Mi Casita",
+        "Uso": "Ocupación de cauce",
+        "Documento_permiso": "/data/01 Puente gavino/Res otorgamiento POC Mi Casita.pdf"
       }
     }
   ]

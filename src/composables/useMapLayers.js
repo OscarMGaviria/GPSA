@@ -1,5 +1,5 @@
 import { ref, shallowRef, onUnmounted } from 'vue'
-import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getPuenteGavinoPrediosConPermiso, getPuenteGavinoForestal, getPuenteGavinoCauce, parseDescription } from '../services/api.js'
+import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getPuenteGavinoPrediosConPermiso, getPuenteGavinoForestal, getPuenteGavinoCauce, getArcgisInventarioForestal, parseDescription } from '../services/api.js'
 import { pctTiempoTranscurrido } from '../utils/stats.js'
 import { parseAvancePct } from '../utils/via.js'
 import { useMapStore } from '../stores/useMapStore.js'
@@ -547,13 +547,19 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       })
       map.addLayer({
         id: `${id}-symbol`,
-        type: 'symbol',
+        type: 'circle',
         source: id,
-        layout: {
-          'text-field': '🌳',
-          'text-size': 20,
-          'text-allow-overlap': true,
-          'text-ignore-placement': true
+        paint: {
+          'circle-radius': [
+            'interpolate', ['linear'], ['zoom'],
+            12, 3,
+            16, 6,
+            20, 10
+          ],
+          'circle-color': '#10b981', // Verde vibrante
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': '#ffffff',
+          'circle-opacity': 0.85
         }
       })
       
