@@ -5,6 +5,8 @@ const ENDPOINTS = {
   puenteGavinoLocalizacion: `${base}/data/01%20Puente%20gavino/Localizacion.geojson`,
   puenteGavinoPrediosAfectados: `${base}/data/01%20Puente%20gavino/Predios_Afectados.geojson`,
   puenteGavinoPrediosConPermiso: `${base}/data/01%20Puente%20gavino/Predios_con_permiso.geojson`,
+  puenteGavinoForestal: `${base}/data/01%20Puente%20gavino/Aprovechamiento_forestal.geojson`,
+  puenteGavinoCauce: `${base}/data/01%20Puente%20gavino/Ocupacion_cauce.geojson`,
 }
 
 // Caché en memoria: evita re-descargar y re-parsear en la misma sesión
@@ -104,8 +106,10 @@ function recoverFeatureCollection(text) {
 export const getLocalizaciones = () => fetchGeoJSON(ENDPOINTS.localizaciones)
 export const getMunicipios     = () => fetchGeoJSON(ENDPOINTS.municipios)
 export const getPuenteGavinoLocalizacion = () => fetchGeoJSON(ENDPOINTS.puenteGavinoLocalizacion)
-export const getPuenteGavinoPrediosAfectados = () => fetchGeoJSON(ENDPOINTS.puenteGavinoPrediosAfectados)
-export const getPuenteGavinoPrediosConPermiso = () => fetchGeoJSON(ENDPOINTS.puenteGavinoPrediosConPermiso)
+export function getPuenteGavinoPrediosAfectados() { return fetchGeoJSON(ENDPOINTS.puenteGavinoPrediosAfectados) }
+export function getPuenteGavinoPrediosConPermiso() { return fetchGeoJSON(ENDPOINTS.puenteGavinoPrediosConPermiso) }
+export function getPuenteGavinoForestal() { return fetchGeoJSON(ENDPOINTS.puenteGavinoForestal) }
+export function getPuenteGavinoCauce() { return fetchGeoJSON(ENDPOINTS.puenteGavinoCauce) }
 
 /** Extrae URLs de imágenes del HTML de descripción */
 export function extractPhotos(htmlString) {

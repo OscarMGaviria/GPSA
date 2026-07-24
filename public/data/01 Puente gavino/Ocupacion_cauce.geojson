@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.2,
+          6.5706
+        ]
+      },
+      "properties": {
+        "Resolucion": "Res 123-2023",
+        "Caudal_Asignado": "2.5 L/s",
+        "Uso": "Industrial",
+        "Documento_permiso": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+      }
+    }
+  ]
+}

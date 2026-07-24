@@ -503,6 +503,40 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     }
   }
 
+  function _setupGenericPointLayer(map, id, geoData, color) {
+    if (!geoData) return
+    try {
+      map.addSource(id, {
+        type: 'geojson',
+        data: geoData,
+        generateId: true
+      })
+      map.addLayer({
+        id: `${id}-circle`,
+        type: 'circle',
+        source: id,
+        paint: {
+          'circle-radius': 8,
+          'circle-color': color,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff'
+        }
+      })
+      
+      let hoveredPoint = null
+      map.on('mousemove', `${id}-circle`, (e) => {
+        if (e.features.length > 0) {
+          map.getCanvas().style.cursor = 'pointer'
+        }
+      })
+      map.on('mouseleave', `${id}-circle`, () => {
+        map.getCanvas().style.cursor = ''
+      })
+    } catch (err) {
+      console.error(`[SIMEVA] Error cargando point layer ${id}:`, err)
+    }
+  }
+
   function _getCentroid(coords) {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     const process = (c) => {
@@ -635,12 +669,14 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     loading.value   = true
     loadError.value = false
 
-    const [resMunicipios, resVias, resLoc, resAfectados, resPermiso] = await Promise.allSettled([
+    const [resMunicipios, resVias, resLoc, resAfectados, resPermiso, resForestal, resCauce] = await Promise.allSettled([
       getMunicipios(), 
       getLocalizaciones(), 
       getPuenteGavinoLocalizacion(),
       getPuenteGavinoPrediosAfectados(),
-      getPuenteGavinoPrediosConPermiso()
+      getPuenteGavinoPrediosConPermiso(),
+      getPuenteGavinoForestal(),
+      getPuenteGavinoCauce()
     ])
 
     if (destroyed) return
@@ -650,6 +686,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const locResult = resLoc.status === 'fulfilled' ? resLoc.value : null
     const afecResult = resAfectados.status === 'fulfilled' ? resAfectados.value : null
     const perResult = resPermiso.status === 'fulfilled' ? resPermiso.value : null
+    const forResult = resForestal.status === 'fulfilled' ? resForestal.value : null
+    const cauResult = resCauce.status === 'fulfilled' ? resCauce.value : null
 
     cachedMunicipios.value = munResult?.data ?? null
     cachedVias.value       = viaResult?.data ?? null
@@ -661,6 +699,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const geoLoc = cachedLocalizaciones.value
     const geoAfectados = afecResult?.data ?? null
     const geoPermiso = perResult?.data ?? null
+    const geoForestal = forResult?.data ?? null
+    const geoCauce = cauResult?.data ?? null
 
     if (resMunicipios.status === 'rejected') console.warn('[SIMEVA] Municipios:', resMunicipios.reason)
     if (resVias.status       === 'rejected') console.warn('[SIMEVA] Vías:', resVias.reason)
@@ -733,6 +773,28 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       })
       map.on('mouseleave', 'gavino-permiso-fill', () => {
         map.getCanvas().style.cursor = ''
+      })
+    }
+    if (geoForestal) {
+      _setupGenericPointLayer(map, 'gavino-forestal', geoForestal, '#16a34a')
+      
+      map.on('click', 'gavino-forestal-circle', (e) => {
+        const p = e.features[0].properties
+        selectedVia.value = {
+          name: 'Aprovechamiento Forestal',
+          description: { ...p }
+        }
+      })
+    }
+    if (geoCauce) {
+      _setupGenericPointLayer(map, 'gavino-cauce', geoCauce, '#0ea5e9')
+      
+      map.on('click', 'gavino-cauce-circle', (e) => {
+        const p = e.features[0].properties
+        selectedVia.value = {
+          name: 'Ocupación de Cauce',
+          description: { ...p }
+        }
       })
     }
     if (geoLoc) {

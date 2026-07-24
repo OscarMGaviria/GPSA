@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.2006,
+          6.5701
+        ]
+      },
+      "properties": {
+        "Especie": "Roble",
+        "DAP": "0.4m",
+        "Volumen": "1.2 m3",
+        "Permiso_doc": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.199,
+          6.5711
+        ]
+      },
+      "properties": {
+        "Especie": "Pino",
+        "DAP": "0.6m",
+        "Volumen": "2.1 m3",
+        "Permiso_doc": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+      }
+    }
+  ]
+}

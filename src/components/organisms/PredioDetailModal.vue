@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { Eye } from '@lucide/vue'
 
 const props = defineProps({ via: { type: Object, required: true } })
 const emit  = defineEmits(['close'])
@@ -10,6 +11,10 @@ function onAfterLeave() { emit('close') }
 
 const desc = computed(() => props.via.description || {})
 const name = computed(() => props.via.name || 'Detalles del Predio')
+
+function isLink(v) {
+  return typeof v === 'string' && (v.startsWith('http') || v.toLowerCase().includes('.pdf'))
+}
 
 const onKey = (e) => {
   if (e.key === 'Escape') requestClose()
@@ -40,7 +45,17 @@ onUnmounted(() => {
               <tbody>
                 <tr v-for="(v, k) in desc" :key="k">
                   <th scope="row" class="td-key">{{ k }}</th>
-                  <td class="td-val">{{ v }}</td>
+                  <td class="td-val">
+                    <template v-if="isLink(v)">
+                      <a :href="v" target="_blank" rel="noopener noreferrer" class="doc-link" title="Abrir Documento">
+                        <Eye class="w-4 h-4" />
+                        Abrir Documento
+                      </a>
+                    </template>
+                    <template v-else>
+                      {{ v }}
+                    </template>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -93,6 +108,15 @@ onUnmounted(() => {
   padding: 14px 0; font-size: 13px; color: #0f172a; font-weight: 500;
   vertical-align: top; word-break: break-word;
 }
+.doc-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #2563eb; text-decoration: none; font-weight: 600;
+}
+.doc-link:hover {
+  text-decoration: underline; color: #1d4ed8;
+}
+.w-4 { width: 16px; }
+.h-4 { height: 16px; }
 .modal-anim-enter-active, .modal-anim-leave-active { transition: opacity 0.2s; }
 .modal-anim-enter-from, .modal-anim-leave-to { opacity: 0; }
 </style>
