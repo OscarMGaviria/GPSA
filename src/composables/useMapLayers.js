@@ -599,7 +599,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         map.flyTo({
           center: coords,
           zoom: 16,
-          duration: 1500,
+          duration: 400,
           essential: true
         })
       })
