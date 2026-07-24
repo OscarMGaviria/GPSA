@@ -128,11 +128,19 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
       feats = feats.filter(f => normUp(f.properties.SUBREGION) === normUp(sub))
       _flyToMpios(map, feats, filters)
     } else if (hasCir) {
+      let featsToFly = []
       if (cachedLocalizaciones?.value?.features) {
         const feats = cachedLocalizaciones.value.features.filter(f => f.properties.NOMBRE_PROYECTO === proyecto)
-        if (feats.length) {
-          flyToGeometries(feats.map(f => f.geometry), { padding: 100 })
-        }
+        featsToFly = featsToFly.concat(feats)
+      }
+      if (cachedVias?.value?.features) {
+        const searchNames = new Set(store.filteredStats.viasDetalle.map(v => v.nombre))
+        const vias = cachedVias.value.features.filter(f => searchNames.has(f.properties.NOMBRE_VIA))
+        featsToFly = featsToFly.concat(vias)
+      }
+      
+      if (featsToFly.length) {
+        flyToGeometries(featsToFly.map(f => f.geometry), { padding: 100 })
       }
       map.once('moveend', () => refreshVisibleCallouts?.(filters))
     } else if (search && cachedVias.value) {
