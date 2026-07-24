@@ -1,9 +1,9 @@
-import { ref }                         from 'vue'
+import { ref, watch }                         from 'vue'
 import maplibregl                   from 'maplibre-gl'
 import { useCallouts }              from './useCallouts.js'
 import { useMapLayers }             from './useMapLayers.js'
 import { useMapFilters }            from './useMapFilters.js'
-import { useMapInit, CENTER, ZOOM } from './useMapInit.js'
+import { useMapInit, CENTER, ZOOM, BASEMAPS } from './useMapInit.js'
 import { useMapStore }              from '../stores/useMapStore.js'
 import { pctTiempoTranscurrido }    from '../utils/stats.js'
 
@@ -49,6 +49,22 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     if (!_map) return
     _map.easeTo({ bearing: 0, pitch: 0, duration: 500 })
   }
+
+  watch(() => filtersGetter(), (newFilters) => {
+    if (!newFilters) return
+    const hasFilter = (newFilters.proyecto && newFilters.proyecto !== 'Todos los proyectos') ||
+                      (newFilters.municipio && newFilters.municipio !== 'Todos los municipios') ||
+                      (newFilters.subregion && newFilters.subregion !== 'Todas las subregiones') ||
+                      (newFilters.search)
+    
+    if (hasFilter && activeBasemap.value === 'ninguno') {
+      const sat = BASEMAPS.find(b => b.id === 'satelite')
+      if (sat) switchBasemap(sat)
+    } else if (!hasFilter && activeBasemap.value === 'satelite') {
+      const nin = BASEMAPS.find(b => b.id === 'ninguno')
+      if (nin) switchBasemap(nin)
+    }
+  }, { deep: true })
 
   function _circuitFeats(nombre, subregion = '') {
     const foundProps = cachedVias.value.features.find(f => f.properties.NOMBRE_VIA === nombre)?.properties
