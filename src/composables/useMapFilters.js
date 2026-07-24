@@ -59,7 +59,7 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     const map = getMap()
     const bounds = new maplibregl.LngLatBounds()
     geometries.forEach(g => coordsBounds(g.coordinates, bounds))
-    if (!bounds.isEmpty()) map.fitBounds(bounds, { ...opts, duration: 900 })
+    if (!bounds.isEmpty()) map.fitBounds(bounds, { ...opts, duration: 400 })
   }
 
   function _updateSelections(mpio, sub) {
@@ -112,7 +112,7 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     if (cachedMunicipios?.value) {
       flyToGeometries(cachedMunicipios.value.features.map(f => f.geometry), { padding: 40 })
     } else {
-      map.flyTo({ center, zoom, duration: 900 })
+      map.flyTo({ center, zoom, duration: 400 })
     }
   }
 
@@ -142,7 +142,7 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
         const points = map.queryRenderedFeatures({ layers: ['proyecto-point-circle'] })
           .filter(f => f.properties.nombre === proyecto)
         if (points.length) {
-          map.flyTo({ center: points[0].geometry.coordinates, zoom: 14, duration: 900 })
+          map.flyTo({ center: points[0].geometry.coordinates, zoom: 14, duration: 400 })
         }
       }
       map.once('moveend', () => refreshVisibleCallouts?.(filters))

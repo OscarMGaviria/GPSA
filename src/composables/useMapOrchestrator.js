@@ -67,7 +67,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
     const bounds = new maplibregl.LngLatBounds()
     function walk(c) { typeof c[0] === 'number' ? bounds.extend(c) : c.forEach(walk) }
     for (const feat of feats) walk(feat.geometry.coordinates)
-    if (!bounds.isEmpty()) _map.fitBounds(bounds, { padding: 80, duration: 900 })
+    if (!bounds.isEmpty()) _map.fitBounds(bounds, { padding: 80, duration: 400 })
   }
 
   function openVia(via) {
@@ -118,7 +118,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
 
   function flyToCoords(lat, lng) {
     if (!_map) return
-    _map.flyTo({ center: [lng, lat], zoom: 15, duration: 900, essential: true })
+    _map.flyTo({ center: [lng, lat], zoom: 15, duration: 400, essential: true })
     if (_coordMarker) _coordMarker.remove()
     _coordMarker = new maplibregl.Marker({ color: '#ef4444' })
       .setLngLat([lng, lat])
