@@ -429,7 +429,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       map.addSource(id, {
         type: 'geojson',
         data: geoData,
-        generateId: true
+        generateId: true,
+        tolerance: 0
       })
       map.addLayer({
         id: `${id}-fill`,
