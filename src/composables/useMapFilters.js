@@ -59,7 +59,13 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     const map = getMap()
     const bounds = new maplibregl.LngLatBounds()
     geometries.forEach(g => coordsBounds(g.coordinates, bounds))
-    if (!bounds.isEmpty()) map.fitBounds(bounds, { ...opts, duration: 400 })
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds, {
+        ...opts,
+        duration: 3000,
+        essential: true
+      })
+    }
   }
 
   function _updateSelections(mpio, sub) {

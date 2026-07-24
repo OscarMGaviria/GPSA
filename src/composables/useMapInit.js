@@ -143,7 +143,7 @@ export function useMapInit(mapContainer, { onMapCreated, onLoad } = {}) {
       style: {
         version: 8,
         sources: {
-          base: { type: 'raster', tiles: initial.tiles, tileSize: 256, attribution: initial.attribution, maxzoom: 19 },
+          base: { type: 'raster', tiles: initial.tiles, tileSize: 256, attribution: initial.attribution, maxzoom: 17 },
         },
         layers: [
           { id: 'base-layer', type: 'raster', source: 'base', minzoom: 0, layout: { visibility: 'none' } },

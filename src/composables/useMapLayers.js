@@ -1,4 +1,4 @@
-import { ref, onUnmounted } from 'vue'
+import { ref, shallowRef, onUnmounted } from 'vue'
 import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getPuenteGavinoPrediosConPermiso, parseDescription } from '../services/api.js'
 import { pctTiempoTranscurrido } from '../utils/stats.js'
 import { parseAvancePct } from '../utils/via.js'
