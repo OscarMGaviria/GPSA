@@ -755,7 +755,49 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       })
     }
 
+    function _setupArcGISRedVial(map) {
+      const baseUrl = 'https://services5.arcgis.com/K90UQIB09TmTjUL8/arcgis/rest/services/R10/FeatureServer'
+      const layersConfig = [
+        { id: '1', name: 'red-vial-primaria', color: '#ef4444', baseWidth: 1.5, maxWidth: 4, opacity: 0.4, visibility: 'visible' },
+        { id: '2', name: 'red-vial-secundaria', color: '#f97316', baseWidth: 0.8, maxWidth: 2.5, opacity: 0.35, visibility: 'visible' },
+        { id: '3', name: 'red-vial-terciaria', color: '#fbbf24', baseWidth: 0.5, maxWidth: 1.5, opacity: 0.3, visibility: 'none' }
+      ]
+
+      layersConfig.forEach(config => {
+        const sourceId = `arcgis-${config.name}-source`
+        if (!map.getSource(sourceId)) {
+          map.addSource(sourceId, {
+            type: 'geojson',
+            data: `${baseUrl}/${config.id}/query?where=1%3D1&outFields=*&f=geojson`
+          })
+        }
+        
+        if (!map.getLayer(config.name)) {
+          map.addLayer({
+            id: config.name,
+            type: 'line',
+            source: sourceId,
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+              'visibility': config.visibility
+            },
+            paint: {
+              'line-color': config.color,
+              'line-width': [
+                'interpolate', ['linear'], ['zoom'],
+                6, config.baseWidth,
+                15, config.maxWidth
+              ],
+              'line-opacity': config.opacity
+            }
+          }, 'proyecto-point-pulse') // Insertamos la capa de vías DEBAJO de los puntos (proyecto-point-pulse) para que no los tapen
+        }
+      })
+    }
+
     _setupProyectoPoint(map, geoLoc)
+    _setupArcGISRedVial(map)
 
     loading.value = false
   }
