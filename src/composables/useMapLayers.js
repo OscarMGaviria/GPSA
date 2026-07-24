@@ -436,6 +436,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         id: `${id}-fill`,
         type: 'fill',
         source: id,
+        filter: ['match', ['geometry-type'], ['Polygon', 'MultiPolygon'], true, false],
         paint: {
           'fill-color': fillColor,
           'fill-opacity': [
