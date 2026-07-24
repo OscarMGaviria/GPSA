@@ -2774,7 +2774,8 @@
         "CIRCULO_MA": "004-40160",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 1065221.02349,
-        "SHAPE_LEN": 7620.06160861
+        "SHAPE_LEN": 7620.06160861,
+        "LABEL_ID": 7
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -5238,7 +5239,8 @@
         "CIRCULO_MA": "004-33911",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 13955.3280151,
-        "SHAPE_LEN": 535.140602212
+        "SHAPE_LEN": 535.140602212,
+        "LABEL_ID": 8
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -5482,7 +5484,8 @@
         "CIRCULO_MA": "004-4959",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 1037278.13344,
-        "SHAPE_LEN": 8953.59228964
+        "SHAPE_LEN": 8953.59228964,
+        "LABEL_ID": 9
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -8350,7 +8353,8 @@
         "CIRCULO_MA": "004-16583",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 390281.476575,
-        "SHAPE_LEN": 4093.7852043
+        "SHAPE_LEN": 4093.7852043,
+        "LABEL_ID": 10
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -9226,7 +9230,8 @@
         "CIRCULO_MA": "004-1230",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 1280875.95755,
-        "SHAPE_LEN": 13796.2752002
+        "SHAPE_LEN": 13796.2752002,
+        "LABEL_ID": 11
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -14046,7 +14051,8 @@
         "CIRCULO_MA": "004-16584",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 280771.649394,
-        "SHAPE_LEN": 2309.10041875
+        "SHAPE_LEN": 2309.10041875,
+        "LABEL_ID": 12
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -14482,7 +14488,8 @@
         "CIRCULO_MA": "004-26847",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 465720.67085,
-        "SHAPE_LEN": 3768.64233799
+        "SHAPE_LEN": 3768.64233799,
+        "LABEL_ID": 13
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -15198,7 +15205,8 @@
         "CIRCULO_MA": "004-49291",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 313387.247562,
-        "SHAPE_LEN": 3459.48235576
+        "SHAPE_LEN": 3459.48235576,
+        "LABEL_ID": 14
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -16354,7 +16362,8 @@
         "CIRCULO_MA": "004-11593",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 1352865.13082,
-        "SHAPE_LEN": 6115.31520258
+        "SHAPE_LEN": 6115.31520258,
+        "LABEL_ID": 15
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -17140,7 +17149,8 @@
         "CIRCULO_MA": null,
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 878.741688915,
-        "SHAPE_LEN": 127.694776136
+        "SHAPE_LEN": 127.694776136,
+        "LABEL_ID": 16
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -17232,7 +17242,8 @@
         "CIRCULO_MA": "004-16049",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 155936.401039,
-        "SHAPE_LEN": 2432.48389758
+        "SHAPE_LEN": 2432.48389758,
+        "LABEL_ID": 17
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -18052,7 +18063,8 @@
         "CIRCULO_MA": "004-22744",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 983079.638993,
-        "SHAPE_LEN": 5189.15949721
+        "SHAPE_LEN": 5189.15949721,
+        "LABEL_ID": 18
       },
       "geometry": {
         "type": "MultiPolygon",
@@ -19268,7 +19280,8 @@
         "CIRCULO_MA": "004-22745",
         "VEREDA": "36420010000001",
         "SHAPE_AREA": 4428.7678037,
-        "SHAPE_LEN": 356.679000336
+        "SHAPE_LEN": 356.679000336,
+        "LABEL_ID": 19
       },
       "geometry": {
         "type": "MultiPolygon",
