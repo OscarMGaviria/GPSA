@@ -46,13 +46,16 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
   const store          = useMapStore()
   const loading          = ref(true)
   const loadError        = ref(false)
-  const fromCache        = ref(false)
   const hoverLabel       = ref({ name: '', x: 0, y: 0, visible: false })
   const viaHoverLabel    = ref({ name: '', km: null, x: 0, y: 0, visible: false })
   const selectedVia      = ref(null)
   const selectedMpio     = ref(null)
+
   const cachedMunicipios = ref(null)
   const cachedVias       = ref(null)
+  const cachedLocalizaciones = ref(null)
+  const fromCache        = ref(false)
+
   let destroyed = false
 
   onUnmounted(() => { destroyed = true })
@@ -648,11 +651,12 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
     cachedMunicipios.value = munResult?.data ?? null
     cachedVias.value       = viaResult?.data ?? null
+    cachedLocalizaciones.value = locResult?.data ?? null
     fromCache.value        = !!(munResult?.fromCache || viaResult?.fromCache)
 
     const geoMunicipios = cachedMunicipios.value
     const geoVias       = cachedVias.value
-    const geoLoc = locResult?.data ?? null
+    const geoLoc = cachedLocalizaciones.value
     const geoAfectados = afecResult?.data ?? null
     const geoPermiso = perResult?.data ?? null
 
@@ -756,5 +760,5 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     loading.value = false
   }
 
-  return { loading, loadError, fromCache, hoverLabel, viaHoverLabel, selectedVia, selectedMpio, cachedMunicipios, cachedVias, loadSimeva }
+  return { loading, loadError, fromCache, hoverLabel, viaHoverLabel, selectedVia, selectedMpio, cachedMunicipios, cachedVias, cachedLocalizaciones, loadSimeva }
 }

@@ -43,7 +43,7 @@ function _applyMpioStyle(map, { hasSub, hasMpio, search, circuito, sub, mpio }) 
   map.setPaintProperty('municipios-fill', 'fill-opacity', _getMpioFillOpacity(isTerrain, isOnlySubregionActive))
 }
 
-export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias, center, zoom, refreshVisibleCallouts } = {}) {
+export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias, cachedLocalizaciones, center, zoom, refreshVisibleCallouts } = {}) {
   const store = useMapStore()
   const selectedSubregion = ref('')
   const selectedMunicipio = ref('')
@@ -128,21 +128,10 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
       feats = feats.filter(f => normUp(f.properties.SUBREGION) === normUp(sub))
       _flyToMpios(map, feats, filters)
     } else if (hasCir) {
-      // Find the project point layer features (which we created from geoLoc)
-      // Since map.querySourceFeatures might not be ready, we just let the bounds filter handle it if needed
-      // Actually we have the list in store.filteredStats.viasDetalle? No, we don't have geometries there.
-      // But we can filter the gavino-localizacion-fill layer to fit bounds.
-      const features = map.queryRenderedFeatures({ layers: ['gavino-localizacion-fill'] })
-        .filter(f => f.properties.NOMBRE_PROYECTO === proyecto)
-      
-      if (features.length) {
-        flyToGeometries(features.map(f => f.geometry), { padding: 100 })
-      } else {
-        // Fallback to the point layer if possible
-        const points = map.queryRenderedFeatures({ layers: ['proyecto-point-circle'] })
-          .filter(f => f.properties.nombre === proyecto)
-        if (points.length) {
-          map.flyTo({ center: points[0].geometry.coordinates, zoom: 14, duration: 400 })
+      if (cachedLocalizaciones?.value?.features) {
+        const feats = cachedLocalizaciones.value.features.filter(f => f.properties.NOMBRE_PROYECTO === proyecto)
+        if (feats.length) {
+          flyToGeometries(feats.map(f => f.geometry), { padding: 100 })
         }
       }
       map.once('moveend', () => refreshVisibleCallouts?.(filters))

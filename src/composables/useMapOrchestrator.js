@@ -17,7 +17,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
   const { visibleCallouts, buildCallouts, updateCalloutPositions, refreshVisibleCallouts }
     = useCallouts(() => _map)
 
-  const { loading, loadError, fromCache, hoverLabel, viaHoverLabel, selectedVia, selectedMpio, cachedMunicipios, cachedVias, loadSimeva }
+  const { loading, loadError, fromCache, hoverLabel, viaHoverLabel, selectedVia, selectedMpio, cachedMunicipios, cachedVias, cachedLocalizaciones, loadSimeva }
     = useMapLayers(
         () => _map,
         {
@@ -29,7 +29,7 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
 
   const { selectedSubregion, selectedMunicipio, noResults }
     = useMapFilters(() => _map, filtersGetter, {
-        cachedMunicipios, cachedVias,
+        cachedMunicipios, cachedVias, cachedLocalizaciones,
         center: CENTER, zoom: ZOOM,
         refreshVisibleCallouts,
       })
