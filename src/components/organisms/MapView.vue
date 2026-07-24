@@ -6,6 +6,7 @@ import { useMapOrchestrator } from '../../composables/useMapOrchestrator.js'
 import { useMapStore } from '../../stores/useMapStore.js'
 import PredioDetailModal from './PredioDetailModal.vue'
 
+const base = import.meta.env.BASE_URL.replace(/\/$/, '')
 const store = useMapStore()
 const mapContainer = ref(null)
 
@@ -164,7 +165,7 @@ onUnmounted(() => globalThis.removeEventListener('keydown', _onGlobalKey))
 
     <!-- Logo A Toda Máquina -->
     <div class="atm-logo">
-      <img :src="'/A toda maquina.png'" alt="A Toda Máquina" />
+      <img :src="`${base}/A toda maquina.png`" alt="A Toda Máquina" />
     </div>
 
     <!-- Tooltip general (hoverLabel) -->

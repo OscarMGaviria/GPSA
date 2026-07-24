@@ -1,9 +1,10 @@
+const base = import.meta.env.BASE_URL.replace(/\/$/, '')
 const ENDPOINTS = {
-  localizaciones: import.meta.env.VITE_API_LOCALIZACIONES ?? '/data/localizacion.geojson',
-  municipios:     '/data/municipios.geojson',
-  puenteGavinoLocalizacion: '/data/01%20Puente%20gavino/Localizacion.geojson',
-  puenteGavinoPrediosAfectados: '/data/01%20Puente%20gavino/Predios_Afectados.geojson',
-  puenteGavinoPrediosConPermiso: '/data/01%20Puente%20gavino/Predios_con_permiso.geojson',
+  localizaciones: import.meta.env.VITE_API_LOCALIZACIONES ?? `${base}/data/localizacion.geojson`,
+  municipios:     `${base}/data/municipios.geojson`,
+  puenteGavinoLocalizacion: `${base}/data/01%20Puente%20gavino/Localizacion.geojson`,
+  puenteGavinoPrediosAfectados: `${base}/data/01%20Puente%20gavino/Predios_Afectados.geojson`,
+  puenteGavinoPrediosConPermiso: `${base}/data/01%20Puente%20gavino/Predios_con_permiso.geojson`,
 }
 
 // Caché en memoria: evita re-descargar y re-parsear en la misma sesión
