@@ -1,7 +1,7 @@
 export const projectStats = {
-  "Puente Gavino": { total: "2", green: 1, red: 1, yellow: 0, obs: "-" },
+  "Puente Gabino": { total: "2", green: 1, red: 1, yellow: 0, obs: "-" },
   "Mi Casita Venecia": { total: "4", green: 2, red: 2, yellow: 0, obs: "-" },
-  "Variante Majagua": { total: "1", green: 1, red: 0, yellow: 0, obs: "-" },
+  "Variante Majagual": { total: "1", green: 1, red: 0, yellow: 0, obs: "-" },
   "Puente Rio Sucio": { total: "Pendiente por definir", green: 0, red: 0, yellow: "?", obs: "Espera de topografía para replantear diseño" },
   "Puente El Verdún": { total: "3", green: 3, red: 0, yellow: 0, obs: "-" },
   "Puente El Vólcan": { total: "2", green: 2, red: 0, yellow: 0, obs: "-" },

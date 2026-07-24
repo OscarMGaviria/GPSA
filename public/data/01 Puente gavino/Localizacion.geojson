@@ -11,7 +11,7 @@
     {
       "type": "Feature",
       "properties": {
-        "NOMBRE_PROYECTO": "Puente Gavino",
+        "NOMBRE_PROYECTO": "Puente Gabino",
         "SUBREGION": "NORDESTE",
         "sistema_origen": "MAGNA-SIRGAS / Colombia Bogota zone",
         "epsg_origen": 3116,
@@ -424,7 +424,7 @@
     {
       "type": "Feature",
       "properties": {
-        "NOMBRE_PROYECTO": "Variante Majagua",
+        "NOMBRE_PROYECTO": "Variante Majagual",
         "SUBREGION": "SUROESTE"
       },
       "geometry": {
