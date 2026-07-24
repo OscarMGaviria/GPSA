@@ -6,7 +6,7 @@ import Selector from '../atoms/Selector.vue'
 const props = defineProps({
   subregionOptions: { type: Array,  default: () => ['Todas las subregiones'] },
   municipioOptions: { type: Array,  default: () => ['Todos los municipios'] },
-  circuitoOptions:  { type: Array,  default: () => ['Todos los circuitos'] },
+  proyectoOptions:  { type: Array,  default: () => ['Todos los proyectos'] },
   activeFilters:    { type: Object, default: null },
 })
 
@@ -15,7 +15,7 @@ const emit = defineEmits(['filter-change', 'close'])
 const searchText   = ref(props.activeFilters?.search ?? '')
 const subregionVal = ref(props.activeFilters?.subregion ?? props.subregionOptions[0])
 const municipioVal = ref(props.activeFilters?.municipio ?? props.municipioOptions[0])
-const circuitoVal  = ref(props.activeFilters?.circuito ?? props.circuitoOptions[0])
+const proyectoVal  = ref(props.activeFilters?.proyecto ?? props.proyectoOptions[0])
 
 let isSyncing = false
 
@@ -26,7 +26,7 @@ watch(() => props.activeFilters, (f) => {
   searchText.value   = f.search    ?? ''
   subregionVal.value = f.subregion ?? props.subregionOptions[0]
   municipioVal.value = f.municipio ?? props.municipioOptions[0]
-  circuitoVal.value  = f.circuito  ?? props.circuitoOptions[0]
+  proyectoVal.value  = f.proyecto  ?? props.proyectoOptions[0]
   nextTick(() => {
     isSyncing = false
   })
@@ -35,7 +35,7 @@ watch(() => props.activeFilters, (f) => {
 watch(subregionVal, () => {
   if (isSyncing) return
   municipioVal.value = props.municipioOptions[0]
-  circuitoVal.value  = props.circuitoOptions[0]
+  proyectoVal.value  = props.proyectoOptions[0]
   emitFilters()
 })
 
@@ -44,7 +44,7 @@ const emitFilters = () => {
     search:    searchText.value,
     subregion: subregionVal.value,
     municipio: municipioVal.value,
-    circuito:  circuitoVal.value,
+    proyecto:  proyectoVal.value,
   })
 }
 
@@ -52,7 +52,7 @@ const clearFilters = () => {
   searchText.value   = ''
   subregionVal.value = props.subregionOptions[0]
   municipioVal.value = props.municipioOptions[0]
-  circuitoVal.value  = props.circuitoOptions[0]
+  proyectoVal.value  = props.proyectoOptions[0]
   emitFilters()
 }
 
@@ -60,8 +60,8 @@ const hasActiveFilters = computed(() => {
   const hasSearch = searchText.value.trim() !== ''
   const hasSubregion = subregionVal.value && subregionVal.value !== props.subregionOptions[0]
   const hasMunicipio = municipioVal.value && municipioVal.value !== props.municipioOptions[0]
-  const hasCircuito = circuitoVal.value && circuitoVal.value !== props.circuitoOptions[0]
-  return hasSearch || hasSubregion || hasMunicipio || hasCircuito
+  const hasProyecto = proyectoVal.value && proyectoVal.value !== props.proyectoOptions[0]
+  return hasSearch || hasSubregion || hasMunicipio || hasProyecto
 })
 
 const isMobile = ref(false)
@@ -96,7 +96,7 @@ onUnmounted(() => {
 
     <Selector v-model="subregionVal" :options="subregionOptions" @update:modelValue="emitFilters" align="right" />
     <Selector v-model="municipioVal" :options="municipioOptions" @update:modelValue="emitFilters" align="right" />
-    <Selector v-model="circuitoVal"  :options="circuitoOptions"  @update:modelValue="emitFilters" align="right" />
+    <Selector v-model="proyectoVal"  :options="proyectoOptions"  @update:modelValue="emitFilters" align="right" />
 
     <div v-if="!isMobile" class="btn-clear-wrapper">
       <button

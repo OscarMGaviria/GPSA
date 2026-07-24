@@ -3,14 +3,15 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppHeader  from './components/organisms/AppHeader.vue'
 import MapView    from './components/organisms/MapView.vue'
-import StatsPanel from './components/organisms/StatsPanel.vue'
+import ProjectStatsCard from './components/organisms/ProjectStatsCard.vue'
+
 import AppTour    from './components/organisms/AppTour.vue'
 import AppWelcome from './components/organisms/AppWelcome.vue'
 import { useMapStore } from './stores/useMapStore.js'
 
 const store = useMapStore()
-const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions, filteredCircuitoOptions } = storeToRefs(store)
-const isPanelOpen = ref(true)
+const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions, filteredProyectoOptions } = storeToRefs(store)
+
 const showTour    = ref(localStorage.getItem('simeva-tour-done') !== '1')
 const showWelcome = ref(localStorage.getItem('simeva-welcome-done') !== '1')
 
@@ -52,7 +53,7 @@ watch(activeFilters, (f) => {
   if (f.search)    p.set('search',    f.search)
   if (f.subregion && f.subregion !== 'Todas las subregiones') p.set('subregion', f.subregion)
   if (f.municipio && f.municipio !== 'Todos los municipios')  p.set('municipio', f.municipio)
-  if (f.circuito  && f.circuito  !== 'Todos los circuitos')   p.set('circuito',  f.circuito)
+  if (f.proyecto  && f.proyecto  !== 'Todos los proyectos')   p.set('proyecto',  f.proyecto)
   const qs = p.toString()
   globalThis.history.replaceState(null, '', qs ? `?${qs}` : globalThis.location.pathname)
 }, { deep: true })
@@ -79,32 +80,16 @@ watch(activeFilters, (f) => {
 
     <AppHeader
       @filter-change="store.setFilter"
-      :panel-open="isPanelOpen"
-      @toggle-panel="isPanelOpen = !isPanelOpen"
+
       @start-tour="showTour = true"
       :subregion-options="filterOptions.subregiones"
       :municipio-options="filteredMunicipioOptions"
-      :circuito-options="filteredCircuitoOptions"
+      :proyecto-options="filteredProyectoOptions"
       :active-filters="activeFilters"
     />
     <div class="content-area">
       <MapView ref="mapViewRef" />
-      <StatsPanel
-        :is-open="isPanelOpen"
-        :loading="mapLoading"
-        :vias-intervenidas="filteredStats.viasIntervenidas"
-        :longitud-total="filteredStats.longitudTotal"
-        :municipios="filteredStats.municipios"
-        :circuitos="filteredStats.circuitos"
-        :subregiones="mapStats.subregiones"
-        :vias-detalle="filteredStats.viasDetalle"
-        :total-vias-global="mapStats.viasIntervenidas"
-        :total-km-global="mapStats.longitudTotal"
-        :active-subregion="activeChartSubregion"
-        @filter-subregion="sub => store.setFilter({ search: '', subregion: sub, municipio: 'Todos los municipios', circuito: 'Todos los circuitos' })"
-        @open-via="via => mapViewRef?.openVia(via)"
-        @fly-via="via => mapViewRef?.flyToVia(via)"
-      />
+      <ProjectStatsCard :projectName="activeFilters.proyecto" />
     </div>
   </div>
 </template>

@@ -4,7 +4,7 @@ import { Layers, Mountain } from '@lucide/vue'
 import { BASEMAPS } from '../../composables/useMapInit.js'
 import { useMapOrchestrator } from '../../composables/useMapOrchestrator.js'
 import { useMapStore } from '../../stores/useMapStore.js'
-import ViaDetailModal from './ViaDetailModal.vue'
+import PredioDetailModal from './PredioDetailModal.vue'
 
 const store = useMapStore()
 const mapContainer = ref(null)
@@ -123,34 +123,14 @@ onUnmounted(() => globalThis.removeEventListener('keydown', _onGlobalKey))
     <!-- Fondo menta cuando no hay mapa base -->
     <div class="map-container" :class="{ 'bg-mint': activeBasemap === 'ninguno' }" ref="mapContainer" />
 
-    <!-- Modal detalle de tramo -->
-    <ViaDetailModal
+    <!-- Modal detalle de predio -->
+    <PredioDetailModal
       v-if="selectedVia"
       :via="selectedVia"
       @close="selectedVia = null"
     />
 
-    <!-- Modal municipio -->
-    <Transition name="mpio-modal">
-      <div v-if="selectedMpio" class="mpio-modal-overlay" @click.self="selectedMpio = null">
-        <div class="mpio-modal">
-          <button class="mpio-close" @click="selectedMpio = null">✕</button>
-          <div class="mpio-header">
-            <svg class="mpio-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-              <circle cx="12" cy="9" r="2.5"/>
-            </svg>
-            <span class="mpio-nombre">{{ selectedMpio.nombre }}</span>
-          </div>
-          <div class="mpio-body">
-            <div class="mpio-row">
-              <span class="mpio-lbl">Subregión</span>
-              <span class="mpio-val">{{ selectedMpio.subregion }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
+
 
     <!-- Error overlay -->
     <Transition name="loader-fade">
@@ -186,6 +166,20 @@ onUnmounted(() => globalThis.removeEventListener('keydown', _onGlobalKey))
     <div class="atm-logo">
       <img :src="'/A toda maquina.png'" alt="A Toda Máquina" />
     </div>
+
+    <!-- Tooltip general (hoverLabel) -->
+    <Transition name="via-tip">
+      <div
+        v-if="hoverLabel.visible"
+        class="via-tooltip"
+        :style="{ left: hoverLabel.x + 'px', top: hoverLabel.y + 'px' }"
+      >
+        <div class="vt-name">{{ hoverLabel.name }}</div>
+        <div class="vt-meta" v-if="hoverLabel.subtext">
+          <span class="vt-km">{{ hoverLabel.subtext }}</span>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Tooltip hover vía -->
     <Transition name="via-tip">
@@ -322,15 +316,7 @@ onUnmounted(() => globalThis.removeEventListener('keydown', _onGlobalKey))
 
     </div>
 
-    <!-- Mensaje del Secretario -->
-    <div class="secre-mensaje">
-      <div class="secre-quote-text">
-        “La transformación de Antioquia no es un acto de audacia momentánea, es una certeza”.
-      </div>
-      <div class="secre-quote-author">
-        Luis Horacio Gallón Arango
-      </div>
-    </div>
+
 
   </div>
 </template>

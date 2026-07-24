@@ -1,6 +1,7 @@
 import { ref, onUnmounted } from 'vue'
-import { getLocalizaciones, getMunicipios } from '../services/api.js'
+import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getPuenteGavinoPrediosConPermiso, parseDescription } from '../services/api.js'
 import { pctTiempoTranscurrido } from '../utils/stats.js'
+import { parseAvancePct } from '../utils/via.js'
 import { useMapStore } from '../stores/useMapStore.js'
 import hitosData from '../data/hitos.json'
 
@@ -58,56 +59,52 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
 
 
-  function _extractFilterOptions(geoMunicipios, geoVias) {
+  function _extractFilterOptions(geoMunicipios, geoVias, geoLoc) {
     const subregiones = geoMunicipios
       ? [...new Set(geoMunicipios.features.map(f => canonicalSub(f.properties.SUBREGION)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
       : []
     const municipioOpts = geoVias
       ? [...new Set(geoVias.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
       : []
-    const circuitos = geoVias
-      ? [...new Set(geoVias.features.map(f => f.properties.CIRCUITO).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
+    const proyectoOpts = geoLoc
+      ? [...new Set(geoLoc.features.map(f => f.properties.NOMBRE_PROYECTO).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
       : []
     
     onOptionsLoaded?.({
       subregiones: ['Todas las subregiones', ...subregiones],
       municipios: ['Todos los municipios', ...municipioOpts],
-      circuitos: ['Todos los circuitos', ...circuitos],
+      proyectos: ['Todos los proyectos', ...proyectoOpts],
       municipiosPorSubregion: _getMunicipiosPorSubregion(geoMunicipios, geoVias),
     })
   }
 
-  function _calculateViasStats(geoVias) {
+  function _calculateViasStats(geoVias, geoLoc) {
     const viasDetalle = []
     let longitudTotal = 0
     const kmPorSubregion = {}
 
-    if (geoVias) {
-      for (const f of geoVias.features) {
+    if (geoLoc) {
+      for (const f of geoLoc.features) {
         const p = f.properties
-        const km = Number.parseFloat(p.Long_km) || 0
+        const nombre = p.NOMBRE_PROYECTO ?? 'Sin nombre'
         const sub = canonicalSub(p.SUBREGION) ?? 'Sin subregión'
-        const mpio = sentenceCase(p.MPIO_NOMBR ?? '')
-
-        longitudTotal += km
-        if (km) kmPorSubregion[sub] = (kmPorSubregion[sub] ?? 0) + km
 
         viasDetalle.push({
-          nombre: p.NOMBRE_VIA ?? 'Sin nombre',
-          codigo: p.CODIGO_VIA ?? '',
-          municipio: mpio,
+          nombre: nombre,
           subregion: sub,
-          km: Math.round(km * 100) / 100,
-          avance: Math.round((Number.parseFloat(p.AV_FISICO) || 0) > 1 ? (Number.parseFloat(p.AV_FISICO) || 0) : (Number.parseFloat(p.AV_FISICO) || 0) * 100),
-          avanceFin: Math.round((Number.parseFloat(p.AV_FINAN) || 0) > 1 ? (Number.parseFloat(p.AV_FINAN) || 0) : (Number.parseFloat(p.AV_FINAN) || 0) * 100),
-          estabilizado: Math.round((Number.parseFloat(p.ESTABILIZADO) || 0) * 100) / 100,
-          contratista: p.CONTRATIST ?? '',
-          contrato: p.CTO ?? '',
-          interventor: p.INTERV ?? '',
-          plazoMeses: Number.parseFloat(p.PLAZO_MESE) || 0,
-          plazo: p.PLAZO_MESE ? `${p.PLAZO_MESE} meses` : '',
-          circuito: p.CIRCUITO ?? '',
-          fechaIni: p.FECHA_INI ?? '',
+          municipio: '',
+          proyecto: nombre,
+          km: 0,
+          avance: 0,
+          avanceFin: 0,
+          estabilizado: 0,
+          contratista: '',
+          contrato: '',
+          interventor: '',
+          plazoMeses: 0,
+          plazo: '',
+          circuito: '',
+          fechaIni: '',
         })
       }
     }
@@ -118,15 +115,14 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       return { name, km: Math.round(km * 100) / 100, pct: Math.round((km / totalKm) * 100) }
     })
 
-    const uniqueVias = new Set(geoVias?.features.map(f => f.properties.NOMBRE_VIA).filter(Boolean)).size
+    const uniqueVias = new Set(geoLoc?.features.map(f => f.properties.NOMBRE_PROYECTO).filter(Boolean)).size
     const uniqueMunicipios = new Set(geoVias?.features.map(f => f.properties.MPIO_NOMBR).filter(Boolean)).size
-    const uniqueCircuitos = new Set(geoVias?.features.map(f => f.properties.CIRCUITO).filter(Boolean)).size
 
     onStatsLoaded?.({
       viasIntervenidas: uniqueVias,
-      longitudTotal: Math.round(longitudTotal * 100) / 100,
+      longitudTotal: 0,
       municipios: uniqueMunicipios,
-      circuitos: uniqueCircuitos,
+      proyectos: uniqueVias,
       subregiones: subregionesStats,
       viasDetalle,
     })
@@ -197,24 +193,40 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
       let hoveredMpio = null
       map.on('mousemove', 'municipios-fill', (e) => {
+        // Ignorar el hover de municipio si hay una capa de predio/localización encima
+        const topFeatures = map.queryRenderedFeatures(e.point, {
+          layers: ['gavino-localizacion-fill', 'gavino-afectados-fill', 'gavino-permiso-fill'].filter(l => map.getLayer(l))
+        })
+        if (topFeatures.length > 0) {
+          if (hoveredMpio !== null) {
+            map.setFeatureState({ source: 'municipios', id: hoveredMpio }, { hover: false })
+            hoveredMpio = null
+            hoverLabel.value = { ...hoverLabel.value, visible: false }
+          }
+          return
+        }
+
         if (hoveredMpio !== null)
           map.setFeatureState({ source: 'municipios', id: hoveredMpio }, { hover: false })
         hoveredMpio = e.features[0].id
         map.setFeatureState({ source: 'municipios', id: hoveredMpio }, { hover: true })
+
+        const p = e.features[0].properties
+        hoverLabel.value = {
+          name: sentenceCase(p.MPIO_NOMBR ?? ''),
+          subtext: sentenceCase(p.SUBREGION ?? ''),
+          x: e.point.x,
+          y: e.point.y,
+          visible: true
+        }
       })
       map.on('mouseleave', 'municipios-fill', () => {
         if (hoveredMpio !== null)
           map.setFeatureState({ source: 'municipios', id: hoveredMpio }, { hover: false })
         hoveredMpio = null
+        hoverLabel.value = { ...hoverLabel.value, visible: false }
       })
 
-      map.on('click', 'municipios-fill', (e) => {
-        const p = e.features[0].properties
-        selectedMpio.value = {
-          nombre: sentenceCase(p.MPIO_NOMBR ?? ''),
-          subregion: canonicalSub(p.SUBREGION),
-        }
-      })
     } catch (err) {
       console.error('[SIMEVA] Error cargando municipios:', err)
     }
@@ -409,18 +421,230 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     }
   }
 
+  function _setupGenericPolygonLayer(map, id, geoData, fillColor, outlineColor) {
+    try {
+      map.addSource(id, {
+        type: 'geojson',
+        data: geoData,
+        generateId: true
+      })
+      map.addLayer({
+        id: `${id}-fill`,
+        type: 'fill',
+        source: id,
+        paint: {
+          'fill-color': fillColor,
+          'fill-opacity': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false],
+            0.7,
+            0.4
+          ]
+        }
+      })
+      map.addLayer({
+        id: `${id}-outline`,
+        type: 'line',
+        source: id,
+        paint: {
+          'line-color': outlineColor,
+          'line-width': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false],
+            4,
+            2
+          ]
+        }
+      })
+      
+      if (id.includes('afectados')) {
+        map.addLayer({
+          id: `${id}-label`,
+          type: 'symbol',
+          source: id,
+          layout: {
+            'text-field': ['get', 'LABEL_ID'],
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-size': 12,
+            'text-anchor': 'center'
+          },
+          paint: {
+            'text-color': '#000000',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 2
+          }
+        })
+      }
+      
+      let hoveredPolygon = null
+      map.on('mousemove', `${id}-fill`, (e) => {
+        if (e.features.length > 0) {
+          if (hoveredPolygon !== null) {
+            map.setFeatureState({ source: id, id: hoveredPolygon }, { hover: false })
+          }
+          hoveredPolygon = e.features[0].id
+          map.setFeatureState({ source: id, id: hoveredPolygon }, { hover: true })
+        }
+      })
+      map.on('mouseleave', `${id}-fill`, () => {
+        if (hoveredPolygon !== null) {
+          map.setFeatureState({ source: id, id: hoveredPolygon }, { hover: false })
+        }
+        hoveredPolygon = null
+      })
+
+    } catch (err) {
+      console.error(`[SIMEVA] Error cargando ${id}:`, err)
+    }
+  }
+
+  function _getCentroid(coords) {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const process = (c) => {
+      if (typeof c[0] === 'number') {
+        if (c[0] < minX) minX = c[0];
+        if (c[0] > maxX) maxX = c[0];
+        if (c[1] < minY) minY = c[1];
+        if (c[1] > maxY) maxY = c[1];
+      } else {
+        c.forEach(process);
+      }
+    };
+    process(coords);
+    return [(minX + maxX) / 2, (minY + maxY) / 2];
+  }
+
+  function _setupProyectoPoint(map, geoLoc) {
+    if (!geoLoc || !geoLoc.features || !geoLoc.features.length) return;
+    
+    const pointFeatures = geoLoc.features.map(f => {
+      const centroid = _getCentroid(f.geometry.coordinates);
+      const desc = parseDescription(f.properties.description);
+      const pct = parseAvancePct(desc);
+      const enEjecucion = pct > 0 && pct < 100;
+      return {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: centroid },
+        properties: { 
+          nombre: f.properties.NOMBRE_PROYECTO || 'Proyecto',
+          enEjecucion
+        }
+      }
+    });
+
+    try {
+      map.addSource('proyecto-point', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: pointFeatures
+        }
+      })
+
+      map.addLayer({
+        id: 'proyecto-point-pulse',
+        type: 'circle',
+        source: 'proyecto-point',
+        filter: ['==', ['get', 'enEjecucion'], true],
+        maxzoom: 13,
+        paint: {
+          'circle-radius': 7,
+          'circle-color': '#22c55e',
+          'circle-opacity': 0.8,
+          'circle-stroke-width': 0
+        }
+      })
+
+      map.addLayer({
+        id: 'proyecto-point-circle',
+        type: 'circle',
+        source: 'proyecto-point',
+        maxzoom: 13,
+        paint: {
+          'circle-radius': 7,
+          'circle-color': '#22c55e',
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff'
+        }
+      })
+
+      map.addLayer({
+        id: 'proyecto-point-label',
+        type: 'symbol',
+        source: 'proyecto-point',
+        maxzoom: 13,
+        layout: {
+          'text-field': ['get', 'nombre'],
+          'text-offset': [0, 1.2],
+          'text-anchor': 'top',
+          'text-size': 12,
+          'text-font': ['Prompt Bold', 'Open Sans Bold', 'Arial Unicode MS Bold']
+        },
+        paint: {
+          'text-color': '#ffffff',
+          'text-halo-color': '#0b5640',
+          'text-halo-width': 2
+        }
+      })
+
+      let hovered = null
+      const pointLayers = ['proyecto-point-pulse', 'proyecto-point-circle', 'proyecto-point-label']
+      
+      map.on('mousemove', pointLayers, () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', pointLayers, () => { map.getCanvas().style.cursor = '' })
+      
+      map.on('click', pointLayers, (e) => {
+        if (!e.features || !e.features.length) return
+        const coords = e.features[0].geometry.coordinates
+        map.flyTo({
+          center: coords,
+          zoom: 16,
+          duration: 1500,
+          essential: true
+        })
+      })
+
+      function animateMarker(timestamp) {
+        if (destroyed || !map.getLayer('proyecto-point-pulse')) return;
+        const duration = 2000;
+        const t = (timestamp % duration) / duration;
+        
+        const radius = 7 + (15 * t);
+        const opacity = Math.max(0, 0.8 - (0.8 * t));
+        
+        map.setPaintProperty('proyecto-point-pulse', 'circle-radius', radius);
+        map.setPaintProperty('proyecto-point-pulse', 'circle-opacity', opacity);
+        
+        requestAnimationFrame(animateMarker);
+      }
+      requestAnimationFrame(animateMarker);
+
+    } catch (err) {
+      console.error('[SIMEVA] Error cargando proyecto point:', err)
+    }
+  }
+
   async function loadSimeva() {
     const map = getMap()
     if (!map || destroyed) return
     loading.value   = true
     loadError.value = false
 
-    const [resMunicipios, resVias] = await Promise.allSettled([getMunicipios(), getLocalizaciones()])
+    const [resMunicipios, resVias, resLoc, resAfectados, resPermiso] = await Promise.allSettled([
+      getMunicipios(), 
+      getLocalizaciones(), 
+      getPuenteGavinoLocalizacion(),
+      getPuenteGavinoPrediosAfectados(),
+      getPuenteGavinoPrediosConPermiso()
+    ])
 
     if (destroyed) return
 
     const munResult = resMunicipios.status === 'fulfilled' ? resMunicipios.value : null
     const viaResult = resVias.status       === 'fulfilled' ? resVias.value       : null
+    const locResult = resLoc.status === 'fulfilled' ? resLoc.value : null
+    const afecResult = resAfectados.status === 'fulfilled' ? resAfectados.value : null
+    const perResult = resPermiso.status === 'fulfilled' ? resPermiso.value : null
 
     cachedMunicipios.value = munResult?.data ?? null
     cachedVias.value       = viaResult?.data ?? null
@@ -428,11 +652,14 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
     const geoMunicipios = cachedMunicipios.value
     const geoVias       = cachedVias.value
+    const geoLoc = locResult?.data ?? null
+    const geoAfectados = afecResult?.data ?? null
+    const geoPermiso = perResult?.data ?? null
 
     if (resMunicipios.status === 'rejected') console.warn('[SIMEVA] Municipios:', resMunicipios.reason)
     if (resVias.status       === 'rejected') console.warn('[SIMEVA] Vías:', resVias.reason)
 
-    if (!geoMunicipios && !geoVias) {
+    if (!geoMunicipios && !geoVias && !geoLoc && !geoAfectados && !geoPermiso) {
       loadError.value = true
       loading.value   = false
       return
@@ -440,10 +667,10 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
     // Normaliza texto para comparar sin acentos ni mayúsculas
 
-    _extractFilterOptions(geoMunicipios, geoVias)
+    _extractFilterOptions(geoMunicipios, geoVias, geoLoc)
 
     // ── Estadísticas desde propiedades directas del GeoJSON ──────────────────
-    _calculateViasStats(geoVias)
+    _calculateViasStats(geoVias, geoLoc)
 
     if (destroyed) return
 
@@ -452,10 +679,79 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       _setupMunicipiosLayer(map, geoMunicipios, geoVias)
     }
 
-    // ── Capa vías ─────────────────────────────────────────────────────────────
-    if (geoVias) {
-      _setupViasLayer(map, geoVias)
+    // ── Capas Puente Gavino ───────────────────────────────────────────────────
+    if (geoAfectados) {
+      _setupGenericPolygonLayer(map, 'gavino-afectados', geoAfectados, '#ef4444', '#dc2626')
+      
+      map.on('click', 'gavino-afectados-fill', (e) => {
+        const p = e.features[0].properties
+        selectedVia.value = {
+          name: 'Predio Afectado',
+          description: {
+            'Local ID': p.LOCAL_ID || 'N/A',
+            'Círculo y Matrícula': p.CIRCULO_MA || 'N/A',
+            'Código de Terreno': p.TERRENO_CO || 'N/A',
+          }
+        }
+      })
+      
+      map.on('mouseenter', 'gavino-afectados-fill', () => {
+        map.getCanvas().style.cursor = 'pointer'
+      })
+      map.on('mouseleave', 'gavino-afectados-fill', () => {
+        map.getCanvas().style.cursor = ''
+      })
     }
+    if (geoPermiso) {
+      _setupGenericPolygonLayer(map, 'gavino-permiso', geoPermiso, '#22c55e', '#16a34a')
+      
+      map.on('click', 'gavino-permiso-fill', (e) => {
+        const p = e.features[0].properties
+        selectedVia.value = {
+          name: 'Predio con Permiso',
+          description: {
+            'Área': p.SHAPE_AREA ? Number(p.SHAPE_AREA).toFixed(2) + ' m²' : 'N/A',
+            'Departamento': p.DPTO || 'N/A',
+            'Municipio': p.MPIO || 'N/A',
+            'Propietario': p.PROP || 'N/A',
+            'Código Catastral': p.CODCATAS || 'N/A',
+            'Matrícula Inmob.': p.MAT_INMOBILIARIA || 'N/A',
+            ...(p.AREA_REQUERIDA ? { 'Área Requerida': p.AREA_REQUERIDA } : {}),
+            ...(p.AREA ? { 'Área': p.AREA } : {})
+          }
+        }
+      })
+      
+      map.on('mouseenter', 'gavino-permiso-fill', () => {
+        map.getCanvas().style.cursor = 'pointer'
+      })
+      map.on('mouseleave', 'gavino-permiso-fill', () => {
+        map.getCanvas().style.cursor = ''
+      })
+    }
+    if (geoLoc) {
+      _setupGenericPolygonLayer(map, 'gavino-localizacion', geoLoc, '#3b82f6', '#2563eb')
+      
+      map.on('click', 'gavino-localizacion-fill', (e) => {
+        const p = e.features[0].properties
+        selectedVia.value = {
+          name: 'Información del Proyecto',
+          description: {
+            'Proyecto': p.NOMBRE_PROYECTO || 'N/A',
+            'Subregión': p.SUBREGION || 'N/A'
+          }
+        }
+      })
+      
+      map.on('mouseenter', 'gavino-localizacion-fill', () => {
+        map.getCanvas().style.cursor = 'pointer'
+      })
+      map.on('mouseleave', 'gavino-localizacion-fill', () => {
+        map.getCanvas().style.cursor = ''
+      })
+    }
+
+    _setupProyectoPoint(map, geoLoc)
 
     loading.value = false
   }

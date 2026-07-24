@@ -1,21 +1,21 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { PanelRightClose, PanelRightOpen, HelpCircle, SlidersHorizontal, X } from '@lucide/vue'
+import { HelpCircle, SlidersHorizontal, X } from '@lucide/vue'
 import FilterBar from '../molecules/FilterBar.vue'
 
 const escudoSrc  = import.meta.env.BASE_URL + 'Escudo de armas.png'
 
 const props = defineProps({
-  title:            { type: String,  default: 'Pavimentación Vial' },
-  subtitle:         { type: String,  default: 'SIMEVA — Sistema de Información y Monitoreo de vias' },
+  title:            { type: String,  default: 'Gestión Predial Social y Ambiental' },
+  subtitle:         { type: String,  default: 'GPSA' },
   subregionOptions: { type: Array,   default: () => ['Todas las subregiones'] },
   municipioOptions: { type: Array,   default: () => ['Todos los municipios'] },
-  circuitoOptions:  { type: Array,   default: () => ['Todos los circuitos'] },
-  panelOpen:        { type: Boolean, default: true },
+  proyectoOptions:  { type: Array,   default: () => ['Todos los proyectos'] },
+
   activeFilters:    { type: Object,  default: null },
 })
 
-const emit = defineEmits(['filter-change', 'toggle-panel', 'start-tour'])
+const emit = defineEmits(['filter-change', 'start-tour'])
 
 const isMobileDrawerOpen = ref(false)
 
@@ -25,7 +25,7 @@ const activeFiltersCount = computed(() => {
   if (props.activeFilters.search) count++
   if (props.activeFilters.subregion && props.activeFilters.subregion !== 'Todas las subregiones') count++
   if (props.activeFilters.municipio && props.activeFilters.municipio !== 'Todos los municipios') count++
-  if (props.activeFilters.circuito && props.activeFilters.circuito !== 'Todos los circuitos') count++
+  if (props.activeFilters.proyecto && props.activeFilters.proyecto !== 'Todos los proyectos') count++
   return count
 })
 </script>
@@ -41,7 +41,7 @@ const activeFiltersCount = computed(() => {
       <div class="header-titles">
         <h1 class="header-title">{{ title }}</h1>
         <p class="header-subtitle desktop-only">{{ subtitle }}</p>
-        <p class="header-subtitle mobile-only">SIMEVA</p>
+        <p class="header-subtitle mobile-only">GPSA</p>
       </div>
     </div>
 
@@ -52,7 +52,7 @@ const activeFiltersCount = computed(() => {
       <FilterBar
         :subregion-options="subregionOptions"
         :municipio-options="municipioOptions"
-        :circuito-options="circuitoOptions"
+        :proyecto-options="proyectoOptions"
         :active-filters="activeFilters"
         @filter-change="emit('filter-change', $event)"
       />
@@ -70,17 +70,7 @@ const activeFiltersCount = computed(() => {
         <span class="btn-tooltip">¿Cómo usar SIMEVA?</span>
       </div>
 
-      <div class="btn-panel-wrapper">
-        <button
-          class="btn-panel"
-          @click="emit('toggle-panel')"
-          :aria-label="panelOpen ? 'Colapsar panel' : 'Expandir panel'"
-        >
-          <PanelRightClose v-if="panelOpen" :size="15" />
-          <PanelRightOpen  v-else            :size="15" />
-        </button>
-        <span class="btn-tooltip">{{ panelOpen ? 'Colapsar panel' : 'Expandir panel' }}</span>
-      </div>
+
     </div>
 
     <!-- RIGHT: Mobile actions (Mobile Only) -->
@@ -99,7 +89,7 @@ const activeFiltersCount = computed(() => {
           <div class="drawer-header">
             <div class="drawer-title-wrapper">
               <h2 class="drawer-title">Filtros de Búsqueda</h2>
-              <p class="drawer-subtitle">Filtra los tramos viales por subregión, municipio o circuito</p>
+              <p class="drawer-subtitle">Filtra los proyectos por subregión, municipio o proyecto</p>
             </div>
             <button class="drawer-close" @click="isMobileDrawerOpen = false" aria-label="Cerrar filtros">
               <X :size="18" />
@@ -109,7 +99,7 @@ const activeFiltersCount = computed(() => {
             <FilterBar
               :subregion-options="subregionOptions"
               :municipio-options="municipioOptions"
-              :circuito-options="circuitoOptions"
+              :proyecto-options="proyectoOptions"
               :active-filters="activeFilters"
               @filter-change="emit('filter-change', $event)"
               @close="isMobileDrawerOpen = false"

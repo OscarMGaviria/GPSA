@@ -1,6 +1,9 @@
 const ENDPOINTS = {
   localizaciones: import.meta.env.VITE_API_LOCALIZACIONES ?? '/data/localizacion.geojson',
-  municipios:     import.meta.env.VITE_API_MUNICIPIOS,
+  municipios:     '/data/municipios.geojson',
+  puenteGavinoLocalizacion: '/data/01%20Puente%20gavino/Localizacion.geojson',
+  puenteGavinoPrediosAfectados: '/data/01%20Puente%20gavino/Predios_Afectados.geojson',
+  puenteGavinoPrediosConPermiso: '/data/01%20Puente%20gavino/Predios_con_permiso.geojson',
 }
 
 // Caché en memoria: evita re-descargar y re-parsear en la misma sesión
@@ -98,6 +101,9 @@ function recoverFeatureCollection(text) {
 
 export const getLocalizaciones = () => fetchGeoJSON(ENDPOINTS.localizaciones)
 export const getMunicipios     = () => fetchGeoJSON(ENDPOINTS.municipios)
+export const getPuenteGavinoLocalizacion = () => fetchGeoJSON(ENDPOINTS.puenteGavinoLocalizacion)
+export const getPuenteGavinoPrediosAfectados = () => fetchGeoJSON(ENDPOINTS.puenteGavinoPrediosAfectados)
+export const getPuenteGavinoPrediosConPermiso = () => fetchGeoJSON(ENDPOINTS.puenteGavinoPrediosConPermiso)
 
 /** Extrae URLs de imágenes del HTML de descripción */
 export function extractPhotos(htmlString) {

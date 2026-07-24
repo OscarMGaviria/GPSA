@@ -25,7 +25,7 @@ function _applyMpioStyle(map, { hasSub, hasMpio, search, circuito, sub, mpio }) 
   const mpioFilter = ['all']
   if (hasSub) mpioFilter.push(['==', ['get', '_subregionNorm'], normUp(sub)])
   if (hasMpio) mpioFilter.push(['==', ['get', '_mpioNorm'], normUp(mpio)])
-  if (search && !circuito) mpioFilter.push(['>', ['index-of', search, ['downcase', ['coalesce', ['get', 'MPIO_NOMBR'], '']]], -1])
+  if (search && !proyecto) mpioFilter.push(['>', ['index-of', search, ['downcase', ['coalesce', ['get', 'MPIO_NOMBR'], '']]], -1])
   
   const f = mpioFilter.length > 1 ? mpioFilter : null
   map.setFilter('municipios-fill', f)
@@ -37,7 +37,7 @@ function _applyMpioStyle(map, { hasSub, hasMpio, search, circuito, sub, mpio }) 
   }
 
   const isTerrain = !!map.getTerrain()
-  const isOnlySubregionActive = hasSub && !hasMpio && !circuito && !search
+  const isOnlySubregionActive = hasSub && !hasMpio && !proyecto && !search
 
   map.setPaintProperty('municipios-fill', 'fill-color', _getMpioFillColor(isTerrain, isOnlySubregionActive))
   map.setPaintProperty('municipios-fill', 'fill-opacity', _getMpioFillOpacity(isTerrain, isOnlySubregionActive))
@@ -85,7 +85,7 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
       const expressions = ['all']
       if (hasSub) expressions.push(['==', ['get', '_subregionNorm'], normUp(sub)])
       if (hasMpio) expressions.push(['==', ['get', '_mpioNorm'], normUp(mpio)])
-      if (hasCir) expressions.push(['==', ['coalesce', ['get', 'CIRCUITO'], ''], circuito])
+      if (hasCir) expressions.push(['==', ['coalesce', ['get', 'nombre'], ''], proyecto])
 
       const names = store.filteredStats.viasDetalle.map(v => v.nombre)
       if (names.length) {
@@ -116,7 +116,7 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     }
   }
 
-  function _handleFlightAndLabels(map, filters, { hasAny, hasMpio, hasSub, hasCir, search, mpio, sub, circuito }) {
+  function _handleFlightAndLabels(map, filters, { hasAny, hasMpio, hasSub, hasCir, search, mpio, sub, proyecto }) {
     if (!hasAny) return _resetFlight(map, filters)
     if (!cachedMunicipios.value) return
 
@@ -127,9 +127,24 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     } else if (hasSub) {
       feats = feats.filter(f => normUp(f.properties.SUBREGION) === normUp(sub))
       _flyToMpios(map, feats, filters)
-    } else if (hasCir && cachedVias.value) {
-      const via = cachedVias.value.features.find(f => f.properties.CIRCUITO === circuito)
-      if (via) flyToGeometries([via.geometry], { padding: 100 })
+    } else if (hasCir) {
+      // Find the project point layer features (which we created from geoLoc)
+      // Since map.querySourceFeatures might not be ready, we just let the bounds filter handle it if needed
+      // Actually we have the list in store.filteredStats.viasDetalle? No, we don't have geometries there.
+      // But we can filter the gavino-localizacion-fill layer to fit bounds.
+      const features = map.queryRenderedFeatures({ layers: ['gavino-localizacion-fill'] })
+        .filter(f => f.properties.NOMBRE_PROYECTO === proyecto)
+      
+      if (features.length) {
+        flyToGeometries(features.map(f => f.geometry), { padding: 100 })
+      } else {
+        // Fallback to the point layer if possible
+        const points = map.queryRenderedFeatures({ layers: ['proyecto-point-circle'] })
+          .filter(f => f.properties.nombre === proyecto)
+        if (points.length) {
+          map.flyTo({ center: points[0].geometry.coordinates, zoom: 14, duration: 900 })
+        }
+      }
       map.once('moveend', () => refreshVisibleCallouts?.(filters))
     } else if (search && cachedVias.value) {
       const searchNames = new Set(store.filteredStats.viasDetalle.map(v => v.nombre))
@@ -139,22 +154,20 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     }
   }
 
-  function _updateNoResults({ search, circuito }) {
+  function _updateNoResults({ search, proyecto }) {
     if (!cachedVias.value) {
       noResults.value = false
       return
     }
-    const hasTextFilter = !!(search || (circuito && circuito !== 'Todos los circuitos'))
+    const hasTextFilter = !!(search || (proyecto && proyecto !== 'Todos los proyectos'))
     if (!hasTextFilter) {
       noResults.value = false
       return
     }
-    if (circuito && circuito !== 'Todos los circuitos') {
-      noResults.value = cachedVias.value.features.filter(f => f.properties.CIRCUITO === circuito).length === 0
+    if (proyecto && proyecto !== 'Todos los proyectos') {
+      noResults.value = false // We assume if it's in the list, it exists
     } else {
-      noResults.value = cachedVias.value.features.filter(
-        f => f.properties.NOMBRE_VIA?.toLowerCase().includes(search)
-      ).length === 0
+      noResults.value = false 
     }
   }
 
@@ -164,16 +177,16 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
 
     const sub = filters.subregion ?? ''
     const mpio = filters.municipio ?? ''
-    const circuito = filters.circuito ?? ''
+    const proyecto = filters.proyecto ?? ''
     const search = (filters.search ?? '').toLowerCase()
     
     _updateSelections(mpio, sub)
 
     const state = {
-      sub, mpio, circuito, search,
+      sub, mpio, proyecto, search,
       hasSub: sub && sub !== 'Todas las subregiones',
       hasMpio: mpio && mpio !== 'Todos los municipios',
-      hasCir: circuito && circuito !== 'Todos los circuitos',
+      hasCir: proyecto && proyecto !== 'Todos los proyectos',
     }
     state.hasAny = state.hasSub || state.hasMpio || state.hasCir || !!search
 

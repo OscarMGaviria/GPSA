@@ -6,13 +6,13 @@ export const useMapStore = defineStore('map', () => {
     search:    '',
     subregion: 'Todas las subregiones',
     municipio: 'Todos los municipios',
-    circuito:  'Todos los circuitos',
+    proyecto:  'Todos los proyectos',
   })
 
   const filterOptions = ref({
     subregiones:            ['Todas las subregiones'],
     municipios:             ['Todos los municipios'],
-    circuitos:              ['Todos los circuitos'],
+    proyectos:              ['Todos los proyectos'],
     municipiosPorSubregion: {},
   })
 
@@ -20,7 +20,7 @@ export const useMapStore = defineStore('map', () => {
     viasIntervenidas: 0,
     longitudTotal:    0,
     municipios:       0,
-    circuitos:        0,
+    proyectos:        0,
     subregiones:      [],
     viasDetalle:      [],
   })
@@ -35,13 +35,13 @@ export const useMapStore = defineStore('map', () => {
     return ['Todos los municipios', ...lista]
   })
 
-  const filteredCircuitoOptions = computed(() => {
+  const filteredProyectoOptions = computed(() => {
     const sub = activeFilters.value.subregion
     const mpio = activeFilters.value.municipio
     const hasSub = sub && sub !== 'Todas las subregiones'
     const hasMpio = mpio && mpio !== 'Todos los municipios'
 
-    if (!hasSub && !hasMpio) return filterOptions.value.circuitos
+    if (!hasSub && !hasMpio) return filterOptions.value.proyectos
 
     const normSub = norm(sub)
     const normMpio = norm(mpio)
@@ -52,21 +52,21 @@ export const useMapStore = defineStore('map', () => {
       return true
     })
 
-    const lista = [...new Set(vias.map(v => v.circuito).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
-    return ['Todos los circuitos', ...lista]
+    const lista = [...new Set(vias.map(v => v.proyecto).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
+    return ['Todos los proyectos', ...lista]
   })
 
   // Normaliza texto para comparar sin acentos ni mayúsculas
   const norm = s => s?.toLowerCase().normalize('NFD').replaceAll(/[̀-ͯ]/g, '').trim() ?? ''
 
   const filteredStats = computed(() => {
-    const { subregion, municipio, circuito, search } = activeFilters.value
+    const { subregion, municipio, proyecto, search } = activeFilters.value
     const hasSub  = subregion && subregion !== 'Todas las subregiones'
     const hasMpio = municipio && municipio !== 'Todos los municipios'
-    const hasCir  = circuito  && circuito  !== 'Todos los circuitos'
+    const hasLoc  = proyecto  && proyecto  !== 'Todos los proyectos'
     const q       = search ? norm(search) : ''
 
-    if (!hasSub && !hasMpio && !hasCir && !q) return mapStats.value
+    if (!hasSub && !hasMpio && !hasLoc && !q) return mapStats.value
 
     const normSub  = norm(subregion)
     const normMpio = norm(municipio)
@@ -74,7 +74,7 @@ export const useMapStore = defineStore('map', () => {
     const vias = mapStats.value.viasDetalle.filter(v => {
       if (hasSub  && norm(v.subregion) !== normSub)  return false
       if (hasMpio && norm(v.municipio) !== normMpio)  return false
-      if (hasCir  && v.circuito !== circuito) return false
+      if (hasLoc  && v.proyecto !== proyecto) return false
       if (q && !norm(v.nombre).includes(q)
             && !norm(v.municipio).includes(q)
             && !norm(v.subregion).includes(q)) return false
@@ -92,7 +92,7 @@ export const useMapStore = defineStore('map', () => {
       viasIntervenidas: new Set(vias.map(v => v.nombre).filter(Boolean)).size,
       longitudTotal:    Math.round(longitudTotal * 100) / 100,
       municipios:       new Set(vias.map(v => v.municipio).filter(Boolean)).size,
-      circuitos:        new Set(vias.map(v => v.circuito).filter(Boolean)).size,
+      proyectos:        new Set(vias.map(v => v.proyecto).filter(Boolean)).size,
       viasDetalle:      vias,
       subregiones:      mapStats.value.subregiones,
     }
@@ -101,9 +101,9 @@ export const useMapStore = defineStore('map', () => {
   function setFilter(filters) {
     if (filters.subregion !== activeFilters.value.subregion) {
       filters.municipio = 'Todos los municipios'
-      filters.circuito = 'Todos los circuitos'
+      filters.proyecto = 'Todos los proyectos'
     } else if (filters.municipio !== activeFilters.value.municipio) {
-      filters.circuito = 'Todos los circuitos'
+      filters.proyecto = 'Todos los proyectos'
     }
     activeFilters.value = filters
   }
@@ -118,7 +118,7 @@ export const useMapStore = defineStore('map', () => {
     filteredStats,
     mapLoading,
     filteredMunicipioOptions,
-    filteredCircuitoOptions,
+    filteredProyectoOptions,
     setFilter,
     setFilterOptions,
     setMapStats,
