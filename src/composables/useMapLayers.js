@@ -537,6 +537,40 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     }
   }
 
+  function _setupArcgisTreeLayer(map, id, geoData) {
+    if (!geoData) return
+    try {
+      map.addSource(id, {
+        type: 'geojson',
+        data: geoData,
+        generateId: true
+      })
+      map.addLayer({
+        id: `${id}-symbol`,
+        type: 'symbol',
+        source: id,
+        layout: {
+          'text-field': '🌳',
+          'text-size': 20,
+          'text-allow-overlap': true,
+          'text-ignore-placement': true
+        }
+      })
+      
+      let hoveredPoint = null
+      map.on('mousemove', `${id}-symbol`, (e) => {
+        if (e.features.length > 0) {
+          map.getCanvas().style.cursor = 'pointer'
+        }
+      })
+      map.on('mouseleave', `${id}-symbol`, () => {
+        map.getCanvas().style.cursor = ''
+      })
+    } catch (err) {
+      console.error(`[SIMEVA] Error cargando tree layer ${id}:`, err)
+    }
+  }
+
   function _getCentroid(coords) {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     const process = (c) => {
@@ -669,14 +703,15 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     loading.value   = true
     loadError.value = false
 
-    const [resMunicipios, resVias, resLoc, resAfectados, resPermiso, resForestal, resCauce] = await Promise.allSettled([
+    const [resMunicipios, resVias, resLoc, resAfectados, resPermiso, resForestal, resCauce, resArcgisForestal] = await Promise.allSettled([
       getMunicipios(), 
       getLocalizaciones(), 
       getPuenteGavinoLocalizacion(),
       getPuenteGavinoPrediosAfectados(),
       getPuenteGavinoPrediosConPermiso(),
       getPuenteGavinoForestal(),
-      getPuenteGavinoCauce()
+      getPuenteGavinoCauce(),
+      getArcgisInventarioForestal()
     ])
 
     if (destroyed) return
@@ -688,6 +723,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const perResult = resPermiso.status === 'fulfilled' ? resPermiso.value : null
     const forResult = resForestal.status === 'fulfilled' ? resForestal.value : null
     const cauResult = resCauce.status === 'fulfilled' ? resCauce.value : null
+    const arcgisForestalResult = resArcgisForestal.status === 'fulfilled' ? resArcgisForestal.value : null
 
     cachedMunicipios.value = munResult?.data ?? null
     cachedVias.value       = viaResult?.data ?? null
@@ -701,6 +737,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const geoPermiso = perResult?.data ?? null
     const geoForestal = forResult?.data ?? null
     const geoCauce = cauResult?.data ?? null
+    const geoArcgisForestal = arcgisForestalResult?.data ?? null
 
     if (resMunicipios.status === 'rejected') console.warn('[SIMEVA] Municipios:', resMunicipios.reason)
     if (resVias.status       === 'rejected') console.warn('[SIMEVA] Vías:', resVias.reason)
@@ -794,6 +831,24 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         selectedVia.value = {
           name: 'Ocupación de Cauce',
           description: { ...p }
+        }
+      })
+    }
+    if (geoArcgisForestal) {
+      _setupArcgisTreeLayer(map, 'arcgis-forestal', geoArcgisForestal)
+      
+      map.on('click', 'arcgis-forestal-symbol', (e) => {
+        const p = e.features[0].properties
+        selectedVia.value = {
+          name: 'Inventario Forestal (ArcGIS)',
+          description: {
+            'Especie': p.Especie || 'N/A',
+            'Nombre Común': p.NombreComun || 'N/A',
+            'DAP (m)': p.DAP || 'N/A',
+            'Altura (m)': p.AlturaTotal || 'N/A',
+            'Estado': p.EstadoFitosanitario || 'N/A',
+            ...p
+          }
         }
       })
     }
