@@ -17,7 +17,8 @@ function writeCache(url, data) { _memCache[url] = data }
 async function fetchGeoJSON(url) {
   let text
   try {
-    const res = await fetch(url)
+    const fetchUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`
+    const res = await fetch(fetchUrl)
     if (!res.ok) throw new Error(`Error ${res.status}`)
     const arrayBuffer = await res.arrayBuffer()
     const decoder = new TextDecoder('utf-8')
