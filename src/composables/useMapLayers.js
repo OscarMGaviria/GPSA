@@ -921,8 +921,70 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       })
     }
 
+    function _setupCustomMarkers(map) {
+      if (!map.getSource('custom-markers')) {
+        map.addSource('custom-markers', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [-75.749567, 5.961762] },
+                properties: { label: 'k19+945 \n Termina intervención' }
+              },
+              {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [-75.7503366, 5.9616767] },
+                properties: { label: 'Inicio puente k19+892' }
+              },
+              {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [-75.7501234, 5.9616766] },
+                properties: { label: 'Fin Puente k19+916' }
+              },
+              {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [-75.750977, 5.961431] },
+                properties: { label: 'Inicia intervención' }
+              }
+            ]
+          }
+        })
+        map.addLayer({
+          id: 'custom-markers-circle',
+          type: 'circle',
+          source: 'custom-markers',
+          paint: {
+            'circle-radius': 6,
+            'circle-color': '#eab308',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        })
+        map.addLayer({
+          id: 'custom-markers-label',
+          type: 'symbol',
+          source: 'custom-markers',
+          layout: {
+            'text-field': ['get', 'label'],
+            'text-offset': [0, 1.2],
+            'text-anchor': 'top',
+            'text-size': 12,
+            'text-font': ['Prompt Bold', 'Open Sans Bold', 'Arial Unicode MS Bold']
+          },
+          paint: {
+            'text-color': '#000000',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 2
+          }
+        })
+      }
+    }
+
     _setupProyectoPoint(map, geoLoc)
     _setupArcGISRedVial(map)
+    _setupCustomMarkers(map)
 
     loading.value = false
   }
