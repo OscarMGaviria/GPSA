@@ -41,6 +41,20 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
           m.on('rotate', () => {
             mapBearing.value = m.getBearing()
           })
+          m.on('contextmenu', async (e) => {
+            const lng = e.lngLat.lng.toFixed(6)
+            const lat = e.lngLat.lat.toFixed(6)
+            try {
+              await navigator.clipboard.writeText(`Latitud\t${lat}\nLongitud\t${lng}`)
+              const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, className: 'copy-toast' })
+                .setLngLat(e.lngLat)
+                .setHTML(`<div style="padding: 4px 8px; font-family: 'Prompt', sans-serif; font-size: 12px; font-weight: 600; color: #0b5640; text-align: center;">¡Coordenadas copiadas!<br>${lat}, ${lng}</div>`)
+                .addTo(m)
+              setTimeout(() => popup.remove(), 1500)
+            } catch (err) {
+              console.error('No se pudo copiar:', err)
+            }
+          })
         },
         onLoad:       () => { store.setMapLoading(true); loadSimeva() },
       })

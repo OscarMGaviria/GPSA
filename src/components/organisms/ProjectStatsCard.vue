@@ -75,20 +75,27 @@ const totalText = computed(() => {
 .project-stats-card {
   position: absolute;
   bottom: 30px;
-  right: 30px;
+  right: 80px;
   width: 340px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px) saturate(200%);
+  -webkit-backdrop-filter: blur(16px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), 0 2px 10px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   z-index: 1000;
   display: flex;
   flex-direction: column;
   gap: 16px;
   pointer-events: auto;
   color: #1e293b;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.project-stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.12), 0 4px 15px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .stats-title {
@@ -178,14 +185,16 @@ const totalText = computed(() => {
 }
 
 /* Animations */
-.fade-slide-enter-active,
+.fade-slide-enter-active {
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 .fade-slide-leave-active {
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-slide-enter-from,
 .fade-slide-leave-to {
   opacity: 0;
-  transform: translateY(20px) scale(0.95);
+  transform: translateY(30px) scale(0.95);
 }
 </style>

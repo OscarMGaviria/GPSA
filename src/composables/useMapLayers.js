@@ -1,5 +1,5 @@
 import { ref, shallowRef, onUnmounted } from 'vue'
-import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getPuenteGavinoPrediosConPermiso, getPuenteGavinoForestal, getPuenteGavinoCauce, getArcgisInventarioForestal, parseDescription } from '../services/api.js'
+import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getPuenteGavinoPrediosConPermiso, getPuenteGavinoForestal, getPuenteGavinoCauce, getPuenteGavinoAbscisas, getArcgisInventarioForestal, parseDescription } from '../services/api.js'
 import { pctTiempoTranscurrido } from '../utils/stats.js'
 import { parseAvancePct } from '../utils/via.js'
 import { useMapStore } from '../stores/useMapStore.js'
@@ -709,7 +709,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     loading.value   = true
     loadError.value = false
 
-    const [resMunicipios, resVias, resLoc, resAfectados, resPermiso, resForestal, resCauce, resArcgisForestal] = await Promise.allSettled([
+    const [resMunicipios, resVias, resLoc, resAfectados, resPermiso, resForestal, resCauce, resAbscisas, resArcgisForestal] = await Promise.allSettled([
       getMunicipios(), 
       getLocalizaciones(), 
       getPuenteGavinoLocalizacion(),
@@ -717,6 +717,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       getPuenteGavinoPrediosConPermiso(),
       getPuenteGavinoForestal(),
       getPuenteGavinoCauce(),
+      getPuenteGavinoAbscisas(),
       getArcgisInventarioForestal()
     ])
 
@@ -729,6 +730,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const perResult = resPermiso.status === 'fulfilled' ? resPermiso.value : null
     const forResult = resForestal.status === 'fulfilled' ? resForestal.value : null
     const cauResult = resCauce.status === 'fulfilled' ? resCauce.value : null
+    const absResult = resAbscisas.status === 'fulfilled' ? resAbscisas.value : null
     const arcgisForestalResult = resArcgisForestal.status === 'fulfilled' ? resArcgisForestal.value : null
 
     cachedMunicipios.value = munResult?.data ?? null
@@ -743,6 +745,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const geoPermiso = perResult?.data ?? null
     const geoForestal = forResult?.data ?? null
     const geoCauce = cauResult?.data ?? null
+    const geoAbscisas = absResult?.data ?? null
     const geoArcgisForestal = arcgisForestalResult?.data ?? null
 
     if (resMunicipios.status === 'rejected') console.warn('[SIMEVA] Municipios:', resMunicipios.reason)
@@ -840,6 +843,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         }
       })
     }
+    // abscisas layer moved to the end to ensure it renders on top
     if (geoArcgisForestal) {
       _setupArcgisTreeLayer(map, 'arcgis-forestal', geoArcgisForestal)
       
@@ -863,11 +867,18 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       
       map.on('click', 'gavino-localizacion-fill', (e) => {
         const p = e.features[0].properties
+        const projName = (p.NOMBRE_PROYECTO || '').toLowerCase()
+        let pocPdf = 'data/01 Puente gavino/Resolucion otorgamiento POC Gavino.pdf'
+        if (projName.includes('casita')) {
+          pocPdf = 'data/01 Puente gavino/Res otorgamiento POC Mi Casita.pdf'
+        }
+        
         selectedVia.value = {
           name: 'Información del Proyecto',
           description: {
             'Proyecto': p.NOMBRE_PROYECTO || 'N/A',
-            'Subregión': p.SUBREGION || 'N/A'
+            'Subregión': p.SUBREGION || 'N/A',
+            'Permiso de ocupación de cauce': pocPdf
           }
         }
       })
@@ -917,6 +928,23 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
               'line-opacity': config.opacity
             }
           }, 'proyecto-point-pulse') // Insertamos la capa de vías DEBAJO de los puntos (proyecto-point-pulse) para que no los tapen
+
+          map.on('click', config.name, (e) => {
+            const p = e.features[0].properties
+            selectedVia.value = {
+              name: 'Detalle de la capa',
+              description: {
+                'Nombre': p.NOMBRE_VIA || 'Vía sin nombre',
+                'Código de Vía': p.CODIGO_VIA || 'N/A'
+              }
+            }
+          })
+          map.on('mouseenter', config.name, () => {
+            map.getCanvas().style.cursor = 'pointer'
+          })
+          map.on('mouseleave', config.name, () => {
+            map.getCanvas().style.cursor = ''
+          })
         }
       })
     }
@@ -930,36 +958,35 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             features: [
               {
                 type: 'Feature',
-                geometry: { type: 'Point', coordinates: [-75.749567, 5.961762] },
-                properties: { label: 'k19+945 \n Termina intervención' }
+                geometry: { type: 'LineString', coordinates: [[-75.749642, 5.961837], [-75.749492, 5.961687]] },
+                properties: { label: 'k19+945 \n Termina intervención', rotation: -45 }
               },
               {
                 type: 'Feature',
-                geometry: { type: 'Point', coordinates: [-75.7503366, 5.9616767] },
-                properties: { label: 'Inicio puente k19+892' }
+                geometry: { type: 'LineString', coordinates: [[-75.7503366, 5.9617767], [-75.7503366, 5.9615767]] },
+                properties: { label: 'Inicio puente k19+892', rotation: -90 }
               },
               {
                 type: 'Feature',
-                geometry: { type: 'Point', coordinates: [-75.7501234, 5.9616766] },
-                properties: { label: 'Fin Puente k19+916' }
+                geometry: { type: 'LineString', coordinates: [[-75.7501234, 5.9617766], [-75.7501234, 5.9615766]] },
+                properties: { label: 'Fin Puente k19+916', rotation: -90 }
               },
               {
                 type: 'Feature',
-                geometry: { type: 'Point', coordinates: [-75.750977, 5.961431] },
-                properties: { label: 'Inicia intervención' }
+                geometry: { type: 'LineString', coordinates: [[-75.751077, 5.961431], [-75.750877, 5.961431]] },
+                properties: { label: 'k19+825 \n Inicia intervención', rotation: 0 }
               }
             ]
           }
         })
         map.addLayer({
-          id: 'custom-markers-circle',
-          type: 'circle',
+          id: 'custom-markers-line',
+          type: 'line',
           source: 'custom-markers',
           paint: {
-            'circle-radius': 6,
-            'circle-color': '#eab308',
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#ffffff'
+            'line-color': '#000000',
+            'line-width': 3,
+            'line-dasharray': [2, 2]
           }
         })
         map.addLayer({
@@ -967,16 +994,41 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           type: 'symbol',
           source: 'custom-markers',
           layout: {
+            'symbol-placement': 'point',
             'text-field': ['get', 'label'],
-            'text-offset': [0, 1.2],
-            'text-anchor': 'top',
-            'text-size': 12,
-            'text-font': ['Prompt Bold', 'Open Sans Bold', 'Arial Unicode MS Bold']
+            'text-rotate': ['get', 'rotation'],
+            'text-offset': [0, -1.2],
+            'text-anchor': 'bottom',
+            'text-size': 18,
+            'text-font': ['Prompt Bold', 'Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-allow-overlap': true,
+            'text-ignore-placement': true
           },
           paint: {
             'text-color': '#000000',
             'text-halo-color': '#ffffff',
             'text-halo-width': 2
+          }
+        })
+        
+        map.addSource('eje-offset', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: [[-75.7509159376212,5.961574396331823],[-75.75087729147855,5.961607894457101],[-75.75081722073415,5.961643898174079],[-75.75076168015399,5.961664404459971],[-75.75068818425618,5.961676351195498],[-75.75060768408015,5.961676830733208],[-75.75049196450784,5.961676775468922],[-75.75005089759503,5.961676578327721],[-75.7500041421137,5.9616765575980475],[-75.74987535011037,5.961676496702531],[-75.74980314153633,5.961681289630141],[-75.74975459000446,5.9616933593705195],[-75.74970865047241,5.961712363069452],[-75.749675080343,5.961731763082256]]
+            }
+          }
+        })
+        map.addLayer({
+          id: 'eje-offset-line',
+          type: 'line',
+          source: 'eje-offset',
+          paint: {
+            'line-color': '#ef4444',
+            'line-width': 2,
+            'line-dasharray': [4, 4]
           }
         })
       }
@@ -985,6 +1037,69 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     _setupProyectoPoint(map, geoLoc)
     _setupArcGISRedVial(map)
     _setupCustomMarkers(map)
+
+    if (geoAbscisas) {
+      const pinId = 'green-pin';
+      if (!map.hasImage(pinId)) {
+        const svg = '<svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C6.48 0 2 4.48 2 10c0 7.5 10 22 10 22s10-14.5 10-22c0-5.52-4.48-10-10-10z" fill="#22c55e"/><circle cx="12" cy="10" r="4.5" fill="#ffffff"/></svg>';
+        const img = new Image(24, 32);
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        img.onload = () => { if (!map.hasImage(pinId)) map.addImage(pinId, img); };
+      }
+
+      if (!map.getSource('gavino-abscisas')) {
+        map.addSource('gavino-abscisas', {
+          type: 'geojson',
+          data: geoAbscisas,
+          generateId: true
+        });
+      }
+
+      if (!map.getLayer('gavino-abscisas-symbol')) {
+        map.addLayer({
+          id: 'gavino-abscisas-symbol',
+          type: 'symbol',
+          source: 'gavino-abscisas',
+          minzoom: 12,
+          layout: {
+            'icon-image': pinId,
+            'icon-size': 1,
+            'icon-anchor': 'bottom',
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'text-field': ['get', 'label'],
+            'text-anchor': 'top',
+            'text-offset': [0, 0.2],
+            'text-size': 14,
+            'text-font': ['Prompt Bold', 'Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-allow-overlap': true
+          },
+          paint: {
+            'text-color': '#0b5640',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 2
+          }
+        });
+
+        map.on('click', 'gavino-abscisas-symbol', (e) => {
+          const p = e.features[0].properties;
+          selectedVia.value = {
+            name: p.NOMBRE_PROYECTO || 'Marca de Posición',
+            description: {
+              'Tipo': p.TIPO || 'N/A',
+              'Descripción': p.DESCRIPCION || 'N/A'
+            }
+          };
+        });
+
+        map.on('mousemove', 'gavino-abscisas-symbol', () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'gavino-abscisas-symbol', () => {
+          map.getCanvas().style.cursor = '';
+        });
+      }
+    }
 
     loading.value = false
   }

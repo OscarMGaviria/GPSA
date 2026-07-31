@@ -1,0 +1,108 @@
+{
+  "type": "FeatureCollection",
+  "name": "Abscisas_Puente_Gabino",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "NOMBRE_PROYECTO": "Puente Gabino",
+        "label": "k1+563",
+        "TIPO": "Marca de posición",
+        "DESCRIPCION": "Abscisa k1+563"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.20134,
+          6.571632
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "NOMBRE_PROYECTO": "Puente Gabino",
+        "label": "k1+788",
+        "TIPO": "Marca de posición",
+        "DESCRIPCION": "Abscisa k1+788"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.199747,
+          6.572854
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "NOMBRE_PROYECTO": "Puente Gabino",
+        "label": "k2+542",
+        "TIPO": "Marca de posición",
+        "DESCRIPCION": "Abscisa k2+542"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.200804,
+          6.569969
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "NOMBRE_PROYECTO": "Puente Gabino",
+        "label": "k2+742",
+        "TIPO": "Marca de posición",
+        "DESCRIPCION": "Abscisa k2+742"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.199311,
+          6.570991
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "NOMBRE_PROYECTO": "Muro",
+        "label": "k7+332",
+        "TIPO": "Marca de posición",
+        "DESCRIPCION": "Abscisa k7+332"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.664184,
+          6.189917
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "NOMBRE_PROYECTO": "Heliconia",
+        "label": "k13+595",
+        "TIPO": "Marca de posición",
+        "DESCRIPCION": "Abscisa k13+595"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.732872,
+          6.205073
+        ]
+      }
+    }
+  ]
+}
