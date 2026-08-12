@@ -24,6 +24,12 @@ const props = defineProps({
   align: {
     type: String,
     default: 'left'  // 'left' | 'right'
+  },
+  groups: {
+    // Agrupa las opciones (salvo la primera, ej. "Todos los proyectos") bajo encabezados.
+    // Forma: [{ label: 'PAP', options: [...] }, { label: 'Puentes', options: [...] }]
+    type: Array,
+    default: null
   }
 })
 
@@ -37,6 +43,27 @@ const searchRef    = ref(null)
 const filtered = computed(() => {
   const q = searchQ.value.trim().toLowerCase()
   return q ? props.options.filter(o => o.toLowerCase().includes(q)) : props.options
+})
+
+const filteredDefault = computed(() => {
+  if (!props.groups) return null
+  const q = searchQ.value.trim().toLowerCase()
+  const def = props.options[0]
+  if (!def) return null
+  return (!q || def.toLowerCase().includes(q)) ? def : null
+})
+
+const filteredGroups = computed(() => {
+  if (!props.groups) return []
+  const q = searchQ.value.trim().toLowerCase()
+  return props.groups
+    .map(g => ({ label: g.label, options: q ? g.options.filter(o => o.toLowerCase().includes(q)) : g.options }))
+    .filter(g => g.options.length > 0)
+})
+
+const hasNoResults = computed(() => {
+  if (!props.groups) return filtered.value.length === 0
+  return !filteredDefault.value && filteredGroups.value.length === 0
 })
 
 const toggle = async () => {
@@ -98,19 +125,47 @@ onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
 
         <!-- Options -->
         <ul class="dropdown-list">
-          <li v-if="filtered.length === 0" class="dropdown-empty">
+          <li v-if="hasNoResults" class="dropdown-empty">
             Sin resultados
           </li>
-          <li
-            v-for="option in filtered"
-            :key="option"
-            class="dropdown-item"
-            :class="{ 'is-selected': option === (modelValue || options[0]) }"
-            @click="select(option)"
-          >
-            <span class="item-label">{{ option }}</span>
-            <Check v-if="option === (modelValue || options[0])" :size="12" class="item-check" />
-          </li>
+
+          <template v-if="groups">
+            <li
+              v-if="filteredDefault"
+              class="dropdown-item"
+              :class="{ 'is-selected': filteredDefault === (modelValue || options[0]) }"
+              @click="select(filteredDefault)"
+            >
+              <span class="item-label">{{ filteredDefault }}</span>
+              <Check v-if="filteredDefault === (modelValue || options[0])" :size="12" class="item-check" />
+            </li>
+            <template v-for="group in filteredGroups" :key="group.label">
+              <li class="dropdown-group-label">{{ group.label }}</li>
+              <li
+                v-for="option in group.options"
+                :key="option"
+                class="dropdown-item"
+                :class="{ 'is-selected': option === (modelValue || options[0]) }"
+                @click="select(option)"
+              >
+                <span class="item-label">{{ option }}</span>
+                <Check v-if="option === (modelValue || options[0])" :size="12" class="item-check" />
+              </li>
+            </template>
+          </template>
+
+          <template v-else>
+            <li
+              v-for="option in filtered"
+              :key="option"
+              class="dropdown-item"
+              :class="{ 'is-selected': option === (modelValue || options[0]) }"
+              @click="select(option)"
+            >
+              <span class="item-label">{{ option }}</span>
+              <Check v-if="option === (modelValue || options[0])" :size="12" class="item-check" />
+            </li>
+          </template>
         </ul>
 
       </div>
@@ -254,6 +309,17 @@ onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
   color: #9ca3af;
   font-family: 'Prompt', sans-serif;
   text-align: center;
+}
+
+.dropdown-group-label {
+  padding: 8px 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Prompt', sans-serif;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  user-select: none;
 }
 
 .dropdown-item {

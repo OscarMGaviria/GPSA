@@ -12,6 +12,33 @@ const props = defineProps({
 
 const emit = defineEmits(['filter-change', 'close'])
 
+const PROYECTO_GROUP_DEFS = [
+  { label: 'PAP', match: n => /^pap\b/i.test(n) },
+  { label: 'Puentes', match: n => /^puente/i.test(n) },
+]
+
+// Proyectos cuyo nombre no sigue la convención "PAP ..." / "Puente ..." pero sí pertenecen a un grupo.
+const PROYECTO_OVERRIDES = {
+  'mi casita venecia': 'Puentes',
+}
+
+// Agrupa los proyectos por PAP o Puentes; lo que no encaje en ninguno cae en "Otros".
+const proyectoGroups = computed(() => {
+  const rest = props.proyectoOptions.slice(1)
+  const groups = PROYECTO_GROUP_DEFS.map(def => ({ label: def.label, options: [] }))
+  const otros = []
+  for (const name of rest) {
+    const overrideLabel = PROYECTO_OVERRIDES[name.toLowerCase()]
+    const groupIdx = overrideLabel
+      ? PROYECTO_GROUP_DEFS.findIndex(def => def.label === overrideLabel)
+      : PROYECTO_GROUP_DEFS.findIndex(def => def.match(name))
+    if (groupIdx !== -1) groups[groupIdx].options.push(name)
+    else otros.push(name)
+  }
+  if (otros.length) groups.push({ label: 'Otros', options: otros })
+  return groups.filter(g => g.options.length)
+})
+
 const searchText   = ref(props.activeFilters?.search ?? '')
 const subregionVal = ref(props.activeFilters?.subregion ?? props.subregionOptions[0])
 const municipioVal = ref(props.activeFilters?.municipio ?? props.municipioOptions[0])
@@ -96,7 +123,7 @@ onUnmounted(() => {
 
     <Selector v-model="subregionVal" :options="subregionOptions" @update:modelValue="emitFilters" align="right" />
     <Selector v-model="municipioVal" :options="municipioOptions" @update:modelValue="emitFilters" align="right" />
-    <Selector v-model="proyectoVal"  :options="proyectoOptions"  @update:modelValue="emitFilters" align="right" />
+    <Selector v-model="proyectoVal"  :options="proyectoOptions" :groups="proyectoGroups" @update:modelValue="emitFilters" align="right" />
 
     <div v-if="!isMobile" class="btn-clear-wrapper">
       <button

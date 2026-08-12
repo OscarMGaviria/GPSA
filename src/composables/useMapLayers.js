@@ -545,21 +545,28 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         data: geoData,
         generateId: true
       })
+      const iconId = 'tree-icon';
+      if (!map.hasImage(iconId)) {
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#10b981" stroke="#064e3b" stroke-width="1.5"><path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3L12 3l4 4.3a1 1 0 0 1-.8 1.7H15l3 3.3a1 1 0 0 1-.7 1.7H17Z"/><path d="M12 22v-3" stroke="#451a03" stroke-width="3"/></svg>';
+        const img = new Image(24, 24);
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        img.onload = () => { if (!map.hasImage(iconId)) map.addImage(iconId, img); };
+      }
+
       map.addLayer({
         id: `${id}-symbol`,
-        type: 'circle',
+        type: 'symbol',
         source: id,
-        paint: {
-          'circle-radius': [
+        layout: {
+          'icon-image': iconId,
+          'icon-size': [
             'interpolate', ['linear'], ['zoom'],
-            12, 3,
-            16, 6,
-            20, 10
+            12, 0.6,
+            16, 1.0,
+            20, 1.6
           ],
-          'circle-color': '#10b981', // Verde vibrante
-          'circle-stroke-width': 1.5,
-          'circle-stroke-color': '#ffffff',
-          'circle-opacity': 0.85
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true
         }
       })
       
@@ -822,9 +829,9 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       })
     }
     if (geoForestal) {
-      _setupGenericPointLayer(map, 'gavino-forestal', geoForestal, '#16a34a')
+      _setupArcgisTreeLayer(map, 'gavino-forestal', geoForestal)
       
-      map.on('click', 'gavino-forestal-circle', (e) => {
+      map.on('click', 'gavino-forestal-symbol', (e) => {
         const p = e.features[0].properties
         selectedVia.value = {
           name: 'Aprovechamiento Forestal',
@@ -868,18 +875,21 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       map.on('click', 'gavino-localizacion-fill', (e) => {
         const p = e.features[0].properties
         const projName = (p.NOMBRE_PROYECTO || '').toLowerCase()
-        let pocPdf = 'data/01 Puente gavino/Resolucion otorgamiento POC Gavino.pdf'
+        
+        const desc = {
+          'Proyecto': p.NOMBRE_PROYECTO || 'N/A',
+          'Subregión': p.SUBREGION || 'N/A'
+        }
+        
         if (projName.includes('casita')) {
-          pocPdf = 'data/01 Puente gavino/Res otorgamiento POC Mi Casita.pdf'
+          desc['Permiso de ocupación de cauce'] = 'data/01 Puente gavino/Res otorgamiento POC Mi Casita.pdf'
+        } else if (projName.includes('gavi') || projName.includes('gabi')) {
+          desc['Permiso de ocupación de cauce'] = 'data/01 Puente gavino/Resolucion otorgamiento POC Gavino.pdf'
         }
         
         selectedVia.value = {
           name: 'Información del Proyecto',
-          description: {
-            'Proyecto': p.NOMBRE_PROYECTO || 'N/A',
-            'Subregión': p.SUBREGION || 'N/A',
-            'Permiso de ocupación de cauce': pocPdf
-          }
+          description: desc
         }
       })
       

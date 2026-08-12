@@ -1,6 +1,6 @@
 export const projectStats = {
   "Puente Gabino": { total: "2", green: 1, red: 1, yellow: 0, obs: "-" },
-  "Mi Casita Venecia": { total: "4", green: 2, red: 2, yellow: 0, obs: "-" },
+  "Mi Casita Venecia": { total: "1", green: 0, red: 1, yellow: 0, obs: "-" },
   "Variante Majagual": { total: "1", green: 1, red: 0, yellow: 0, obs: "-" },
   "Puente Rio Sucio": { total: "Pendiente por definir", green: 0, red: 0, yellow: "?", obs: "Espera de topografía para replantear diseño" },
   "Puente El Verdún": { total: "3", green: 3, red: 0, yellow: 0, obs: "-" },
@@ -10,7 +10,6 @@ export const projectStats = {
   "Puente El Churimbo": { total: "2", green: 2, red: 0, yellow: 0, obs: "-" },
   "Puente Las Margaritas": { total: "En ejecución", green: 0, red: 0, yellow: 0, obs: "-" },
   "Puente Toledo": { total: "2", green: 2, red: 0, yellow: 0, obs: "-" },
-  "PAP San Antonio de prado": { total: "2", green: 0, red: 0, yellow: 2, obs: "Esperando firma para permisos de intervención" },
   "PAP Heliconia": { total: "2", green: 2, red: 0, yellow: 0, obs: "-" },
   "PAP Ituango - Fase 1": { total: "En ejecución", green: 0, red: 0, yellow: 0, obs: "-" },
   "PAP Ituango - Fase 2": { total: "En ejecución", green: 0, red: 0, yellow: 0, obs: "-" },
