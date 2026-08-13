@@ -1,0 +1,38 @@
+{
+  "type": "FeatureCollection",
+  "name": "abscisas",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "k19+930",
+        "NOMBRE_PROYECTO": "Puente Gavino",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "k19+930"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.749723,
+          5.961619
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "k19+808",
+        "NOMBRE_PROYECTO": "Puente Gavino",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "k19+808"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.750784,
+          5.961552
+        ]
+      }
+    }
+  ]
+}

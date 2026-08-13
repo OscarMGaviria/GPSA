@@ -1046,7 +1046,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
     _setupProyectoPoint(map, geoLoc)
     _setupArcGISRedVial(map)
-    _setupCustomMarkers(map)
+    // _setupCustomMarkers(map)
 
     if (geoAbscisas) {
       const pinId = 'green-pin';
