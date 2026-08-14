@@ -5,32 +5,144 @@
     {
       "type": "Feature",
       "properties": {
-        "label": "k19+930",
+        "label": "Fin\nk1+788",
         "NOMBRE_PROYECTO": "Puente Gavino",
         "TIPO": "Abscisa",
-        "DESCRIPCION": "k19+930"
+        "DESCRIPCION": "Fin\nk1+788"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -75.749723,
-          5.961619
+          -75.199745,
+          6.572853
         ]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "label": "k19+808",
+        "label": "Inicio\nk1+564",
         "NOMBRE_PROYECTO": "Puente Gavino",
         "TIPO": "Abscisa",
-        "DESCRIPCION": "k19+808"
+        "DESCRIPCION": "Inicio\nk1+564"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -75.750784,
-          5.961552
+          -75.201351,
+          6.571648
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "Fin\nk2+742",
+        "NOMBRE_PROYECTO": "Puente Gavino",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "Fin\nk2+742"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.199302,
+          6.57099
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "Inicio\nk2+542",
+        "NOMBRE_PROYECTO": "Puente Gavino",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "Inicio\nk2+542"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.200802,
+          6.569942
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "Final k7+319",
+        "NOMBRE_PROYECTO": "PAP San Antonio de Prado",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "Final k7+319"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.664298,
+          6.189899
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "Inicio k7+301",
+        "NOMBRE_PROYECTO": "PAP San Antonio de Prado",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "Inicio k7+301"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.664441,
+          6.189839
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "k9+778",
+        "NOMBRE_PROYECTO": "Puente Gavino",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "k9+778"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.608812,
+          8.110389
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "Final\nk55+190",
+        "NOMBRE_PROYECTO": "PAP Heliconia",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "Final\nk55+190"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.732871,
+          6.205071
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "inicio\nk55+112",
+        "NOMBRE_PROYECTO": "PAP Heliconia",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "inicio\nk55+112"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.733166,
+          6.205705
         ]
       }
     }

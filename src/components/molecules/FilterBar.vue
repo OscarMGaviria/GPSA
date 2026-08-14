@@ -4,45 +4,16 @@ import { Search, X } from '@lucide/vue'
 import Selector from '../atoms/Selector.vue'
 
 const props = defineProps({
-  subregionOptions: { type: Array,  default: () => ['Todas las subregiones'] },
-  municipioOptions: { type: Array,  default: () => ['Todos los municipios'] },
-  proyectoOptions:  { type: Array,  default: () => ['Todos los proyectos'] },
-  activeFilters:    { type: Object, default: null },
+  puenteOptions: { type: Array,  default: () => ['Todos los puentes'] },
+  papOptions:    { type: Array,  default: () => ['Todos los PAP y otros'] },
+  activeFilters: { type: Object, default: null },
 })
 
 const emit = defineEmits(['filter-change', 'close'])
 
-const PROYECTO_GROUP_DEFS = [
-  { label: 'PAP', match: n => /^pap\b/i.test(n) },
-  { label: 'Puentes', match: n => /^puente/i.test(n) },
-]
-
-// Proyectos cuyo nombre no sigue la convención "PAP ..." / "Puente ..." pero sí pertenecen a un grupo.
-const PROYECTO_OVERRIDES = {
-  'mi casita venecia': 'Puentes',
-}
-
-// Agrupa los proyectos por PAP o Puentes; lo que no encaje en ninguno cae en "Otros".
-const proyectoGroups = computed(() => {
-  const rest = props.proyectoOptions.slice(1)
-  const groups = PROYECTO_GROUP_DEFS.map(def => ({ label: def.label, options: [] }))
-  const otros = []
-  for (const name of rest) {
-    const overrideLabel = PROYECTO_OVERRIDES[name.toLowerCase()]
-    const groupIdx = overrideLabel
-      ? PROYECTO_GROUP_DEFS.findIndex(def => def.label === overrideLabel)
-      : PROYECTO_GROUP_DEFS.findIndex(def => def.match(name))
-    if (groupIdx !== -1) groups[groupIdx].options.push(name)
-    else otros.push(name)
-  }
-  if (otros.length) groups.push({ label: 'Otros', options: otros })
-  return groups.filter(g => g.options.length)
-})
-
-const searchText   = ref(props.activeFilters?.search ?? '')
-const subregionVal = ref(props.activeFilters?.subregion ?? props.subregionOptions[0])
-const municipioVal = ref(props.activeFilters?.municipio ?? props.municipioOptions[0])
-const proyectoVal  = ref(props.activeFilters?.proyecto ?? props.proyectoOptions[0])
+const searchText = ref(props.activeFilters?.search ?? '')
+const puenteVal  = ref(props.activeFilters?.puente ?? props.puenteOptions[0])
+const papVal     = ref(props.activeFilters?.pap ?? props.papOptions[0])
 
 let isSyncing = false
 
@@ -50,45 +21,34 @@ let isSyncing = false
 watch(() => props.activeFilters, (f) => {
   if (!f) return
   isSyncing = true
-  searchText.value   = f.search    ?? ''
-  subregionVal.value = f.subregion ?? props.subregionOptions[0]
-  municipioVal.value = f.municipio ?? props.municipioOptions[0]
-  proyectoVal.value  = f.proyecto  ?? props.proyectoOptions[0]
+  searchText.value = f.search ?? ''
+  puenteVal.value  = f.puente ?? props.puenteOptions[0]
+  papVal.value     = f.pap ?? props.papOptions[0]
   nextTick(() => {
     isSyncing = false
   })
 }, { immediate: true, deep: true })
 
-watch(subregionVal, () => {
-  if (isSyncing) return
-  municipioVal.value = props.municipioOptions[0]
-  proyectoVal.value  = props.proyectoOptions[0]
-  emitFilters()
-})
-
 const emitFilters = () => {
   emit('filter-change', {
-    search:    searchText.value,
-    subregion: subregionVal.value,
-    municipio: municipioVal.value,
-    proyecto:  proyectoVal.value,
+    search: searchText.value,
+    puente: puenteVal.value,
+    pap:    papVal.value,
   })
 }
 
 const clearFilters = () => {
-  searchText.value   = ''
-  subregionVal.value = props.subregionOptions[0]
-  municipioVal.value = props.municipioOptions[0]
-  proyectoVal.value  = props.proyectoOptions[0]
+  searchText.value = ''
+  puenteVal.value  = props.puenteOptions[0]
+  papVal.value     = props.papOptions[0]
   emitFilters()
 }
 
 const hasActiveFilters = computed(() => {
   const hasSearch = searchText.value.trim() !== ''
-  const hasSubregion = subregionVal.value && subregionVal.value !== props.subregionOptions[0]
-  const hasMunicipio = municipioVal.value && municipioVal.value !== props.municipioOptions[0]
-  const hasProyecto = proyectoVal.value && proyectoVal.value !== props.proyectoOptions[0]
-  return hasSearch || hasSubregion || hasMunicipio || hasProyecto
+  const hasPuente = puenteVal.value && puenteVal.value !== props.puenteOptions[0]
+  const hasPap    = papVal.value && papVal.value !== props.papOptions[0]
+  return hasSearch || hasPuente || hasPap
 })
 
 const isMobile = ref(false)
@@ -121,9 +81,8 @@ onUnmounted(() => {
       />
     </div>
 
-    <Selector v-model="subregionVal" :options="subregionOptions" @update:modelValue="emitFilters" align="right" />
-    <Selector v-model="municipioVal" :options="municipioOptions" @update:modelValue="emitFilters" align="right" />
-    <Selector v-model="proyectoVal"  :options="proyectoOptions" :groups="proyectoGroups" @update:modelValue="emitFilters" align="right" />
+    <Selector v-model="puenteVal" :options="puenteOptions" @update:modelValue="emitFilters" align="right" />
+    <Selector v-model="papVal"    :options="papOptions"    @update:modelValue="emitFilters" align="right" />
 
     <div v-if="!isMobile" class="btn-clear-wrapper">
       <button

@@ -1,5 +1,5 @@
 import { ref, shallowRef, onUnmounted } from 'vue'
-import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getPuenteGavinoPrediosConPermiso, getPuenteGavinoForestal, getPuenteGavinoCauce, getPuenteGavinoAbscisas, getArcgisInventarioForestal, parseDescription } from '../services/api.js'
+import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getMiCasitaPrediosAfectados, getHeliconiaPrediosAfectados, getPuenteGavinoForestal, getPuenteGavinoCauce, getPuenteGavinoAbscisas, getArcgisInventarioForestal, parseDescription } from '../services/api.js'
 import { pctTiempoTranscurrido } from '../utils/stats.js'
 import { parseAvancePct } from '../utils/via.js'
 import { useMapStore } from '../stores/useMapStore.js'
@@ -63,21 +63,25 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
 
   function _extractFilterOptions(geoMunicipios, geoVias, geoLoc) {
-    const subregiones = geoMunicipios
-      ? [...new Set(geoMunicipios.features.map(f => canonicalSub(f.properties.SUBREGION)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
-      : []
-    const municipioOpts = geoVias
-      ? [...new Set(geoVias.features.map(f => sentenceCase(f.properties.MPIO_NOMBR)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
-      : []
-    const proyectoOpts = geoLoc
+    const proyectos = geoLoc
       ? [...new Set(geoLoc.features.map(f => f.properties.NOMBRE_PROYECTO).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
       : []
     
+    const puentes = []
+    const paps = []
+    
+    for (const name of proyectos) {
+      const lower = name.toLowerCase()
+      if (lower.startsWith('puente') || lower.includes('casita')) {
+        puentes.push(name)
+      } else {
+        paps.push(name)
+      }
+    }
+
     onOptionsLoaded?.({
-      subregiones: ['Todas las subregiones', ...subregiones],
-      municipios: ['Todos los municipios', ...municipioOpts],
-      proyectos: ['Todos los proyectos', ...proyectoOpts],
-      municipiosPorSubregion: _getMunicipiosPorSubregion(geoMunicipios, geoVias),
+      puentes: ['Todos los puentes', ...puentes],
+      paps: ['Todos los PAP y otros', ...paps],
     })
   }
 
@@ -438,7 +442,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         source: id,
         filter: ['match', ['geometry-type'], ['Polygon', 'MultiPolygon'], true, false],
         paint: {
-          'fill-color': fillColor,
+          'fill-color': ['coalesce', ['get', 'fillColor'], fillColor],
           'fill-opacity': [
             'case',
             ['boolean', ['feature-state', 'hover'], false],
@@ -452,7 +456,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         type: 'line',
         source: id,
         paint: {
-          'line-color': outlineColor,
+          'line-color': ['coalesce', ['get', 'outlineColor'], outlineColor],
           'line-width': [
             'case',
             ['boolean', ['feature-state', 'hover'], false],
@@ -607,12 +611,16 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       const centroid = _getCentroid(f.geometry.coordinates);
       const desc = parseDescription(f.properties.description);
       const pct = parseAvancePct(desc);
-      const enEjecucion = pct > 0 && pct < 100;
+      const nombre = f.properties.NOMBRE_PROYECTO || 'Proyecto';
+      let enEjecucion = pct > 0 && pct < 100;
+      if (nombre.includes('El Tres San Pedro')) {
+        enEjecucion = true;
+      }
       return {
         type: 'Feature',
         geometry: { type: 'Point', coordinates: centroid },
         properties: { 
-          nombre: f.properties.NOMBRE_PROYECTO || 'Proyecto',
+          nombre,
           enEjecucion
         }
       }
@@ -716,12 +724,13 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     loading.value   = true
     loadError.value = false
 
-    const [resMunicipios, resVias, resLoc, resAfectados, resPermiso, resForestal, resCauce, resAbscisas, resArcgisForestal] = await Promise.allSettled([
+    const [resMunicipios, resVias, resLoc, resAfectados, resMiCasita, resHeliconia, resForestal, resCauce, resAbscisas, resArcgisForestal] = await Promise.allSettled([
       getMunicipios(), 
       getLocalizaciones(), 
       getPuenteGavinoLocalizacion(),
       getPuenteGavinoPrediosAfectados(),
-      getPuenteGavinoPrediosConPermiso(),
+      getMiCasitaPrediosAfectados(),
+      getHeliconiaPrediosAfectados(),
       getPuenteGavinoForestal(),
       getPuenteGavinoCauce(),
       getPuenteGavinoAbscisas(),
@@ -734,7 +743,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const viaResult = resVias.status       === 'fulfilled' ? resVias.value       : null
     const locResult = resLoc.status === 'fulfilled' ? resLoc.value : null
     const afecResult = resAfectados.status === 'fulfilled' ? resAfectados.value : null
-    const perResult = resPermiso.status === 'fulfilled' ? resPermiso.value : null
+    const micasitaResult = resMiCasita.status === 'fulfilled' ? resMiCasita.value : null
+    const heliconiaResult = resHeliconia.status === 'fulfilled' ? resHeliconia.value : null
     const forResult = resForestal.status === 'fulfilled' ? resForestal.value : null
     const cauResult = resCauce.status === 'fulfilled' ? resCauce.value : null
     const absResult = resAbscisas.status === 'fulfilled' ? resAbscisas.value : null
@@ -749,7 +759,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const geoVias       = cachedVias.value
     const geoLoc = cachedLocalizaciones.value
     const geoAfectados = afecResult?.data ?? null
-    const geoPermiso = perResult?.data ?? null
+    const geoMiCasita = micasitaResult?.data ?? null
+    const geoHeliconia = heliconiaResult?.data ?? null
     const geoForestal = forResult?.data ?? null
     const geoCauce = cauResult?.data ?? null
     const geoAbscisas = absResult?.data ?? null
@@ -779,21 +790,94 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     }
 
     // ── Capas Puente Gavino ───────────────────────────────────────────────────
-    if (geoAfectados) {
-      _setupGenericPolygonLayer(map, 'gavino-afectados', geoAfectados, '#ef4444', '#dc2626')
+    if (geoLoc) {
+      _setupGenericPolygonLayer(map, 'gavino-localizacion', geoLoc, '#3b82f6', '#2563eb')
       
-      map.on('click', 'gavino-afectados-fill', (e) => {
+      map.on('click', 'gavino-localizacion-fill', (e) => {
         const p = e.features[0].properties
+        const projName = (p.NOMBRE_PROYECTO || '').toLowerCase()
+        
+        const desc = {
+          'Proyecto': p.NOMBRE_PROYECTO || 'N/A',
+          'Subregión': p.SUBREGION || 'N/A'
+        }
+        
+        if (projName.includes('casita')) {
+          desc['Permiso de ocupación de cauce'] = 'data/01 Puente gavino/Res otorgamiento POC Mi Casita.pdf'
+        } else if (projName.includes('gavi') || projName.includes('gabi')) {
+          desc['Permiso de ocupación de cauce'] = 'data/01 Puente gavino/Resolucion otorgamiento POC Gavino.pdf'
+        } else if (projName.includes('el tres') || projName.includes('san pedro de uraba')) {
+          desc['Estado'] = 'Finalizo la ejecucion - El Muro ya esta construido.'
+          desc['Estado Predial'] = '1. El Predio 034-13299 fue expropiado esta a nombre de la Gobernaciòn 2. 034-3534 En expropiacion se tiene acta de entrega anticipada por parte del juzgado'
+        } else if (projName.includes('majagual')) {
+          desc['Permiso de aprovechamiento forestal'] = 'data/01 Puente gavino/Permiso de aprovechamiento forestal Majagual.pdf'
+        } else if (projName.includes('san antonio')) {
+          desc['Aprovechamiento forestal'] = 'No requiere'
+          desc['Permiso de intervención de cauce'] = 'No requiere'
+        }
+        
         selectedVia.value = {
-          name: 'Predio Afectado',
-          description: {
-            'Local ID': p.LOCAL_ID || 'N/A',
-            'Círculo y Matrícula': p.CIRCULO_MA || 'N/A',
-            'Código de Terreno': p.TERRENO_CO || 'N/A',
-          }
+          name: 'Información del Proyecto',
+          description: desc
         }
       })
       
+      map.on('mouseenter', 'gavino-localizacion-fill', () => {
+        map.getCanvas().style.cursor = 'pointer'
+      })
+      map.on('mouseleave', 'gavino-localizacion-fill', () => {
+        map.getCanvas().style.cursor = ''
+      })
+    }
+
+    if (geoAfectados) {
+      geoAfectados.features.forEach(f => {
+        if (f.properties.fuente === 'AFECTACION_2.shp') {
+          f.properties.fillColor = '#22c55e';
+          f.properties.outlineColor = '#16a34a';
+        }
+      });
+      _setupGenericPolygonLayer(map, 'gavino-afectados', geoAfectados, '#ef4444', '#dc2626')
+      
+      map.on('click', 'gavino-afectados-fill', (e) => {
+        if (!e.features || e.features.length === 0) return
+        const p = e.features[0].properties
+        
+        if (p.fuente === 'AFECTACION_2.shp') {
+          selectedVia.value = {
+            name: 'Predio Afectado',
+            description: {
+              'Matricula': '026-23008',
+              'Propietario': 'MICHELLE MARIA NAVARRO',
+              'Permiso de Intervension': 'Si',
+              'Area': '3509.55 m²'
+            }
+          }
+        } else if (p.fuente === '1_AFECTACION.shp') {
+          selectedVia.value = {
+            name: 'Predio Afectado',
+            description: {
+              'Matricula': '025-26288',
+              'Propietario': 'MARIA EUGENIA MARTINEZ',
+              'Permiso de Intervension': 'No',
+              'Area': '3184.90 m²'
+            }
+          }
+        } else {
+          selectedVia.value = {
+            name: 'Predio Afectado',
+            description: {
+              'Área': p.SHAPE_AREA ? Number(p.SHAPE_AREA).toFixed(2) + ' m²' : 'N/A',
+              'Departamento': p.DPTO || 'N/A',
+              'Municipio': p.MPIO || 'N/A',
+              'Propietario': p.PROP || 'N/A',
+              'Código Catastral': p.CODCATAS || 'N/A',
+              'Matrícula Inmob.': p.MATRICULA || 'N/A',
+              'Fuente': p.fuente || 'N/A'
+            }
+          }
+        }
+      })
       map.on('mouseenter', 'gavino-afectados-fill', () => {
         map.getCanvas().style.cursor = 'pointer'
       })
@@ -801,30 +885,176 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         map.getCanvas().style.cursor = ''
       })
     }
-    if (geoPermiso) {
-      _setupGenericPolygonLayer(map, 'gavino-permiso', geoPermiso, '#22c55e', '#16a34a')
+
+    if (geoMiCasita) {
+      geoMiCasita.features = geoMiCasita.features.filter(f => {
+        const id = f.properties.LOCAL_ID || f.properties.local_id || '';
+        return id !== '6902004000000100063' && id !== '6862004000000200028';
+      });
+
+      geoMiCasita.features.forEach(f => {
+        const localId = f.properties.LOCAL_ID || f.properties.local_id || '';
+        if (localId === '8610001000000010094' || localId === '8610001000000010066') {
+          f.properties.fillColor = '#22c55e';
+          f.properties.outlineColor = '#16a34a';
+        }
+      });
+      _setupGenericPolygonLayer(map, 'micasita-afectados', geoMiCasita, '#ef4444', '#dc2626')
       
-      map.on('click', 'gavino-permiso-fill', (e) => {
+      map.on('click', 'micasita-afectados-fill', (e) => {
+        if (!e.features || e.features.length === 0) return
         const p = e.features[0].properties
-        selectedVia.value = {
-          name: 'Predio con Permiso',
-          description: {
-            'Área': p.SHAPE_AREA ? Number(p.SHAPE_AREA).toFixed(2) + ' m²' : 'N/A',
-            'Departamento': p.DPTO || 'N/A',
-            'Municipio': p.MPIO || 'N/A',
-            'Propietario': p.PROP || 'N/A',
-            'Código Catastral': p.CODCATAS || 'N/A',
-            'Matrícula Inmob.': p.MAT_INMOBILIARIA || 'N/A',
-            ...(p.AREA_REQUERIDA ? { 'Área Requerida': p.AREA_REQUERIDA } : {}),
-            ...(p.AREA ? { 'Área': p.AREA } : {})
+        
+        let area = 0;
+        if (e.features[0].geometry && e.features[0].geometry.coordinates) {
+          const coords = e.features[0].geometry.coordinates;
+          if (coords.length > 0 && coords[0].length > 0) {
+            let pts = coords[0];
+            if (e.features[0].geometry.type === 'MultiPolygon') {
+              pts = coords[0][0];
+            }
+            if (pts) {
+              const R = 6378137;
+              let tempArea = 0;
+              for (let i = 0; i < pts.length - 1; i++) {
+                const p1 = pts[i];
+                const p2 = pts[i + 1];
+                tempArea += (p2[0] - p1[0]) * (p2[1] + p1[1]) * (Math.PI / 180) * R * (Math.PI / 180) * R * Math.cos(p1[1] * Math.PI / 180);
+              }
+              area = Math.abs(tempArea) / 2;
+            }
+          }
+        }
+        
+        const areaStr = area > 0 ? area.toFixed(2) + ' m²' : 'N/A';
+        const localId = p.LOCAL_ID || p.local_id || '';
+        
+        const isHugoEcheverri = localId === '8610001000000010066';
+        const isMiguelZapata = localId === '8610001000000010094';
+        const isRamonAgudelo = localId === '8610002000000020261';
+        const isLibardoVelasquez = localId === '8610001000000010084';
+
+        if (isLibardoVelasquez) {
+          selectedVia.value = {
+            name: 'Predio Afectado',
+            description: {
+              'Matricula': '010-12231',
+              'Propietario': 'LIBARDO ERNESTO VELASQUEZ ZAPATA',
+              'Permiso de Intervension': 'No',
+              'Area': areaStr
+            }
+          }
+        } else if (isRamonAgudelo) {
+          selectedVia.value = {
+            name: 'Predio Afectado',
+            description: {
+              'Matricula': '010-15312',
+              'Propietario': 'Ramon Alberto Agudelo Vergara',
+              'Permiso de Intervension': 'No',
+              'Area': areaStr
+            }
+          }
+        } else if (isHugoEcheverri) {
+          selectedVia.value = {
+            name: 'Predio Afectado',
+            description: {
+              'Matricula': '010-14909',
+              'Propietario': 'Hugo Echeverri Gutierrez (50%) - Blanca Paulina Diaz de Echeverri (50%)',
+              'Permiso de Intervension': 'Si',
+              'Area': areaStr
+            }
+          }
+        } else if (isMiguelZapata) {
+          selectedVia.value = {
+            name: 'Predio Afectado',
+            description: {
+              'Matricula': '010-2244',
+              'Propietario': 'Miguel Zapata Correa',
+              'Permiso de Intervension': 'Si',
+              'Area': '373.28 m²'
+            }
+          }
+        } else {
+          selectedVia.value = {
+            name: 'Predio Afectado',
+            description: {
+              'Local ID': localId || 'N/A',
+              'Círculo y Matrícula': p.CIRCULO_MA || 'N/A',
+              'Código de Terreno': p.TERRENO_CO || p.terreno_co || 'N/A',
+              'Area': areaStr
+            }
           }
         }
       })
-      
-      map.on('mouseenter', 'gavino-permiso-fill', () => {
+      map.on('mouseenter', 'micasita-afectados-fill', () => {
         map.getCanvas().style.cursor = 'pointer'
       })
-      map.on('mouseleave', 'gavino-permiso-fill', () => {
+      map.on('mouseleave', 'micasita-afectados-fill', () => {
+        map.getCanvas().style.cursor = ''
+      })
+    }
+
+    if (geoHeliconia) {
+      geoHeliconia.features.forEach(f => {
+        f.properties.fillColor = '#22c55e';
+        f.properties.outlineColor = '#16a34a';
+      });
+      _setupGenericPolygonLayer(map, 'heliconia-afectados', geoHeliconia, '#22c55e', '#16a34a')
+      
+      map.on('click', 'heliconia-afectados-fill', (e) => {
+        if (!e.features || e.features.length === 0) return
+        
+        let area = 0;
+        if (e.features[0].geometry && e.features[0].geometry.coordinates) {
+          const coords = e.features[0].geometry.coordinates;
+          if (coords.length > 0 && coords[0].length > 0) {
+            let pts = coords[0];
+            if (e.features[0].geometry.type === 'MultiPolygon') {
+              pts = coords[0][0];
+            }
+            if (pts) {
+              const R = 6378137;
+              let tempArea = 0;
+              for (let i = 0; i < pts.length - 1; i++) {
+                const p1 = pts[i];
+                const p2 = pts[i + 1];
+                tempArea += (p2[0] - p1[0]) * (p2[1] + p1[1]) * (Math.PI / 180) * R * (Math.PI / 180) * R * Math.cos(p1[1] * Math.PI / 180);
+              }
+              area = Math.abs(tempArea) / 2;
+            }
+          }
+        }
+        
+        const areaStr = area > 0 ? area.toFixed(2) + ' m²' : 'N/A';
+        
+        const featureProps = e.features[0].properties || {};
+        const localId = featureProps.LOCAL_ID;
+        
+        let matricula = 'xxx-xxxxx';
+        let propietario = 'xxx';
+        
+        if (localId === '3471001001001400001') {
+          matricula = '001-742696';
+          propietario = 'MUNICIPIO DE HELICONIA';
+        } else if (localId === '3471001001001400002') {
+          matricula = '001-542540';
+          propietario = 'MARIA GABRIELA HERRERA GIL';
+        }
+        
+        selectedVia.value = {
+          name: 'Predio Afectado (Heliconia)',
+          description: {
+            'Matricula': matricula,
+            'Propietario': propietario,
+            'Permiso de Intervension': 'Si',
+            'Area': areaStr
+          }
+        }
+      })
+      map.on('mouseenter', 'heliconia-afectados-fill', () => {
+        map.getCanvas().style.cursor = 'pointer'
+      })
+      map.on('mouseleave', 'heliconia-afectados-fill', () => {
         map.getCanvas().style.cursor = ''
       })
     }
@@ -867,37 +1097,6 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             ...p
           }
         }
-      })
-    }
-    if (geoLoc) {
-      _setupGenericPolygonLayer(map, 'gavino-localizacion', geoLoc, '#3b82f6', '#2563eb')
-      
-      map.on('click', 'gavino-localizacion-fill', (e) => {
-        const p = e.features[0].properties
-        const projName = (p.NOMBRE_PROYECTO || '').toLowerCase()
-        
-        const desc = {
-          'Proyecto': p.NOMBRE_PROYECTO || 'N/A',
-          'Subregión': p.SUBREGION || 'N/A'
-        }
-        
-        if (projName.includes('casita')) {
-          desc['Permiso de ocupación de cauce'] = 'data/01 Puente gavino/Res otorgamiento POC Mi Casita.pdf'
-        } else if (projName.includes('gavi') || projName.includes('gabi')) {
-          desc['Permiso de ocupación de cauce'] = 'data/01 Puente gavino/Resolucion otorgamiento POC Gavino.pdf'
-        }
-        
-        selectedVia.value = {
-          name: 'Información del Proyecto',
-          description: desc
-        }
-      })
-      
-      map.on('mouseenter', 'gavino-localizacion-fill', () => {
-        map.getCanvas().style.cursor = 'pointer'
-      })
-      map.on('mouseleave', 'gavino-localizacion-fill', () => {
-        map.getCanvas().style.cursor = ''
       })
     }
 
@@ -968,35 +1167,15 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             features: [
               {
                 type: 'Feature',
-                geometry: { type: 'LineString', coordinates: [[-75.749642, 5.961837], [-75.749492, 5.961687]] },
-                properties: { label: 'k19+945 \n Termina intervención', rotation: -45 }
+                geometry: { type: 'Point', coordinates: [-75.732871, 6.205071] },
+                properties: { label: 'Final \n k55+190', rotation: 0 }
               },
               {
                 type: 'Feature',
-                geometry: { type: 'LineString', coordinates: [[-75.7503366, 5.9617767], [-75.7503366, 5.9615767]] },
-                properties: { label: 'Inicio puente k19+892', rotation: -90 }
-              },
-              {
-                type: 'Feature',
-                geometry: { type: 'LineString', coordinates: [[-75.7501234, 5.9617766], [-75.7501234, 5.9615766]] },
-                properties: { label: 'Fin Puente k19+916', rotation: -90 }
-              },
-              {
-                type: 'Feature',
-                geometry: { type: 'LineString', coordinates: [[-75.751077, 5.961431], [-75.750877, 5.961431]] },
-                properties: { label: 'k19+825 \n Inicia intervención', rotation: 0 }
+                geometry: { type: 'Point', coordinates: [-75.733166, 6.205705] },
+                properties: { label: 'inicio k55+112', rotation: 0 }
               }
             ]
-          }
-        })
-        map.addLayer({
-          id: 'custom-markers-line',
-          type: 'line',
-          source: 'custom-markers',
-          paint: {
-            'line-color': '#000000',
-            'line-width': 3,
-            'line-dasharray': [2, 2]
           }
         })
         map.addLayer({
@@ -1020,33 +1199,13 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             'text-halo-width': 2
           }
         })
-        
-        map.addSource('eje-offset', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: {
-              type: 'LineString',
-              coordinates: [[-75.7509159376212,5.961574396331823],[-75.75087729147855,5.961607894457101],[-75.75081722073415,5.961643898174079],[-75.75076168015399,5.961664404459971],[-75.75068818425618,5.961676351195498],[-75.75060768408015,5.961676830733208],[-75.75049196450784,5.961676775468922],[-75.75005089759503,5.961676578327721],[-75.7500041421137,5.9616765575980475],[-75.74987535011037,5.961676496702531],[-75.74980314153633,5.961681289630141],[-75.74975459000446,5.9616933593705195],[-75.74970865047241,5.961712363069452],[-75.749675080343,5.961731763082256]]
-            }
-          }
-        })
-        map.addLayer({
-          id: 'eje-offset-line',
-          type: 'line',
-          source: 'eje-offset',
-          paint: {
-            'line-color': '#ef4444',
-            'line-width': 2,
-            'line-dasharray': [4, 4]
-          }
-        })
       }
     }
 
     _setupProyectoPoint(map, geoLoc)
     _setupArcGISRedVial(map)
     // _setupCustomMarkers(map)
+
 
     if (geoAbscisas) {
       const pinId = 'green-pin';

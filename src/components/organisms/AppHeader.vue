@@ -6,13 +6,11 @@ import FilterBar from '../molecules/FilterBar.vue'
 const escudoSrc  = import.meta.env.BASE_URL + 'Escudo de armas.png'
 
 const props = defineProps({
-  title:            { type: String,  default: 'Gestión Predial Social y Ambiental' },
-  subtitle:         { type: String,  default: 'GPSA' },
-  subregionOptions: { type: Array,   default: () => ['Todas las subregiones'] },
-  municipioOptions: { type: Array,   default: () => ['Todos los municipios'] },
-  proyectoOptions:  { type: Array,   default: () => ['Todos los proyectos'] },
-
-  activeFilters:    { type: Object,  default: null },
+  title:          { type: String,  default: 'Gestión Predial Social y Ambiental' },
+  subtitle:       { type: String,  default: 'GPSA' },
+  puenteOptions:  { type: Array,   default: () => ['Todos los puentes'] },
+  papOptions:     { type: Array,   default: () => ['Todos los PAP y otros'] },
+  activeFilters:  { type: Object,  default: null },
 })
 
 const emit = defineEmits(['filter-change', 'start-tour'])
@@ -23,9 +21,8 @@ const activeFiltersCount = computed(() => {
   if (!props.activeFilters) return 0
   let count = 0
   if (props.activeFilters.search) count++
-  if (props.activeFilters.subregion && props.activeFilters.subregion !== 'Todas las subregiones') count++
-  if (props.activeFilters.municipio && props.activeFilters.municipio !== 'Todos los municipios') count++
-  if (props.activeFilters.proyecto && props.activeFilters.proyecto !== 'Todos los proyectos') count++
+  if (props.activeFilters.puente && props.activeFilters.puente !== 'Todos los puentes') count++
+  if (props.activeFilters.pap && props.activeFilters.pap !== 'Todos los PAP y otros') count++
   return count
 })
 </script>
@@ -50,9 +47,8 @@ const activeFiltersCount = computed(() => {
     <!-- RIGHT: filters + panel toggle (Desktop Only) -->
     <div class="header-filters desktop-only">
       <FilterBar
-        :subregion-options="subregionOptions"
-        :municipio-options="municipioOptions"
-        :proyecto-options="proyectoOptions"
+        :puente-options="puenteOptions"
+        :pap-options="papOptions"
         :active-filters="activeFilters"
         @filter-change="emit('filter-change', $event)"
       />
@@ -97,9 +93,8 @@ const activeFiltersCount = computed(() => {
           </div>
           <div class="drawer-body">
             <FilterBar
-              :subregion-options="subregionOptions"
-              :municipio-options="municipioOptions"
-              :proyecto-options="proyectoOptions"
+              :puente-options="puenteOptions"
+              :pap-options="papOptions"
               :active-filters="activeFilters"
               @filter-change="emit('filter-change', $event)"
               @close="isMobileDrawerOpen = false"

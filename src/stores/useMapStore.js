@@ -3,17 +3,14 @@ import { defineStore } from 'pinia'
 
 export const useMapStore = defineStore('map', () => {
   const activeFilters = ref({
-    search:    '',
-    subregion: 'Todas las subregiones',
-    municipio: 'Todos los municipios',
-    proyecto:  'Todos los proyectos',
+    search: '',
+    puente: 'Todos los puentes',
+    pap:    'Todos los PAP y otros',
   })
 
   const filterOptions = ref({
-    subregiones:            ['Todas las subregiones'],
-    municipios:             ['Todos los municipios'],
-    proyectos:              ['Todos los proyectos'],
-    municipiosPorSubregion: {},
+    puentes: ['Todos los puentes'],
+    paps:    ['Todos los PAP y otros'],
   })
 
   const mapStats = ref({
@@ -28,53 +25,19 @@ export const useMapStore = defineStore('map', () => {
   const mapLoading = ref(true)
   function setMapLoading(val) { mapLoading.value = val }
 
-  const filteredMunicipioOptions = computed(() => {
-    const sub = activeFilters.value.subregion
-    if (!sub || sub === 'Todas las subregiones') return filterOptions.value.municipios
-    const lista = filterOptions.value.municipiosPorSubregion[sub] ?? []
-    return ['Todos los municipios', ...lista]
-  })
-
-  const filteredProyectoOptions = computed(() => {
-    const sub = activeFilters.value.subregion
-    const mpio = activeFilters.value.municipio
-    const hasSub = sub && sub !== 'Todas las subregiones'
-    const hasMpio = mpio && mpio !== 'Todos los municipios'
-
-    if (!hasSub && !hasMpio) return filterOptions.value.proyectos
-
-    const normSub = norm(sub)
-    const normMpio = norm(mpio)
-
-    const vias = mapStats.value.viasDetalle.filter(v => {
-      if (hasSub && norm(v.subregion) !== normSub) return false
-      if (hasMpio && norm(v.municipio) !== normMpio) return false
-      return true
-    })
-
-    const lista = [...new Set(vias.map(v => v.proyecto).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
-    return ['Todos los proyectos', ...lista]
-  })
-
-  // Normaliza texto para comparar sin acentos ni mayúsculas
-  const norm = s => s?.toLowerCase().normalize('NFD').replaceAll(/[̀-ͯ]/g, '').trim() ?? ''
+  const norm = s => s?.toLowerCase().normalize('NFD').replaceAll(/[\u0300-\u036f]/g, '').trim() ?? ''
 
   const filteredStats = computed(() => {
-    const { subregion, municipio, proyecto, search } = activeFilters.value
-    const hasSub  = subregion && subregion !== 'Todas las subregiones'
-    const hasMpio = municipio && municipio !== 'Todos los municipios'
-    const hasLoc  = proyecto  && proyecto  !== 'Todos los proyectos'
-    const q       = search ? norm(search) : ''
+    const { puente, pap, search } = activeFilters.value
+    const hasPuente = puente && puente !== 'Todos los puentes'
+    const hasPap    = pap && pap !== 'Todos los PAP y otros'
+    const q         = search ? norm(search) : ''
 
-    if (!hasSub && !hasMpio && !hasLoc && !q) return mapStats.value
-
-    const normSub  = norm(subregion)
-    const normMpio = norm(municipio)
+    if (!hasPuente && !hasPap && !q) return mapStats.value
 
     const vias = mapStats.value.viasDetalle.filter(v => {
-      if (hasSub  && norm(v.subregion) !== normSub)  return false
-      if (hasMpio && norm(v.municipio) !== normMpio)  return false
-      if (hasLoc  && v.proyecto !== proyecto) return false
+      if (hasPuente && v.proyecto !== puente) return false
+      if (hasPap    && v.proyecto !== pap) return false
       if (q && !norm(v.nombre).includes(q)
             && !norm(v.municipio).includes(q)
             && !norm(v.subregion).includes(q)) return false
@@ -82,11 +45,6 @@ export const useMapStore = defineStore('map', () => {
     })
 
     const longitudTotal = vias.reduce((s, v) => s + (v.km || 0), 0)
-    const totalKm       = longitudTotal || 1
-    const kmPorSub      = {}
-    for (const v of vias) {
-      if (v.subregion) kmPorSub[v.subregion] = (kmPorSub[v.subregion] ?? 0) + (v.km || 0)
-    }
 
     return {
       viasIntervenidas: new Set(vias.map(v => v.nombre).filter(Boolean)).size,
@@ -99,12 +57,14 @@ export const useMapStore = defineStore('map', () => {
   })
 
   function setFilter(filters) {
-    if (filters.subregion !== activeFilters.value.subregion) {
-      filters.municipio = 'Todos los municipios'
-      filters.proyecto = 'Todos los proyectos'
-    } else if (filters.municipio !== activeFilters.value.municipio) {
-      filters.proyecto = 'Todos los proyectos'
+    // Exclusividad: si cambia puente y es válido, reiniciar pap. Y viceversa.
+    if (filters.puente !== activeFilters.value.puente && filters.puente !== 'Todos los puentes') {
+      filters.pap = 'Todos los PAP y otros'
+    } else if (filters.pap !== activeFilters.value.pap && filters.pap !== 'Todos los PAP y otros') {
+      filters.puente = 'Todos los puentes'
     }
+    
+    // Si se limpia pap mientras puente estaba limpio, o viceversa, asegurar que quede consistente.
     activeFilters.value = filters
   }
 
@@ -117,8 +77,6 @@ export const useMapStore = defineStore('map', () => {
     mapStats,
     filteredStats,
     mapLoading,
-    filteredMunicipioOptions,
-    filteredProyectoOptions,
     setFilter,
     setFilterOptions,
     setMapStats,

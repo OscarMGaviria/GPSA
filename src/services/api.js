@@ -3,8 +3,9 @@ const ENDPOINTS = {
   localizaciones: import.meta.env.VITE_API_LOCALIZACIONES ?? `${base}/data/localizacion.geojson`,
   municipios:     `${base}/data/municipios.geojson`,
   puenteGavinoLocalizacion: `${base}/data/01%20Puente%20gavino/Localizacion.geojson`,
-  puenteGavinoPrediosAfectados: `${base}/data/01%20Puente%20gavino/Predios_Afectados.geojson`,
-  puenteGavinoPrediosConPermiso: `${base}/data/01%20Puente%20gavino/Predios_con_permiso.geojson`,
+  puenteGavinoPrediosAfectados: `${base}/data/01%20Puente%20gavino/GABINO_OSCAR_poligonos.geojson`,
+  miCasitaPrediosAfectados: `${base}/data/01%20Puente%20gavino/Predios_Afectados.geojson`,
+  heliconiaPrediosAfectados: `${base}/data/01%20Puente%20gavino/afectaciones_heliconia.geojson`,
   puenteGavinoForestal: `${base}/data/01%20Puente%20gavino/Aprovechamiento_forestal.geojson`,
   puenteGavinoCauce: `${base}/data/01%20Puente%20gavino/Ocupacion_cauce.geojson`,
   puenteGavinoAbscisas: `${base}/data/01%20Puente%20gavino/abscisas.geojson`,
@@ -109,7 +110,8 @@ export const getLocalizaciones = () => fetchGeoJSON(ENDPOINTS.localizaciones)
 export const getMunicipios     = () => fetchGeoJSON(ENDPOINTS.municipios)
 export const getPuenteGavinoLocalizacion = () => fetchGeoJSON(ENDPOINTS.puenteGavinoLocalizacion)
 export function getPuenteGavinoPrediosAfectados() { return fetchGeoJSON(ENDPOINTS.puenteGavinoPrediosAfectados) }
-export function getPuenteGavinoPrediosConPermiso() { return fetchGeoJSON(ENDPOINTS.puenteGavinoPrediosConPermiso) }
+export function getMiCasitaPrediosAfectados() { return fetchGeoJSON(ENDPOINTS.miCasitaPrediosAfectados) }
+export function getHeliconiaPrediosAfectados() { return fetchGeoJSON(ENDPOINTS.heliconiaPrediosAfectados) }
 export function getPuenteGavinoForestal() { return fetchGeoJSON(ENDPOINTS.puenteGavinoForestal) }
 export function getPuenteGavinoCauce() { return fetchGeoJSON(ENDPOINTS.puenteGavinoCauce) }
 export function getPuenteGavinoAbscisas() { return fetchGeoJSON(ENDPOINTS.puenteGavinoAbscisas) }

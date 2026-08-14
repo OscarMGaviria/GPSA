@@ -20,7 +20,6 @@ export const projectStats = {
   "PAP Llanos de Urarco": { total: "Pendiente por definir", green: 0, red: 0, yellow: "?", obs: "Falta gestión predial" },
   "PAP Palenque": { total: "Pendiente por definir", green: 0, red: 0, yellow: "?", obs: "Falta gestión predial" },
   "PAP El Tres San Pedro de Uraba": { total: "2", green: 2, red: 0, yellow: 0, obs: "-" },
-  "PAP Taraza Ecogan": { total: "En ejecución", green: 0, red: 0, yellow: 0, obs: "-" },
   "Puente Piru": { total: "En ejecución", green: 0, red: 0, yellow: 0, obs: "-" },
   "Puente Camaron": { total: "En ejecución", green: 0, red: 0, yellow: 0, obs: "-" },
   "Puente Rionegro": { total: "2", green: 2, red: 0, yellow: 0, obs: "-" }

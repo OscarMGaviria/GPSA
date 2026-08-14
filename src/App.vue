@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppHeader  from './components/organisms/AppHeader.vue'
 import MapView    from './components/organisms/MapView.vue'
@@ -10,7 +10,7 @@ import AppWelcome from './components/organisms/AppWelcome.vue'
 import { useMapStore } from './stores/useMapStore.js'
 
 const store = useMapStore()
-const { activeFilters, filterOptions, mapStats, filteredStats, mapLoading, filteredMunicipioOptions, filteredProyectoOptions } = storeToRefs(store)
+const { activeFilters, filterOptions, mapLoading } = storeToRefs(store)
 
 const showTour    = ref(localStorage.getItem('simeva-tour-done') !== '1')
 const showWelcome = ref(localStorage.getItem('simeva-welcome-done') !== '1')
@@ -33,27 +33,12 @@ onUnmounted(() => {
   globalThis.removeEventListener('resize', checkMobile)
 })
 
-// Subregión activa en la gráfica: la seleccionada explícitamente,
-// o la que corresponde al municipio seleccionado (inferida del mapa municipiosPorSubregion)
-const activeChartSubregion = computed(() => {
-  const sub = activeFilters.value.subregion
-  if (sub && sub !== 'Todas las subregiones') return sub
-  const mpio = activeFilters.value.municipio
-  if (!mpio || mpio === 'Todos los municipios') return ''
-  const mpioMap = filterOptions.value.municipiosPorSubregion
-  for (const [subName, mpios] of Object.entries(mpioMap)) {
-    if (mpios.some(m => m.toLowerCase() === mpio.toLowerCase())) return subName
-  }
-  return ''
-})
-
 // Sincronizar URL al cambiar filtros
 watch(activeFilters, (f) => {
   const p = new URLSearchParams()
   if (f.search)    p.set('search',    f.search)
-  if (f.subregion && f.subregion !== 'Todas las subregiones') p.set('subregion', f.subregion)
-  if (f.municipio && f.municipio !== 'Todos los municipios')  p.set('municipio', f.municipio)
-  if (f.proyecto  && f.proyecto  !== 'Todos los proyectos')   p.set('proyecto',  f.proyecto)
+  if (f.puente && f.puente !== 'Todos los puentes') p.set('puente', f.puente)
+  if (f.pap && f.pap !== 'Todos los PAP y otros')  p.set('pap', f.pap)
   const qs = p.toString()
   globalThis.history.replaceState(null, '', qs ? `?${qs}` : globalThis.location.pathname)
 }, { deep: true })
@@ -80,16 +65,14 @@ watch(activeFilters, (f) => {
 
     <AppHeader
       @filter-change="store.setFilter"
-
       @start-tour="showTour = true"
-      :subregion-options="filterOptions.subregiones"
-      :municipio-options="filteredMunicipioOptions"
-      :proyecto-options="filteredProyectoOptions"
+      :puente-options="filterOptions.puentes"
+      :pap-options="filterOptions.paps"
       :active-filters="activeFilters"
     />
     <div class="content-area">
       <MapView ref="mapViewRef" />
-      <ProjectStatsCard :projectName="activeFilters.proyecto" />
+      <ProjectStatsCard :projectName="activeFilters.puente !== 'Todos los puentes' ? activeFilters.puente : (activeFilters.pap !== 'Todos los PAP y otros' ? activeFilters.pap : 'Todos los proyectos')" />
     </div>
   </div>
 </template>

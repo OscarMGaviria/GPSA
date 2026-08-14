@@ -66,9 +66,8 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
 
   watch(() => filtersGetter(), (newFilters) => {
     if (!newFilters) return
-    const hasFilter = (newFilters.proyecto && newFilters.proyecto !== 'Todos los proyectos') ||
-                      (newFilters.municipio && newFilters.municipio !== 'Todos los municipios') ||
-                      (newFilters.subregion && newFilters.subregion !== 'Todas las subregiones') ||
+    const hasFilter = (newFilters.puente && newFilters.puente !== 'Todos los puentes') ||
+                      (newFilters.pap && newFilters.pap !== 'Todos los PAP y otros') ||
                       (newFilters.search)
     
     if (hasFilter && activeBasemap.value === 'ninguno') {

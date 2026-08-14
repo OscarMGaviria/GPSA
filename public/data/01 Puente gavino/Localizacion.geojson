@@ -1729,40 +1729,6 @@
     {
       "type": "Feature",
       "properties": {
-        "NOMBRE_PROYECTO": "PAP Taraza Ecogan",
-        "SUBREGION": "BAJO CAUCA"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              -75.50054307532928,
-              7.684480284345282
-            ],
-            [
-              -75.50057132612419,
-              7.684536948375807
-            ],
-            [
-              -75.50128305131553,
-              7.68418382126247
-            ],
-            [
-              -75.50125480047977,
-              7.684127157300872
-            ],
-            [
-              -75.50054307532928,
-              7.684480284345282
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
         "NOMBRE_PROYECTO": "Puente Camaron",
         "SUBREGION": "URABA"
       },
