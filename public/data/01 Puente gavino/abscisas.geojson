@@ -161,6 +161,22 @@
           5.961551
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "k19+929",
+        "NOMBRE_PROYECTO": "Jardin Rio Sucio",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "k19+929"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.749729,
+          5.961615
+        ]
+      }
     }
   ]
 }
