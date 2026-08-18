@@ -1,6 +1,5 @@
 export const projectStats = {
   "Puente Gabino": { total: "2", green: 1, red: 1, yellow: 0, obs: "-" },
-  "Mi Casita Venecia": { total: "1", green: 0, red: 1, yellow: 0, obs: "-" },
   "Variante Majagual": { total: "1", green: 1, red: 0, yellow: 0, obs: "-" },
   "Puente Rio Sucio": { total: "13", green: 10, red: 3, yellow: 0, obs: "-" },
   "Puente El Verdún": { total: "3", green: 3, red: 0, yellow: 0, obs: "-" },
