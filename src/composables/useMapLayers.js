@@ -898,6 +898,15 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           f.properties.fillColor = '#22c55e';
           f.properties.outlineColor = '#16a34a';
         }
+        
+        // Jardin Rio Sucio (Municipio 364) - Predios que deben estar en verde
+        if (f.properties.MUNICIPIO === '364' || f.properties.municipio === '364') {
+          const redIds = ['3642001000000100151', '3642001000000100101', '3642001000000100018'];
+          if (!redIds.includes(localId)) {
+            f.properties.fillColor = '#22c55e';
+            f.properties.outlineColor = '#16a34a';
+          }
+        }
       });
       _setupGenericPolygonLayer(map, 'micasita-afectados', geoMiCasita, '#ef4444', '#dc2626')
       
