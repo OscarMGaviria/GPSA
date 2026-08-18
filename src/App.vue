@@ -3,7 +3,6 @@ import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppHeader  from './components/organisms/AppHeader.vue'
 import MapView    from './components/organisms/MapView.vue'
-import ProjectStatsCard from './components/organisms/ProjectStatsCard.vue'
 
 import AppTour    from './components/organisms/AppTour.vue'
 import AppWelcome from './components/organisms/AppWelcome.vue'
@@ -72,7 +71,6 @@ watch(activeFilters, (f) => {
     />
     <div class="content-area">
       <MapView ref="mapViewRef" />
-      <ProjectStatsCard :projectName="activeFilters.puente !== 'Todos los puentes' ? activeFilters.puente : (activeFilters.pap !== 'Todos los PAP y otros' ? activeFilters.pap : 'Todos los proyectos')" />
     </div>
   </div>
 </template>
