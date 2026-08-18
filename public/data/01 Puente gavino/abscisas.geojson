@@ -209,6 +209,86 @@
           5.584526
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "k50+942",
+        "NOMBRE_PROYECTO": "Jardin Rio Sucio",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "k50+942"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.774427,
+          5.573016
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "k50+751",
+        "NOMBRE_PROYECTO": "Jardin Rio Sucio",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "k50+751"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.772907,
+          5.572989
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "k50+422",
+        "NOMBRE_PROYECTO": "Jardin Rio Sucio",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "k50+422"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.774481,
+          5.575396
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "k49+547",
+        "NOMBRE_PROYECTO": "Jardin Rio Sucio",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "k49+547"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.777808,
+          5.580529
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "k49+417",
+        "NOMBRE_PROYECTO": "Jardin Rio Sucio",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "k49+417"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.777156,
+          5.581151
+        ]
+      }
     }
   ]
 }
