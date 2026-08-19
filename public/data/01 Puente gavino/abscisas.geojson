@@ -289,6 +289,22 @@
           5.581151
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "label": "Puente Urbano",
+        "NOMBRE_PROYECTO": "Puente Urbano",
+        "TIPO": "Abscisa",
+        "DESCRIPCION": "Puente Urbano"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -76.361367,
+          8.242407
+        ]
+      }
     }
   ]
 }
