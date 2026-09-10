@@ -4,6 +4,7 @@ import { Search, X } from '@lucide/vue'
 import Selector from '../atoms/Selector.vue'
 
 const props = defineProps({
+  fuenteOptions: { type: Array,  default: () => ['Todas las fuentes'] },
   puenteOptions: { type: Array,  default: () => ['Todos los puentes'] },
   papOptions:    { type: Array,  default: () => ['Todos los PAP y otros'] },
   activeFilters: { type: Object, default: null },
@@ -12,6 +13,7 @@ const props = defineProps({
 const emit = defineEmits(['filter-change', 'close'])
 
 const searchText = ref(props.activeFilters?.search ?? '')
+const fuenteVal  = ref(props.activeFilters?.fuente ?? props.fuenteOptions[0])
 const puenteVal  = ref(props.activeFilters?.puente ?? props.puenteOptions[0])
 const papVal     = ref(props.activeFilters?.pap ?? props.papOptions[0])
 
@@ -22,6 +24,7 @@ watch(() => props.activeFilters, (f) => {
   if (!f) return
   isSyncing = true
   searchText.value = f.search ?? ''
+  fuenteVal.value  = f.fuente ?? props.fuenteOptions[0]
   puenteVal.value  = f.puente ?? props.puenteOptions[0]
   papVal.value     = f.pap ?? props.papOptions[0]
   nextTick(() => {
@@ -32,6 +35,7 @@ watch(() => props.activeFilters, (f) => {
 const emitFilters = () => {
   emit('filter-change', {
     search: searchText.value,
+    fuente: fuenteVal.value,
     puente: puenteVal.value,
     pap:    papVal.value,
   })
@@ -39,6 +43,7 @@ const emitFilters = () => {
 
 const clearFilters = () => {
   searchText.value = ''
+  fuenteVal.value  = props.fuenteOptions[0]
   puenteVal.value  = props.puenteOptions[0]
   papVal.value     = props.papOptions[0]
   emitFilters()
@@ -46,9 +51,10 @@ const clearFilters = () => {
 
 const hasActiveFilters = computed(() => {
   const hasSearch = searchText.value.trim() !== ''
+  const hasFuente = fuenteVal.value && fuenteVal.value !== props.fuenteOptions[0]
   const hasPuente = puenteVal.value && puenteVal.value !== props.puenteOptions[0]
   const hasPap    = papVal.value && papVal.value !== props.papOptions[0]
-  return hasSearch || hasPuente || hasPap
+  return hasSearch || hasFuente || hasPuente || hasPap
 })
 
 const isMobile = ref(false)
@@ -81,6 +87,7 @@ onUnmounted(() => {
       />
     </div>
 
+    <Selector v-model="fuenteVal" :options="fuenteOptions" @update:modelValue="emitFilters" align="right" />
     <Selector v-model="puenteVal" :options="puenteOptions" @update:modelValue="emitFilters" align="right" />
     <Selector v-model="papVal"    :options="papOptions"    @update:modelValue="emitFilters" align="right" />
 

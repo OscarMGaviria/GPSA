@@ -4,11 +4,13 @@ import { defineStore } from 'pinia'
 export const useMapStore = defineStore('map', () => {
   const activeFilters = ref({
     search: '',
+    fuente: 'Todas las fuentes',
     puente: 'Todos los puentes',
     pap:    'Todos los PAP y otros',
   })
 
   const filterOptions = ref({
+    fuentes: ['Todas las fuentes'],
     puentes: ['Todos los puentes'],
     paps:    ['Todos los PAP y otros'],
   })
@@ -24,18 +26,38 @@ export const useMapStore = defineStore('map', () => {
 
   const mapLoading = ref(true)
   function setMapLoading(val) { mapLoading.value = val }
+  
+  const layerToggles = ref([
+    { id: 'gavino-localizacion', name: 'Puente Gavino - Localización', layers: ['gavino-localizacion-fill', 'gavino-localizacion-outline'], visible: false },
+    { id: 'gavino-afectados', name: 'Puente Gavino - Afectados', layers: ['gavino-afectados-fill', 'gavino-afectados-outline', 'gavino-afectados-label'], visible: false },
+    { id: 'micasita-afectados', name: 'Mi Casita - Afectados', layers: ['micasita-afectados-fill', 'micasita-afectados-outline'], visible: false },
+    { id: 'heliconia-afectados', name: 'Heliconia - Afectados', layers: ['heliconia-afectados-fill', 'heliconia-afectados-outline'], visible: false },
+    { id: 'gavino-cauce', name: 'Ocupación Cauce', layers: ['gavino-cauce-circle'], visible: false },
+    { id: 'gavino-forestal', name: 'Aprovechamiento Forestal (Gavino)', layers: ['gavino-forestal-symbol'], visible: false },
+    { id: 'gavino-abscisas', name: 'Abscisas', layers: ['gavino-abscisas-symbol'], visible: false },
+    { id: 'area-intervenidas', name: 'Áreas Intervenidas', layers: ['area-intervenidas-fill', 'area-intervenidas-outline'], visible: true },
+    { id: 'predios-intervenidos', name: 'Predios Intervenidos', layers: ['predios-intervenidos-fill', 'predios-intervenidos-outline'], visible: true },
+    { id: 'arcgis-forestal', name: 'Inventario Forestal', layers: ['arcgis-forestal-symbol'], visible: true },
+  ])
+  
+  function toggleLayer(id) {
+    const layer = layerToggles.value.find(l => l.id === id)
+    if (layer) layer.visible = !layer.visible
+  }
 
   const norm = s => s?.toLowerCase().normalize('NFD').replaceAll(/[\u0300-\u036f]/g, '').trim() ?? ''
 
   const filteredStats = computed(() => {
-    const { puente, pap, search } = activeFilters.value
+    const { fuente, puente, pap, search } = activeFilters.value
+    const hasFuente = fuente && fuente !== 'Todas las fuentes'
     const hasPuente = puente && puente !== 'Todos los puentes'
     const hasPap    = pap && pap !== 'Todos los PAP y otros'
     const q         = search ? norm(search) : ''
 
-    if (!hasPuente && !hasPap && !q) return mapStats.value
+    if (!hasFuente && !hasPuente && !hasPap && !q) return mapStats.value
 
     const vias = mapStats.value.viasDetalle.filter(v => {
+      if (hasFuente && v.fuente !== fuente) return false
       if (hasPuente && v.proyecto !== puente) return false
       if (hasPap    && v.proyecto !== pap) return false
       if (q && !norm(v.nombre).includes(q)
@@ -77,6 +99,8 @@ export const useMapStore = defineStore('map', () => {
     mapStats,
     filteredStats,
     mapLoading,
+    layerToggles,
+    toggleLayer,
     setFilter,
     setFilterOptions,
     setMapStats,

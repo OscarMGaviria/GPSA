@@ -10,6 +10,8 @@ const ENDPOINTS = {
   puenteGavinoCauce: `${base}/data/01%20Puente%20gavino/Ocupacion_cauce.geojson`,
   puenteGavinoAbscisas: `${base}/data/01%20Puente%20gavino/abscisas.geojson`,
   arcgisInventarioForestal: 'https://services5.arcgis.com/K90UQIB09TmTjUL8/arcgis/rest/services/Inventario_Forestal/FeatureServer/0/query?where=1=1&outFields=*&f=geojson',
+  areaIntervenidasVisor: `${base}/data/Capas/Area_Intervenidas_Visor.geojson`,
+  prediosIntervenidosVisor: `${base}/data/Capas/Predios_Intervenidos_Visor.geojson`,
 }
 
 // Caché en memoria: evita re-descargar y re-parsear en la misma sesión
@@ -116,6 +118,8 @@ export function getPuenteGavinoForestal() { return fetchGeoJSON(ENDPOINTS.puente
 export function getPuenteGavinoCauce() { return fetchGeoJSON(ENDPOINTS.puenteGavinoCauce) }
 export function getPuenteGavinoAbscisas() { return fetchGeoJSON(ENDPOINTS.puenteGavinoAbscisas) }
 export function getArcgisInventarioForestal() { return fetchGeoJSON(ENDPOINTS.arcgisInventarioForestal) }
+export function getAreaIntervenidasVisor() { return fetchGeoJSON(ENDPOINTS.areaIntervenidasVisor) }
+export function getPrediosIntervenidosVisor() { return fetchGeoJSON(ENDPOINTS.prediosIntervenidosVisor) }
 
 /** Extrae URLs de imágenes del HTML de descripción */
 export function extractPhotos(htmlString) {

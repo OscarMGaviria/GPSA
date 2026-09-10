@@ -41,6 +41,18 @@ export function useMapOrchestrator(mapContainer, filtersGetter) {
           m.on('rotate', () => {
             mapBearing.value = m.getBearing()
           })
+          
+          watch(() => store.layerToggles, (toggles) => {
+            if (!m) return
+            toggles.forEach(t => {
+              t.layers.forEach(lId => {
+                if (m.getLayer(lId)) {
+                  m.setLayoutProperty(lId, 'visibility', t.visible ? 'visible' : 'none')
+                }
+              })
+            })
+          }, { deep: true, immediate: true })
+
           m.on('contextmenu', async (e) => {
             const lng = e.lngLat.lng.toFixed(6)
             const lat = e.lngLat.lat.toFixed(6)

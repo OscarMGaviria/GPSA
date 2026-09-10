@@ -36,6 +36,7 @@ onUnmounted(() => {
 watch(activeFilters, (f) => {
   const p = new URLSearchParams()
   if (f.search)    p.set('search',    f.search)
+  if (f.fuente && f.fuente !== 'Todas las fuentes') p.set('fuente', f.fuente)
   if (f.puente && f.puente !== 'Todos los puentes') p.set('puente', f.puente)
   if (f.pap && f.pap !== 'Todos los PAP y otros')  p.set('pap', f.pap)
   const qs = p.toString()
@@ -65,6 +66,7 @@ watch(activeFilters, (f) => {
     <AppHeader
       @filter-change="store.setFilter"
       @start-tour="showTour = true"
+      :fuente-options="filterOptions.fuentes"
       :puente-options="filterOptions.puentes"
       :pap-options="filterOptions.paps"
       :active-filters="activeFilters"

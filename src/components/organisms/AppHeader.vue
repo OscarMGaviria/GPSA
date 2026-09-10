@@ -8,6 +8,7 @@ const escudoSrc  = import.meta.env.BASE_URL + 'Escudo de armas.png'
 const props = defineProps({
   title:          { type: String,  default: 'Gestión Predial Social y Ambiental' },
   subtitle:       { type: String,  default: 'GPSA' },
+  fuenteOptions:  { type: Array,   default: () => ['Todas las fuentes'] },
   puenteOptions:  { type: Array,   default: () => ['Todos los puentes'] },
   papOptions:     { type: Array,   default: () => ['Todos los PAP y otros'] },
   activeFilters:  { type: Object,  default: null },
@@ -21,6 +22,7 @@ const activeFiltersCount = computed(() => {
   if (!props.activeFilters) return 0
   let count = 0
   if (props.activeFilters.search) count++
+  if (props.activeFilters.fuente && props.activeFilters.fuente !== 'Todas las fuentes') count++
   if (props.activeFilters.puente && props.activeFilters.puente !== 'Todos los puentes') count++
   if (props.activeFilters.pap && props.activeFilters.pap !== 'Todos los PAP y otros') count++
   return count
@@ -47,6 +49,7 @@ const activeFiltersCount = computed(() => {
     <!-- RIGHT: filters + panel toggle (Desktop Only) -->
     <div class="header-filters desktop-only">
       <FilterBar
+        :fuente-options="fuenteOptions"
         :puente-options="puenteOptions"
         :pap-options="papOptions"
         :active-filters="activeFilters"
@@ -93,6 +96,7 @@ const activeFiltersCount = computed(() => {
           </div>
           <div class="drawer-body">
             <FilterBar
+              :fuente-options="fuenteOptions"
               :puente-options="puenteOptions"
               :pap-options="papOptions"
               :active-filters="activeFilters"

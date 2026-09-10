@@ -28,6 +28,7 @@ defineExpose({ openVia, flyToVia })
 
 // ── Coordinate Search ────────────────────────────────────────────────────────
 const searchOpen  = ref(false)
+const layersOpen  = ref(false)
 const searchQuery = ref('')
 const searchError = ref('')
 const searchInput = ref(null)
@@ -315,6 +316,39 @@ onUnmounted(() => globalThis.removeEventListener('keydown', _onGlobalKey))
         <Layers :size="16" />
       </button>
 
+    </div>
+
+    <!-- Selector de capas (Layer Switcher) -->
+    <div class="layer-switcher">
+      <Transition name="panel">
+        <div v-if="layersOpen" class="switcher-panel layers-panel">
+          <label
+            v-for="layer in store.layerToggles"
+            :key="layer.id"
+            class="layer-toggle-label"
+          >
+            <input 
+              type="checkbox" 
+              :checked="layer.visible"
+              @change="store.toggleLayer(layer.id)"
+            />
+            <span class="bm-label">{{ layer.name }}</span>
+          </label>
+        </div>
+      </Transition>
+
+      <button
+        class="switcher-toggle layers-toggle"
+        @click="layersOpen = !layersOpen"
+        :class="{ 'is-open': layersOpen }"
+        title="Capas del mapa"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+      </button>
     </div>
 
 

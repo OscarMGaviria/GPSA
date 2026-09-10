@@ -1,5 +1,5 @@
 import { ref, shallowRef, onUnmounted } from 'vue'
-import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getMiCasitaPrediosAfectados, getHeliconiaPrediosAfectados, getPuenteGavinoForestal, getPuenteGavinoCauce, getPuenteGavinoAbscisas, getArcgisInventarioForestal, parseDescription } from '../services/api.js'
+import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getMiCasitaPrediosAfectados, getHeliconiaPrediosAfectados, getPuenteGavinoForestal, getPuenteGavinoCauce, getPuenteGavinoAbscisas, getArcgisInventarioForestal, getAreaIntervenidasVisor, getPrediosIntervenidosVisor, parseDescription } from '../services/api.js'
 import { pctTiempoTranscurrido } from '../utils/stats.js'
 import { parseAvancePct } from '../utils/via.js'
 import { useMapStore } from '../stores/useMapStore.js'
@@ -79,7 +79,23 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       }
     }
 
+    const fuentesSet = new Set()
+    if (geoLoc) {
+      for (const f of geoLoc.features) {
+         const fuente = f.properties.FUENTE_FINANCIACION || f.properties.FUENTE_FIN || f.properties.FUENTE || f.properties.fuente
+         if (fuente && typeof fuente === 'string') fuentesSet.add(fuente)
+      }
+    }
+    if (geoVias) {
+      for (const f of geoVias.features) {
+         const fuente = f.properties.FUENTE_FINANCIACION || f.properties.FUENTE_FIN || f.properties.FUENTE || f.properties.fuente
+         if (fuente && typeof fuente === 'string') fuentesSet.add(fuente)
+      }
+    }
+    const fuentes = [...fuentesSet].sort((a, b) => a.localeCompare(b, 'es'))
+
     onOptionsLoaded?.({
+      fuentes: ['Todas las fuentes', ...fuentes],
       puentes: ['Todos los puentes', ...puentes],
       paps: ['Todos los PAP y otros', ...paps],
     })
@@ -99,6 +115,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         viasDetalle.push({
           nombre: nombre,
           subregion: sub,
+          fuente: p.FUENTE_FINANCIACION || p.FUENTE_FIN || p.FUENTE || p.fuente || '',
           municipio: '',
           proyecto: nombre,
           km: 0,
@@ -430,6 +447,9 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
   function _setupGenericPolygonLayer(map, id, geoData, fillColor, outlineColor) {
     try {
+      const toggleState = store.layerToggles.find(t => t.id === id)
+      const visibility = toggleState && !toggleState.visible ? 'none' : 'visible'
+      
       map.addSource(id, {
         type: 'geojson',
         data: geoData,
@@ -441,6 +461,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         type: 'fill',
         source: id,
         filter: ['match', ['geometry-type'], ['Polygon', 'MultiPolygon'], true, false],
+        layout: { visibility },
         paint: {
           'fill-color': ['coalesce', ['get', 'fillColor'], fillColor],
           'fill-opacity': [
@@ -455,6 +476,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         id: `${id}-outline`,
         type: 'line',
         source: id,
+        layout: { visibility },
         paint: {
           'line-color': ['coalesce', ['get', 'outlineColor'], outlineColor],
           'line-width': [
@@ -472,6 +494,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           type: 'symbol',
           source: id,
           layout: {
+            visibility,
             'text-field': ['get', 'LABEL_ID'],
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
             'text-size': 12,
@@ -510,6 +533,9 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
   function _setupGenericPointLayer(map, id, geoData, color) {
     if (!geoData) return
     try {
+      const toggleState = store.layerToggles.find(t => t.id === id)
+      const visibility = toggleState && !toggleState.visible ? 'none' : 'visible'
+      
       map.addSource(id, {
         type: 'geojson',
         data: geoData,
@@ -519,6 +545,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         id: `${id}-circle`,
         type: 'circle',
         source: id,
+        layout: { visibility },
         paint: {
           'circle-radius': 8,
           'circle-color': color,
@@ -544,6 +571,9 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
   function _setupArcgisTreeLayer(map, id, geoData) {
     if (!geoData) return
     try {
+      const toggleState = store.layerToggles.find(t => t.id === id)
+      const visibility = toggleState && !toggleState.visible ? 'none' : 'visible'
+      
       map.addSource(id, {
         type: 'geojson',
         data: geoData,
@@ -562,6 +592,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         type: 'symbol',
         source: id,
         layout: {
+          visibility,
           'icon-image': iconId,
           'icon-size': [
             'interpolate', ['linear'], ['zoom'],
@@ -724,7 +755,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     loading.value   = true
     loadError.value = false
 
-    const [resMunicipios, resVias, resLoc, resAfectados, resMiCasita, resHeliconia, resForestal, resCauce, resAbscisas, resArcgisForestal] = await Promise.allSettled([
+    const [resMunicipios, resVias, resLoc, resAfectados, resMiCasita, resHeliconia, resForestal, resCauce, resAbscisas, resArcgisForestal, resAreaIntervenidas, resPrediosIntervenidos] = await Promise.allSettled([
       getMunicipios(), 
       getLocalizaciones(), 
       getPuenteGavinoLocalizacion(),
@@ -734,7 +765,9 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       getPuenteGavinoForestal(),
       getPuenteGavinoCauce(),
       getPuenteGavinoAbscisas(),
-      getArcgisInventarioForestal()
+      getArcgisInventarioForestal(),
+      getAreaIntervenidasVisor(),
+      getPrediosIntervenidosVisor()
     ])
 
     if (destroyed) return
@@ -749,6 +782,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const cauResult = resCauce.status === 'fulfilled' ? resCauce.value : null
     const absResult = resAbscisas.status === 'fulfilled' ? resAbscisas.value : null
     const arcgisForestalResult = resArcgisForestal.status === 'fulfilled' ? resArcgisForestal.value : null
+    const areaIntervenidasResult = resAreaIntervenidas.status === 'fulfilled' ? resAreaIntervenidas.value : null
+    const prediosIntervenidosResult = resPrediosIntervenidos.status === 'fulfilled' ? resPrediosIntervenidos.value : null
 
     cachedMunicipios.value = munResult?.data ?? null
     cachedVias.value       = viaResult?.data ?? null
@@ -765,6 +800,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const geoCauce = cauResult?.data ?? null
     const geoAbscisas = absResult?.data ?? null
     const geoArcgisForestal = arcgisForestalResult?.data ?? null
+    const geoAreaIntervenidas = areaIntervenidasResult?.data ?? null
+    const geoPrediosIntervenidos = prediosIntervenidosResult?.data ?? null
 
     if (resMunicipios.status === 'rejected') console.warn('[SIMEVA] Municipios:', resMunicipios.reason)
     if (resVias.status       === 'rejected') console.warn('[SIMEVA] Vías:', resVias.reason)
@@ -1233,6 +1270,9 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         });
       }
 
+      const toggleState = store.layerToggles.find(t => t.id === 'gavino-abscisas')
+      const visibility = toggleState && !toggleState.visible ? 'none' : 'visible'
+
       if (!map.getLayer('gavino-abscisas-symbol')) {
         map.addLayer({
           id: 'gavino-abscisas-symbol',
@@ -1240,6 +1280,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           source: 'gavino-abscisas',
           minzoom: 12,
           layout: {
+            visibility,
             'icon-image': pinId,
             'icon-size': 1,
             'icon-anchor': 'bottom',
@@ -1277,6 +1318,48 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           map.getCanvas().style.cursor = '';
         });
       }
+    }
+
+    if (geoPrediosIntervenidos) {
+      _setupGenericPolygonLayer(map, 'predios-intervenidos', geoPrediosIntervenidos, '#eab308', '#ca8a04')
+
+      map.on('click', 'predios-intervenidos-fill', (e) => {
+        if (!e.features || e.features.length === 0) return
+        const p = e.features[0].properties
+        selectedVia.value = {
+          name: 'Predio Intervenido',
+          description: { ...p }
+        }
+      })
+      map.on('mouseenter', 'predios-intervenidos-fill', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'predios-intervenidos-fill', () => { map.getCanvas().style.cursor = '' })
+    }
+
+    if (geoAreaIntervenidas) {
+      geoAreaIntervenidas.features.forEach(f => {
+        if (f.properties.Permiso && f.properties.Permiso.toUpperCase() === 'SI') {
+          f.properties.fillColor = '#22c55e';
+          f.properties.outlineColor = '#16a34a';
+        } else {
+          f.properties.fillColor = '#ef4444';
+          f.properties.outlineColor = '#dc2626';
+        }
+      });
+      _setupGenericPolygonLayer(map, 'area-intervenidas', geoAreaIntervenidas, '#9333ea', '#7e22ce')
+      
+      map.on('click', 'area-intervenidas-fill', (e) => {
+        if (!e.features || e.features.length === 0) return
+        const p = { ...e.features[0].properties }
+        delete p.fillColor
+        delete p.outlineColor
+        
+        selectedVia.value = {
+          name: 'Área Intervenida',
+          description: p
+        }
+      })
+      map.on('mouseenter', 'area-intervenidas-fill', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'area-intervenidas-fill', () => { map.getCanvas().style.cursor = '' })
     }
 
     loading.value = false
