@@ -32787,6 +32787,34 @@
           ]
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "NOMBRE_PROYECTO": "Tamesis la Oculta",
+        "SUBREGION": "SUROESTE"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.679173,
+          5.749006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "NOMBRE_PROYECTO": "Granada 0+900",
+        "SUBREGION": "ORIENTE"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.242392,
+          6.129378
+        ]
+      }
     }
   ]
 }
