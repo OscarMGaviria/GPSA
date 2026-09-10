@@ -28,7 +28,7 @@ export const useMapStore = defineStore('map', () => {
   function setMapLoading(val) { mapLoading.value = val }
   
   const layerToggles = ref([
-    { id: 'gavino-localizacion', name: 'Puente Gavino - Localización', layers: ['gavino-localizacion-fill', 'gavino-localizacion-outline'], visible: false },
+    { id: 'gavino-localizacion', name: 'Puente Gavino - Localización', layers: ['gavino-localizacion-fill', 'gavino-localizacion-outline'], visible: true },
     { id: 'gavino-afectados', name: 'Puente Gavino - Afectados', layers: ['gavino-afectados-fill', 'gavino-afectados-outline', 'gavino-afectados-label'], visible: false },
     { id: 'micasita-afectados', name: 'Mi Casita - Afectados', layers: ['micasita-afectados-fill', 'micasita-afectados-outline'], visible: false },
     { id: 'heliconia-afectados', name: 'Heliconia - Afectados', layers: ['heliconia-afectados-fill', 'heliconia-afectados-outline'], visible: false },

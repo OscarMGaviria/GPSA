@@ -37,18 +37,51 @@ const TABLE_FIELDS = [
   'Fecha de inicio', 'Plazo (meses)', 'Duración transcurrida',
   'Avance físico',
 ]
+const ignoreKeys = new Set([
+  'circuitid', 'id-circuito', 'idcircuito', 'circuit_id', 'id',
+  'terreno_codigo', 'no', 'sector', 'etiqueta', 'puntaje_union', 'metodo_union',
+  'proyecto+matricula', 'abscisa_inicial', 'objectid', 'shape_length', 'shape_area', 'globalid'
+])
+
+// Keys shown ONLY in modal, not in sidebar table
+const modalOnlyKeys = new Set([
+  'estado', 'estado_proyecto', 'estado proyecto'
+])
+
+// Keys shown in BOTH sidebar table AND modal
+const sidebarAndModalKeys = new Set([
+  'proyecto', 'municipio', 'matricula', 'propietario'
+])
+
 const tableRows = computed(() => {
   const used = new Set()
   const rows = []
-  const skipKeys = new Set(['circuitId', 'circuitid', 'id-circuito', 'idCircuito', 'circuit_id', 'id'])
   for (const k of TABLE_FIELDS) {
-    if (desc.value[k] && !skipKeys.has(k)) { rows.push([k, desc.value[k]]); used.add(k) }
+    if (desc.value[k] && !ignoreKeys.has(k.toLowerCase()) && !modalOnlyKeys.has(k.toLowerCase())) { 
+      rows.push([k, desc.value[k]])
+      used.add(k) 
+    }
   }
   for (const [k, v] of Object.entries(desc.value)) {
-    if (!used.has(k) && !skipKeys.has(k) && !skipKeys.has(k.toLowerCase())) rows.push([k, v])
+    if (!used.has(k) && !ignoreKeys.has(k.toLowerCase()) && !modalOnlyKeys.has(k.toLowerCase())) {
+      rows.push([k, v])
+    }
   }
   return rows
 })
+
+const hiddenRows = computed(() => {
+  const result = []
+  for (const [k, v] of Object.entries(desc.value)) {
+    if ((modalOnlyKeys.has(k.toLowerCase()) || sidebarAndModalKeys.has(k.toLowerCase())) && v !== '' && v !== null && v !== undefined) {
+      result.push([k, v])
+    }
+  }
+  return result
+})
+const hasHiddenData = computed(() => hiddenRows.value.length > 0)
+
+const estadoModalOpen = ref(false)
 
 // ── Galería ───────────────────────────────────────────────────────────────────
 const PHASES = [
@@ -130,6 +163,7 @@ function closeLightbox() { lightboxOpen.value = false; resumeAuto() }
 const onKey = (e) => {
   if (e.key === 'Escape') {
     if (lightboxOpen.value) { closeLightbox(); return }
+    if (estadoModalOpen.value) { estadoModalOpen.value = false; return }
     requestClose()
   }
   if (e.key === 'ArrowLeft')  prev()
@@ -247,6 +281,11 @@ function onLbTouchEnd(e) {
                   </tr>
                 </tbody>
               </table>
+              <div v-if="hasHiddenData" style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+                <button class="btn-primary" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);" @click="estadoModalOpen = true">
+                  Ver Detalles Completos
+                </button>
+              </div>
             </div>
 
             <div class="divider block-entry-divider" />
@@ -388,6 +427,26 @@ function onLbTouchEnd(e) {
           </button>
           <span class="lb-ctr">{{ activeIdx + 1 }} / {{ allPhotos.length }}</span>
           <button class="lb-close" @click="closeLightbox" aria-label="Cerrar">✕</button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ── ESTADO PROYECTO MODAL ── -->
+    <Transition name="modal-anim">
+      <div v-if="estadoModalOpen" class="backdrop" @click.self="estadoModalOpen = false" style="z-index: 1050; justify-content: center; align-items: center; background: rgba(5, 20, 12, 0.7); backdrop-filter: blur(4px);">
+        <div class="modal" role="dialog" aria-modal="true" style="max-width: 650px; width: 90%; height: auto; max-height: 85vh; background: #ffffff; border-radius: 16px; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden;">
+          <header class="pdf-head" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;">
+            <h3 class="pdf-title" style="color: #0b5640; font-size: 1.35rem; font-weight: 600; margin: 0; font-family: 'Prompt', sans-serif;">Detalles y Estado del Proyecto</h3>
+            <button class="btn-x" @click="estadoModalOpen = false" aria-label="Cerrar" style="background: #e2e8f0; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: #475569; transition: background 0.2s;">✕</button>
+          </header>
+          <div style="overflow-y: auto; flex: 1; padding: 24px; background: #fafafa;">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div v-for="[k, v] in hiddenRows" :key="k" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">{{ k.replace(/_/g, ' ') }}</h4>
+                <p style="margin: 0; white-space: pre-wrap; font-size: 1.05rem; line-height: 1.6; color: #1e293b;">{{ v }}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>

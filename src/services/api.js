@@ -12,10 +12,11 @@ const ENDPOINTS = {
   arcgisInventarioForestal: 'https://services5.arcgis.com/K90UQIB09TmTjUL8/arcgis/rest/services/Inventario_Forestal/FeatureServer/0/query?where=1=1&outFields=*&f=geojson',
   areaIntervenidasVisor: `${base}/data/Capas/Area_Intervenidas_Visor.geojson`,
   prediosIntervenidosVisor: `${base}/data/Capas/Predios_Intervenidos_Visor.geojson`,
+  datosPredial: `${base}/data/Capas/datos_predial.json`,
 }
 
-// Caché en memoria: evita re-descargar y re-parsear en la misma sesión
-// (no tiene límite de tamaño como localStorage y es instantáneo)
+// CachÃ© en memoria: evita re-descargar y re-parsear en la misma sesiÃ³n
+// (no tiene lÃ­mite de tamaÃ±o como localStorage y es instantÃ¡neo)
 const _memCache = {}
 
 function readCache(url)        { return _memCache[url] ?? null }
@@ -31,40 +32,40 @@ async function fetchGeoJSON(url) {
     const decoder = new TextDecoder('utf-8')
     text = decoder.decode(arrayBuffer)
   } catch (err) {
-    // Sin red o error HTTP → intentar caché
+    // Sin red o error HTTP â†’ intentar cachÃ©
     const cached = readCache(url)
-    if (cached) { console.warn(`[SIMEVA] Sin conexión — usando caché para ${url}`); return { data: cached, fromCache: true } }
+    if (cached) { console.warn(`[SIMEVA] Sin conexiÃ³n â€” usando cachÃ© para ${url}`); return { data: cached, fromCache: true } }
     throw err
   }
 
-  // Intento 1: JSON válido
+  // Intento 1: JSON vÃ¡lido
   try {
     const parsed = JSON.parse(text)
     // Desempaquetar wrapper { success, data: FeatureCollection }
     const data = parsed?.data?.type === 'FeatureCollection' ? parsed.data : parsed
     writeCache(url, data)
     return { data, fromCache: false }
-  } catch { /* continúa */ }
+  } catch { /* continÃºa */ }
 
-  // Intento 2: JSON truncado → recuperar features
+  // Intento 2: JSON truncado â†’ recuperar features
   const recovered = recoverFeatureCollection(text)
   if (recovered) {
-    console.warn(`[SIMEVA] JSON truncado en ${url} — recuperados ${recovered.features.length} features`)
+    console.warn(`[SIMEVA] JSON truncado en ${url} â€” recuperados ${recovered.features.length} features`)
     writeCache(url, recovered)
     return { data: recovered, fromCache: false }
   }
 
-  // Último recurso: caché
+  // Ãšltimo recurso: cachÃ©
   const cached = readCache(url)
-  if (cached) { console.warn(`[SIMEVA] JSON inválido — usando caché para ${url}`); return { data: cached, fromCache: true } }
+  if (cached) { console.warn(`[SIMEVA] JSON invÃ¡lido â€” usando cachÃ© para ${url}`); return { data: cached, fromCache: true } }
 
   throw new Error(`No se pudo parsear el GeoJSON de ${url}`)
 }
 
 /**
- * Cuando el servidor mock trunca el JSON, recorre el texto carácter a carácter
- * rastreando profundidad de llaves para encontrar el último feature completo,
- * y reconstruye un FeatureCollection válido con los features que alcanzaron a cerrarse.
+ * Cuando el servidor mock trunca el JSON, recorre el texto carÃ¡cter a carÃ¡cter
+ * rastreando profundidad de llaves para encontrar el Ãºltimo feature completo,
+ * y reconstruye un FeatureCollection vÃ¡lido con los features que alcanzaron a cerrarse.
  */
 function recoverFeatureCollection(text) {
   // Localizar el inicio del array de features
@@ -73,8 +74,8 @@ function recoverFeatureCollection(text) {
   const arrStart  = text.indexOf('[', featIdx)
   if (arrStart === -1) return null
 
-  // Rastrear qué posiciones corresponden al cierre de cada feature top-level
-  const closings = []   // índices donde depth vuelve a 0 (cada feature cerrado)
+  // Rastrear quÃ© posiciones corresponden al cierre de cada feature top-level
+  const closings = []   // Ã­ndices donde depth vuelve a 0 (cada feature cerrado)
   let depth   = 0
   let inStr   = false
   let escaped = false
@@ -96,7 +97,7 @@ function recoverFeatureCollection(text) {
 
   if (closings.length === 0) return null
 
-  // Extraer el JSON de los features hasta el último cerrado
+  // Extraer el JSON de los features hasta el Ãºltimo cerrado
   const lastClose   = closings[closings.length - 1]
   const featuresRaw = text.substring(arrStart + 1, lastClose + 1).trim().replace(/,\s*$/, '')
 
@@ -120,8 +121,9 @@ export function getPuenteGavinoAbscisas() { return fetchGeoJSON(ENDPOINTS.puente
 export function getArcgisInventarioForestal() { return fetchGeoJSON(ENDPOINTS.arcgisInventarioForestal) }
 export function getAreaIntervenidasVisor() { return fetchGeoJSON(ENDPOINTS.areaIntervenidasVisor) }
 export function getPrediosIntervenidosVisor() { return fetchGeoJSON(ENDPOINTS.prediosIntervenidosVisor) }
+export function getDatosPredial() { return fetchGeoJSON(ENDPOINTS.datosPredial) }
 
-/** Extrae URLs de imágenes del HTML de descripción */
+/** Extrae URLs de imÃ¡genes del HTML de descripciÃ³n */
 export function extractPhotos(htmlString) {
   if (!htmlString) return []
   try {
@@ -133,8 +135,8 @@ export function extractPhotos(htmlString) {
 }
 
 /**
- * Extrae fotos organizadas en fases (antes/durante/después)
- * buscando en las propiedades del feature y en el HTML de descripción.
+ * Extrae fotos organizadas en fases (antes/durante/despuÃ©s)
+ * buscando en las propiedades del feature y en el HTML de descripciÃ³n.
  */
 export function extractPhotosByPhase(props = {}, htmlDescription = '') {
   const result = { antes: [], durante: [], despues: [] }
@@ -142,7 +144,7 @@ export function extractPhotosByPhase(props = {}, htmlDescription = '') {
   const PHASE = {
     antes:   /antes|before|inicio|pre[-_]/i,
     durante: /durante|during|en[-_]?obra|proceso/i,
-    despues: /despu[eé]s|after|post[-_]|final/i,
+    despues: /despu[eÃ©]s|after|post[-_]|final/i,
   }
 
   // Buscar en propiedades del feature
@@ -155,7 +157,7 @@ export function extractPhotosByPhase(props = {}, htmlDescription = '') {
     }
   }
 
-  // Fallback: imágenes del HTML → poner en "durante"
+  // Fallback: imÃ¡genes del HTML â†’ poner en "durante"
   if (!result.antes.length && !result.durante.length && !result.despues.length) {
     result.durante = extractPhotos(htmlDescription)
   }
@@ -164,16 +166,16 @@ export function extractPhotosByPhase(props = {}, htmlDescription = '') {
 }
 
 /**
- * Extrae texto plano de la descripción HTML que viene en cada feature de localizaciones.
- * Retorna un objeto con los campos más relevantes.
+ * Extrae texto plano de la descripciÃ³n HTML que viene en cada feature de localizaciones.
+ * Retorna un objeto con los campos mÃ¡s relevantes.
  */
 /**
- * Intenta extraer el valor numérico de km del objeto parseado de descripción.
- * Busca claves como "Longitud", "Km", "Kilómetros", o valores con "km" en el texto.
+ * Intenta extraer el valor numÃ©rico de km del objeto parseado de descripciÃ³n.
+ * Busca claves como "Longitud", "Km", "KilÃ³metros", o valores con "km" en el texto.
  */
 /**
- * Calcula la longitud real de una geometría GeoJSON (LineString o MultiLineString)
- * usando la fórmula de Haversine. Retorna kilómetros.
+ * Calcula la longitud real de una geometrÃ­a GeoJSON (LineString o MultiLineString)
+ * usando la fÃ³rmula de Haversine. Retorna kilÃ³metros.
  */
 export function calcGeomKm(geometry) {
   if (!geometry) return 0
@@ -206,14 +208,14 @@ export function calcGeomKm(geometry) {
 export function extractKm(desc) {
   if (!desc || typeof desc !== 'object') return null
   // Buscar clave que hable de longitud/km
-  const kmKey = Object.keys(desc).find(k => /longitud|kilóm|^km$/i.test(k))
+  const kmKey = Object.keys(desc).find(k => /longitud|kilÃ³m|^km$/i.test(k))
   if (kmKey) {
     const match = String(desc[kmKey]).replace(',', '.').match(/[\d.]+/)
     if (match) return Number.parseFloat(match[0])
   }
-  // Fallback: buscar patrón "X km" en cualquier valor
+  // Fallback: buscar patrÃ³n "X km" en cualquier valor
   for (const val of Object.values(desc)) {
-    // Cuantificadores acotados (máx. 6 dígitos enteros, 3 decimales) para
+    // Cuantificadores acotados (mÃ¡x. 6 dÃ­gitos enteros, 3 decimales) para
     // evitar backtracking super-lineal (SonarQube javascript:S5852).
     const m = /(\d{1,6}(?:\.\d{1,3})?)\s*km/i.exec(String(val).slice(0, 200).replace(',', '.'))
     if (m) return Number.parseFloat(m[1])
@@ -237,3 +239,4 @@ export function parseDescription(htmlString) {
   })
   return result
 }
+

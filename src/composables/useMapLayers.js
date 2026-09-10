@@ -1,11 +1,11 @@
 import { ref, shallowRef, onUnmounted } from 'vue'
-import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getMiCasitaPrediosAfectados, getHeliconiaPrediosAfectados, getPuenteGavinoForestal, getPuenteGavinoCauce, getPuenteGavinoAbscisas, getArcgisInventarioForestal, getAreaIntervenidasVisor, getPrediosIntervenidosVisor, parseDescription } from '../services/api.js'
+import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getMiCasitaPrediosAfectados, getHeliconiaPrediosAfectados, getPuenteGavinoForestal, getPuenteGavinoCauce, getPuenteGavinoAbscisas, getArcgisInventarioForestal, getAreaIntervenidasVisor, getPrediosIntervenidosVisor, getDatosPredial, parseDescription } from '../services/api.js'
 import { pctTiempoTranscurrido } from '../utils/stats.js'
 import { parseAvancePct } from '../utils/via.js'
 import { useMapStore } from '../stores/useMapStore.js'
 import hitosData from '../data/hitos.json'
 
-const normStr = s => (s ?? '').toLowerCase().normalize('NFD').replaceAll(/[̀-ͯ]/g, '').trim()
+const normStr = s => (s ?? '').toLowerCase().normalize('NFD').replaceAll(/[\u0300-\u036f]/g, '').trim()
 const normUp  = s => (s ?? '').normalize('NFD').replaceAll(/[\u0300-\u036f]/g, '').toUpperCase().trim()
 const _circuitosConSeguimiento = new Set(Object.keys(hitosData).map(normStr))
 
@@ -62,7 +62,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
 
 
-  function _extractFilterOptions(geoMunicipios, geoVias, geoLoc) {
+  function _extractFilterOptions(geoMunicipios, geoVias, geoLoc, geoAreaIntervenidas) {
     const proyectos = geoLoc
       ? [...new Set(geoLoc.features.map(f => f.properties.NOMBRE_PROYECTO).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'))
       : []
@@ -82,13 +82,22 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const fuentesSet = new Set()
     if (geoLoc) {
       for (const f of geoLoc.features) {
-         const fuente = f.properties.FUENTE_FINANCIACION || f.properties.FUENTE_FIN || f.properties.FUENTE || f.properties.fuente
+         const p = f.properties
+         const fuente = p.Fuente_Financiacion || p.FUENTE_FINANCIACION || p.FUENTE_FIN || p.FUENTE || p.fuente
          if (fuente && typeof fuente === 'string') fuentesSet.add(fuente)
       }
     }
     if (geoVias) {
       for (const f of geoVias.features) {
-         const fuente = f.properties.FUENTE_FINANCIACION || f.properties.FUENTE_FIN || f.properties.FUENTE || f.properties.fuente
+         const p = f.properties
+         const fuente = p.Fuente_Financiacion || p.FUENTE_FINANCIACION || p.FUENTE_FIN || p.FUENTE || p.fuente
+         if (fuente && typeof fuente === 'string') fuentesSet.add(fuente)
+      }
+    }
+    if (geoAreaIntervenidas) {
+      for (const f of geoAreaIntervenidas.features) {
+         const p = f.properties
+         const fuente = p.Fuente_Financiacion || p.FUENTE_FINANCIACION || p.FUENTE_FIN || p.FUENTE || p.fuente
          if (fuente && typeof fuente === 'string') fuentesSet.add(fuente)
       }
     }
@@ -101,7 +110,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     })
   }
 
-  function _calculateViasStats(geoVias, geoLoc) {
+  function _calculateViasStats(geoVias, geoLoc, geoAreaIntervenidas) {
     const viasDetalle = []
     let longitudTotal = 0
     const kmPorSubregion = {}
@@ -110,13 +119,40 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       for (const f of geoLoc.features) {
         const p = f.properties
         const nombre = p.NOMBRE_PROYECTO ?? 'Sin nombre'
-        const sub = canonicalSub(p.SUBREGION) ?? 'Sin subregión'
+        const sub = canonicalSub(p.SUBREGION) ?? 'Sin subregiÃ³n'
 
         viasDetalle.push({
           nombre: nombre,
           subregion: sub,
           fuente: p.FUENTE_FINANCIACION || p.FUENTE_FIN || p.FUENTE || p.fuente || '',
           municipio: '',
+          proyecto: nombre,
+          km: 0,
+          avance: 0,
+          avanceFin: 0,
+          estabilizado: 0,
+          contratista: '',
+          contrato: '',
+          interventor: '',
+          plazoMeses: 0,
+          plazo: '',
+          circuito: '',
+          fechaIni: '',
+        })
+      }
+    }
+    
+    if (geoAreaIntervenidas) {
+      for (const f of geoAreaIntervenidas.features) {
+        const p = f.properties
+        const nombre = p.Proyecto || p.proyecto || 'Área Intervenida'
+        const sub = 'Sin subregión'
+
+        viasDetalle.push({
+          nombre: nombre,
+          subregion: sub,
+          fuente: p.Fuente_Financiacion || p.FUENTE_FINANCIACION || p.FUENTE_FIN || p.FUENTE || p.fuente || '',
+          municipio: p.Municipio || p.municipio || '',
           proyecto: nombre,
           km: 0,
           avance: 0,
@@ -217,7 +253,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
       let hoveredMpio = null
       map.on('mousemove', 'municipios-fill', (e) => {
-        // Ignorar el hover de municipio si hay una capa de predio/localización encima
+        // Ignorar el hover de municipio si hay una capa de predio/localizaciÃ³n encima
         const topFeatures = map.queryRenderedFeatures(e.point, {
           layers: ['gavino-localizacion-fill', 'gavino-afectados-fill', 'gavino-permiso-fill'].filter(l => map.getLayer(l))
         })
@@ -274,7 +310,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         type: 'geojson',
         data: geoViasTagged,
         generateId: true,
-        tolerance: 1.25 // Tolerancia de simplificación (Douglas-Peucker) para enderezar tramos en zoom alejado y dar detalle al acercarse
+        tolerance: 1.25 // Tolerancia de simplificaciÃ³n (Douglas-Peucker) para enderezar tramos en zoom alejado y dar detalle al acercarse
       })
 
       // 1. Casing base (siempre visible)
@@ -311,8 +347,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           'line-opacity': 0.45
         },
       })
-      // (Glow removido a petición del usuario para evitar efectos difuminados de tipo brillo/neon)
-      // 4. Línea principal (siempre visible)
+      // (Glow removido a peticiÃ³n del usuario para evitar efectos difuminados de tipo brillo/neon)
+      // 4. LÃ­nea principal (siempre visible)
       map.addLayer({
         id: 'vias-line',
         type: 'line',
@@ -324,7 +360,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           'line-opacity': 1,
         },
       })
-      // (Highlight blanco superior removido a petición del usuario para evitar el uso del color blanco)
+      // (Highlight blanco superior removido a peticiÃ³n del usuario para evitar el uso del color blanco)
 
       // 6. Hit target (invisible but thick) to capture hover/click easily
       map.addLayer({
@@ -360,7 +396,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         map.setFilter('vias-hover-inner-casing', HOVER_FILTER_OFF)
       }
 
-      // Mapa CIRCUITO + SUBREGION → { km, avance } agregado para el tooltip/click
+      // Mapa CIRCUITO + SUBREGION â†’ { km, avance } agregado para el tooltip/click
       const circuitDataMap = {}
       for (const f of geoVias.features) {
         const circ = f.properties.CIRCUITO ?? ''
@@ -396,12 +432,12 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           subregion: subregion,
           description: {
             circuitId:               first['id-circuito'] ?? first.CIRCUITO ?? '',
-            Subregión:               canonicalSub(first.SUBREGION),
-            Municipio:               municipios.join(', '),
-            Circuito:                circuito,
-            Contrato:                first.CTO        ?? '',
-            Contratista:             first.CONTRATIST ?? '',
-            Interventoría:           first.INTERV     ?? '',
+            'Subregión':             canonicalSub(first.SUBREGION),
+            'Municipio':             municipios.join(', '),
+            'Circuito':              circuito,
+            'Contrato':              first.CTO        ?? '',
+            'Contratista':           first.CONTRATIST ?? '',
+            'Interventoría':         first.INTERV     ?? '',
             'Longitud (km)':         data.km ?? '',
             'Avance físico':         `${data.avance ?? 0}%`,
             'Fecha de inicio':       first.FECHA_INI  ?? '',
@@ -441,7 +477,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       map.on('move',   updateCalloutPositions)
       map.on('resize', updateCalloutPositions)
     } catch (err) {
-      console.error('[SIMEVA] Error cargando vías:', err)
+      console.error('[SIMEVA] Error cargando vÃ­as:', err)
     }
   }
 
@@ -755,7 +791,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     loading.value   = true
     loadError.value = false
 
-    const [resMunicipios, resVias, resLoc, resAfectados, resMiCasita, resHeliconia, resForestal, resCauce, resAbscisas, resArcgisForestal, resAreaIntervenidas, resPrediosIntervenidos] = await Promise.allSettled([
+    const [resMunicipios, resVias, resLoc, resAfectados, resMiCasita, resHeliconia, resForestal, resCauce, resAbscisas, resArcgisForestal, resAreaIntervenidas, resPrediosIntervenidos, resDatosPredial] = await Promise.allSettled([
       getMunicipios(), 
       getLocalizaciones(), 
       getPuenteGavinoLocalizacion(),
@@ -767,7 +803,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       getPuenteGavinoAbscisas(),
       getArcgisInventarioForestal(),
       getAreaIntervenidasVisor(),
-      getPrediosIntervenidosVisor()
+      getPrediosIntervenidosVisor(),
+      getDatosPredial()
     ])
 
     if (destroyed) return
@@ -784,6 +821,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const arcgisForestalResult = resArcgisForestal.status === 'fulfilled' ? resArcgisForestal.value : null
     const areaIntervenidasResult = resAreaIntervenidas.status === 'fulfilled' ? resAreaIntervenidas.value : null
     const prediosIntervenidosResult = resPrediosIntervenidos.status === 'fulfilled' ? resPrediosIntervenidos.value : null
+    const datosPredialResult = resDatosPredial.status === 'fulfilled' ? resDatosPredial.value : null
+    const jsonDatosPredial = datosPredialResult?.data ?? null
 
     cachedMunicipios.value = munResult?.data ?? null
     cachedVias.value       = viaResult?.data ?? null
@@ -804,7 +843,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
     const geoPrediosIntervenidos = prediosIntervenidosResult?.data ?? null
 
     if (resMunicipios.status === 'rejected') console.warn('[SIMEVA] Municipios:', resMunicipios.reason)
-    if (resVias.status       === 'rejected') console.warn('[SIMEVA] Vías:', resVias.reason)
+    if (resVias.status       === 'rejected') console.warn('[SIMEVA] VÃ­as:', resVias.reason)
 
     if (!geoMunicipios && !geoVias && !geoLoc && !geoAfectados && !geoPermiso) {
       loadError.value = true
@@ -812,21 +851,21 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       return
     }
 
-    // Normaliza texto para comparar sin acentos ni mayúsculas
+    // Normaliza texto para comparar sin acentos ni mayÃºsculas
 
-    _extractFilterOptions(geoMunicipios, geoVias, geoLoc)
+    _extractFilterOptions(geoMunicipios, geoVias, geoLoc, geoAreaIntervenidas)
 
-    // ── Estadísticas desde propiedades directas del GeoJSON ──────────────────
-    _calculateViasStats(geoVias, geoLoc)
+    // â”€â”€ EstadÃ­sticas desde propiedades directas del GeoJSON â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    _calculateViasStats(geoVias, geoLoc, geoAreaIntervenidas)
 
     if (destroyed) return
 
-    // ── Capa municipios ───────────────────────────────────────────────────────
+    // â”€â”€ Capa municipios â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (geoMunicipios) {
       _setupMunicipiosLayer(map, geoMunicipios, geoVias)
     }
 
-    // ── Capas Puente Gavino ───────────────────────────────────────────────────
+    // â”€â”€ Capas Puente Gavino â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (geoLoc) {
       _setupGenericPolygonLayer(map, 'gavino-localizacion', geoLoc, '#3b82f6', '#2563eb')
       
@@ -836,25 +875,25 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         
         const desc = {
           'Proyecto': p.NOMBRE_PROYECTO || 'N/A',
-          'Subregión': p.SUBREGION || 'N/A'
+          'SubregiÃ³n': p.SUBREGION || 'N/A'
         }
         
         if (projName.includes('casita')) {
-          desc['Permiso de ocupación de cauce'] = 'data/01 Puente gavino/Res otorgamiento POC Mi Casita.pdf'
+          desc['Permiso de ocupaciÃ³n de cauce'] = 'data/01 Puente gavino/Res otorgamiento POC Mi Casita.pdf'
         } else if (projName.includes('gavi') || projName.includes('gabi')) {
-          desc['Permiso de ocupación de cauce'] = 'data/01 Puente gavino/Resolucion otorgamiento POC Gavino.pdf'
+          desc['Permiso de ocupaciÃ³n de cauce'] = 'data/01 Puente gavino/Resolucion otorgamiento POC Gavino.pdf'
         } else if (projName.includes('el tres') || projName.includes('san pedro de uraba')) {
           desc['Estado'] = 'Finalizo la ejecucion - El Muro ya esta construido.'
-          desc['Estado Predial'] = '1. El Predio 034-13299 fue expropiado esta a nombre de la Gobernaciòn 2. 034-3534 En expropiacion se tiene acta de entrega anticipada por parte del juzgado'
+          desc['Estado Predial'] = '1. El Predio 034-13299 fue expropiado esta a nombre de la GobernaciÃ²n 2. 034-3534 En expropiacion se tiene acta de entrega anticipada por parte del juzgado'
         } else if (projName.includes('majagual')) {
           desc['Permiso de aprovechamiento forestal'] = 'data/01 Puente gavino/Permiso de aprovechamiento forestal Majagual.pdf'
         } else if (projName.includes('san antonio')) {
           desc['Aprovechamiento forestal'] = 'No requiere'
-          desc['Permiso de intervención de cauce'] = 'No requiere'
+          desc['Permiso de intervenciÃ³n de cauce'] = 'No requiere'
         }
         
         selectedVia.value = {
-          name: 'Información del Proyecto',
+          name: 'InformaciÃ³n del Proyecto',
           description: desc
         }
       })
@@ -887,7 +926,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
               'Matricula': '026-23008',
               'Propietario': 'MICHELLE MARIA NAVARRO',
               'Permiso de Intervension': 'Si',
-              'Area': '3509.55 m²'
+              'Area': '3509.55 mÂ²'
             }
           }
         } else if (p.fuente === '1_AFECTACION.shp') {
@@ -897,19 +936,19 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
               'Matricula': '025-26288',
               'Propietario': 'MARIA EUGENIA MARTINEZ',
               'Permiso de Intervension': 'No',
-              'Area': '3184.90 m²'
+              'Area': '3184.90 mÂ²'
             }
           }
         } else {
           selectedVia.value = {
             name: 'Predio Afectado',
             description: {
-              'Área': p.SHAPE_AREA ? Number(p.SHAPE_AREA).toFixed(2) + ' m²' : 'N/A',
+              'Ãrea': p.SHAPE_AREA ? Number(p.SHAPE_AREA).toFixed(2) + ' mÂ²' : 'N/A',
               'Departamento': p.DPTO || 'N/A',
               'Municipio': p.MPIO || 'N/A',
               'Propietario': p.PROP || 'N/A',
-              'Código Catastral': p.CODCATAS || 'N/A',
-              'Matrícula Inmob.': p.MATRICULA || 'N/A',
+              'CÃ³digo Catastral': p.CODCATAS || 'N/A',
+              'MatrÃ­cula Inmob.': p.MATRICULA || 'N/A',
               'Fuente': p.fuente || 'N/A'
             }
           }
@@ -972,7 +1011,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           }
         }
         
-        const areaStr = area > 0 ? area.toFixed(2) + ' m²' : 'N/A';
+        const areaStr = area > 0 ? area.toFixed(2) + ' mÂ²' : 'N/A';
         const localId = p.LOCAL_ID || p.local_id || '';
         
         const isHugoEcheverri = localId === '8610001000000010066';
@@ -1017,7 +1056,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
               'Matricula': '010-2244',
               'Propietario': 'Miguel Zapata Correa',
               'Permiso de Intervension': 'Si',
-              'Area': '373.28 m²'
+              'Area': '373.28 mÂ²'
             }
           }
         } else {
@@ -1025,8 +1064,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             name: 'Predio Afectado',
             description: {
               'Local ID': localId || 'N/A',
-              'Círculo y Matrícula': p.CIRCULO_MA || 'N/A',
-              'Código de Terreno': p.TERRENO_CO || p.terreno_co || 'N/A',
+              'CÃ­rculo y MatrÃ­cula': p.CIRCULO_MA || 'N/A',
+              'CÃ³digo de Terreno': p.TERRENO_CO || p.terreno_co || 'N/A',
               'Area': areaStr
             }
           }
@@ -1071,7 +1110,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           }
         }
         
-        const areaStr = area > 0 ? area.toFixed(2) + ' m²' : 'N/A';
+        const areaStr = area > 0 ? area.toFixed(2) + ' mÂ²' : 'N/A';
         
         const featureProps = e.features[0].properties || {};
         const localId = featureProps.LOCAL_ID;
@@ -1121,7 +1160,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       map.on('click', 'gavino-cauce-circle', (e) => {
         const p = e.features[0].properties
         selectedVia.value = {
-          name: 'Ocupación de Cauce',
+          name: 'OcupaciÃ³n de Cauce',
           description: { ...p }
         }
       })
@@ -1136,7 +1175,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           name: 'Inventario Forestal (ArcGIS)',
           description: {
             'Especie': p.Especie || 'N/A',
-            'Nombre Común': p.NombreComun || 'N/A',
+            'Nombre ComÃºn': p.NombreComun || 'N/A',
             'DAP (m)': p.DAP || 'N/A',
             'Altura (m)': p.AlturaTotal || 'N/A',
             'Estado': p.EstadoFitosanitario || 'N/A',
@@ -1182,15 +1221,15 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
               ],
               'line-opacity': config.opacity
             }
-          }, 'proyecto-point-pulse') // Insertamos la capa de vías DEBAJO de los puntos (proyecto-point-pulse) para que no los tapen
+          }, 'proyecto-point-pulse') // Insertamos la capa de vÃ­as DEBAJO de los puntos (proyecto-point-pulse) para que no los tapen
 
           map.on('click', config.name, (e) => {
             const p = e.features[0].properties
             selectedVia.value = {
               name: 'Detalle de la capa',
               description: {
-                'Nombre': p.NOMBRE_VIA || 'Vía sin nombre',
-                'Código de Vía': p.CODIGO_VIA || 'N/A'
+                'Nombre': p.NOMBRE_VIA || 'VÃ­a sin nombre',
+                'CÃ³digo de VÃ­a': p.CODIGO_VIA || 'N/A'
               }
             }
           })
@@ -1303,10 +1342,10 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         map.on('click', 'gavino-abscisas-symbol', (e) => {
           const p = e.features[0].properties;
           selectedVia.value = {
-            name: p.NOMBRE_PROYECTO || 'Marca de Posición',
+            name: p.NOMBRE_PROYECTO || 'Marca de PosiciÃ³n',
             description: {
               'Tipo': p.TIPO || 'N/A',
-              'Descripción': p.DESCRIPCION || 'N/A'
+              'DescripciÃ³n': p.DESCRIPCION || 'N/A'
             }
           };
         });
@@ -1337,7 +1376,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
     if (geoAreaIntervenidas) {
       geoAreaIntervenidas.features.forEach(f => {
-        if (f.properties.Permiso && f.properties.Permiso.toUpperCase() === 'SI') {
+        const permiso = f.properties.Permiso_Intervencion || f.properties.permiso_intervencion || f.properties.Permiso || '';
+        if (permiso.trim().toUpperCase() === 'SI') {
           f.properties.fillColor = '#22c55e';
           f.properties.outlineColor = '#16a34a';
         } else {
@@ -1348,16 +1388,76 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
       _setupGenericPolygonLayer(map, 'area-intervenidas', geoAreaIntervenidas, '#9333ea', '#7e22ce')
       
       map.on('click', 'area-intervenidas-fill', (e) => {
-        if (!e.features || e.features.length === 0) return
-        const p = { ...e.features[0].properties }
-        delete p.fillColor
-        delete p.outlineColor
-        
-        selectedVia.value = {
-          name: 'Área Intervenida',
-          description: p
-        }
-      })
+          if (!e.features || e.features.length === 0) return
+          const p = { ...e.features[0].properties }
+          delete p.fillColor
+          delete p.outlineColor
+          
+          let descData = { ...p };
+          const matricula = p.Matricula || p.matricula || '';
+          if (jsonDatosPredial && Array.isArray(jsonDatosPredial)) {
+              const matchedRows = jsonDatosPredial.filter(row => {
+                  const key = Object.keys(row).find(k => k.includes('Matr'));
+                  return String(row[key] || '').trim() === String(matricula).trim();
+              });
+              if (matchedRows.length > 0) {
+                  const abscisa = p.ABS || '';
+                  let exactMatch = matchedRows.find(row => String(row['Abscisa inicial'] || '').trim() === String(abscisa).trim());
+                  let finalMatch = exactMatch || matchedRows[0];
+                  descData = { ...descData, ...finalMatch };
+              }
+          }
+          
+          const calcAreaHelper = (feature) => {
+            if (!feature || !feature.geometry || !feature.geometry.coordinates) return 0;
+            const coords = feature.geometry.coordinates;
+            if (coords.length === 0 || coords[0].length === 0) return 0;
+            let totalArea = 0;
+            const polys = feature.geometry.type === 'MultiPolygon' ? coords : [coords];
+            const R = 6378137;
+            for (const poly of polys) {
+              const pts = poly[0];
+              if (!pts) continue;
+              let tempArea = 0;
+              for (let i = 0; i < pts.length - 1; i++) {
+                const p1 = pts[i];
+                const p2 = pts[i + 1];
+                tempArea += (p2[0] - p1[0]) * (p2[1] + p1[1]) * (Math.PI / 180) * R * (Math.PI / 180) * R * Math.cos(p1[1] * Math.PI / 180);
+              }
+              totalArea += Math.abs(tempArea) / 2;
+            }
+            return totalArea;
+          };
+
+          const areaRequerida = calcAreaHelper(e.features[0]);
+          descData['Area_Requerida'] = areaRequerida > 0 ? areaRequerida.toFixed(2) + ' m²' : 'N/A';
+          
+          let areaTotal = 0;
+          if (geoPrediosIntervenidos && geoPrediosIntervenidos.features) {
+            const matchingPredio = geoPrediosIntervenidos.features.find(f => {
+              const m = f.properties.Matricula || f.properties.matricula || '';
+              return m && String(m).trim() === String(matricula).trim();
+            });
+            if (matchingPredio) {
+              areaTotal = calcAreaHelper(matchingPredio);
+            }
+          }
+          
+          if (areaTotal > 0) {
+            descData['Area_Total'] = areaTotal.toFixed(2) + ' m²';
+            const areaSobrante = areaTotal - areaRequerida;
+            descData['Area_Sobrante'] = areaSobrante.toFixed(2) + ' m²';
+          } else {
+             // Fallback if no predio found but we want to show the fields
+             descData['Area_Total'] = 'N/A';
+             descData['Area_Sobrante'] = 'N/A';
+          }
+          
+          selectedVia.value = {
+            name: 'Área Intervenida',
+            description: descData
+          }
+        })
       map.on('mouseenter', 'area-intervenidas-fill', () => { map.getCanvas().style.cursor = 'pointer' })
       map.on('mouseleave', 'area-intervenidas-fill', () => { map.getCanvas().style.cursor = '' })
     }
@@ -1367,3 +1467,5 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
 
   return { loading, loadError, fromCache, hoverLabel, viaHoverLabel, selectedVia, selectedMpio, cachedMunicipios, cachedVias, cachedLocalizaciones, loadSimeva }
 }
+
+

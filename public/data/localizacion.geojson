@@ -18118,6 +18118,48 @@
           ]
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "CIRCUITO": "Tamesis la Oculta",
+        "NOMBRE_PROYECTO": "Tamesis la Oculta",
+        "NOMBRE_VIA": "Tamesis la Oculta",
+        "SUBREGION": "SUROESTE",
+        "MPIO_NOMBR": "TAMESIS",
+        "Long_km": 0,
+        "AV_FISICO": 0,
+        "FUENTE_FINANCIACION": "",
+        "id-circuito": ""
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.679173,
+          5.749006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "CIRCUITO": "Granada 0+900",
+        "NOMBRE_PROYECTO": "Granada 0+900",
+        "NOMBRE_VIA": "Granada 0+900",
+        "SUBREGION": "ORIENTE",
+        "MPIO_NOMBR": "GRANADA",
+        "Long_km": 0,
+        "AV_FISICO": 0,
+        "FUENTE_FINANCIACION": "",
+        "id-circuito": ""
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -75.242392,
+          6.129378
+        ]
+      }
     }
   ]
 }

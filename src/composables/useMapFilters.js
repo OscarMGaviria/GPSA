@@ -75,6 +75,35 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
     if (map.getLayer('vias-hit-target')) {
       map.setFilter('vias-hit-target', viasFilter)
     }
+
+    // Filtrar también la capa de proyectos (gavino-localizacion) por nombre
+    if (map.getLayer('gavino-localizacion-fill')) {
+      if (hasCir && proyecto) {
+        map.setFilter('gavino-localizacion-fill', ['==', ['get', 'NOMBRE_PROYECTO'], proyecto])
+        if (map.getLayer('gavino-localizacion-outline')) {
+          map.setFilter('gavino-localizacion-outline', ['==', ['get', 'NOMBRE_PROYECTO'], proyecto])
+        }
+      } else {
+        map.setFilter('gavino-localizacion-fill', null)
+        if (map.getLayer('gavino-localizacion-outline')) {
+          map.setFilter('gavino-localizacion-outline', null)
+        }
+      }
+    }
+
+    // Filtrar capa de puntos de proyecto
+    if (map.getLayer('proyecto-point-circle')) {
+      if (hasCir && proyecto) {
+        const proyectoFilter = ['==', ['get', 'nombre'], proyecto]
+        map.setFilter('proyecto-point-circle', proyectoFilter)
+        if (map.getLayer('proyecto-point-label')) map.setFilter('proyecto-point-label', proyectoFilter)
+        if (map.getLayer('proyecto-point-pulse')) map.setFilter('proyecto-point-pulse', proyectoFilter)
+      } else {
+        map.setFilter('proyecto-point-circle', null)
+        if (map.getLayer('proyecto-point-label')) map.setFilter('proyecto-point-label', null)
+        if (map.getLayer('proyecto-point-pulse')) map.setFilter('proyecto-point-pulse', ['==', ['get', 'enEjecucion'], true])
+      }
+    }
   }
 
   function _resetFlight(map, filters) {
@@ -102,8 +131,15 @@ export function useMapFilters(getMap, filtersRef, { cachedMunicipios, cachedVias
         featsToFly = featsToFly.concat(vias)
       }
       
-      console.log("featsToFly:", featsToFly); if (featsToFly.length) {
-        flyToGeometries(featsToFly.map(f => f.geometry), { padding: 100 })
+      if (featsToFly.length) {
+        // Si todos los features son Points, usar flyTo con zoom fijo
+        const allPoints = featsToFly.every(f => f.geometry.type === 'Point')
+        if (allPoints) {
+          const coords = featsToFly[0].geometry.coordinates
+          map.flyTo({ center: [coords[0], coords[1]], zoom: 14, duration: 1500, essential: true })
+        } else {
+          flyToGeometries(featsToFly.map(f => f.geometry), { padding: 100 })
+        }
       }
       map.once('moveend', () => refreshVisibleCallouts?.(filters))
     } else if (search && cachedVias.value) {
