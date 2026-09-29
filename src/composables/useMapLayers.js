@@ -2,6 +2,7 @@ import { ref, shallowRef, onUnmounted } from 'vue'
 import { getLocalizaciones, getMunicipios, getPuenteGavinoLocalizacion, getPuenteGavinoPrediosAfectados, getMiCasitaPrediosAfectados, getHeliconiaPrediosAfectados, getPuenteGavinoForestal, getPuenteGavinoCauce, getPuenteGavinoAbscisas, getArcgisInventarioForestal, getAreaIntervenidasVisor, getPrediosIntervenidosVisor, getDatosPredial, parseDescription } from '../services/api.js'
 import { pctTiempoTranscurrido } from '../utils/stats.js'
 import { parseAvancePct } from '../utils/via.js'
+import { findPredialRow, mergePredialRow } from '../utils/predial.js'
 import { useMapStore } from '../stores/useMapStore.js'
 import hitosData from '../data/hitos.json'
 
@@ -1367,7 +1368,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
         const p = e.features[0].properties
         selectedVia.value = {
           name: 'Predio Intervenido',
-          description: { ...p }
+          description: mergePredialRow(p, findPredialRow(jsonDatosPredial, p.Matricula, 0, p.Proyecto))
         }
       })
       map.on('mouseenter', 'predios-intervenidos-fill', () => { map.getCanvas().style.cursor = 'pointer' })
@@ -1393,21 +1394,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           delete p.fillColor
           delete p.outlineColor
           
-          let descData = { ...p };
           const matricula = p.Matricula || p.matricula || '';
-          if (jsonDatosPredial && Array.isArray(jsonDatosPredial)) {
-              const matchedRows = jsonDatosPredial.filter(row => {
-                  const key = Object.keys(row).find(k => k.includes('Matr'));
-                  return String(row[key] || '').trim() === String(matricula).trim();
-              });
-              if (matchedRows.length > 0) {
-                  const abscisa = p.ABS || '';
-                  let exactMatch = matchedRows.find(row => String(row['Abscisa inicial'] || '').trim() === String(abscisa).trim());
-                  let finalMatch = exactMatch || matchedRows[0];
-                  descData = { ...descData, ...finalMatch };
-              }
-          }
-          
+
           const calcAreaHelper = (feature) => {
             if (!feature || !feature.geometry || !feature.geometry.coordinates) return 0;
             const coords = feature.geometry.coordinates;
@@ -1430,6 +1418,7 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
           };
 
           const areaRequerida = calcAreaHelper(e.features[0]);
+          const descData = mergePredialRow(p, findPredialRow(jsonDatosPredial, matricula, areaRequerida, p.Proyecto));
           descData['Area_Requerida'] = areaRequerida > 0 ? areaRequerida.toFixed(2) + ' m²' : 'N/A';
           
           let areaTotal = 0;
@@ -1448,8 +1437,8 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             const areaSobrante = areaTotal - areaRequerida;
             descData['Area_Sobrante'] = areaSobrante.toFixed(2) + ' m²';
           } else {
-             // Fallback if no predio found but we want to show the fields
-             descData['Area_Total'] = 'N/A';
+             // Sin polígono del predio: se usa el área total del reporte predial si existe
+             descData['Area_Total'] = descData['Area_Total'] || 'N/A';
              descData['Area_Sobrante'] = 'N/A';
           }
           
