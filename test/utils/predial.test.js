@@ -29,6 +29,11 @@ describe('findPredialRow', () => {
     expect(findPredialRow(rows, '032-17880', 0, 'Tamesis Tramo 2')).toBe(rows[2])
     expect(findPredialRow(rows, ' 001-507923 ', 0, 'San Antonio de Prado')).toBe(rows[3])
   })
+  it('reconoce matrículas alternas entre paréntesis', () => {
+    const alt = [{ Proyecto: 'Granada 0+900', Matricula: '018-32 ( 018-73794)' }]
+    expect(findPredialRow(alt, '018-73794')).toBe(alt[0])
+    expect(findPredialRow(alt, '018-32')).toBe(alt[0])
+  })
   it('devuelve null sin matrícula o sin coincidencias', () => {
     expect(findPredialRow(rows, null)).toBeNull()
     expect(findPredialRow(rows, '999-1')).toBeNull()

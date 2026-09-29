@@ -1417,12 +1417,14 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
             return totalArea;
           };
 
-          const areaRequerida = calcAreaHelper(e.features[0]);
+          // Áreas del shapefile (m²); si no vienen, se calculan desde la geometría
+          const fmtM2 = v => v.toFixed(2) + ' m²';
+          const areaRequerida = Number(p.Area_Requerida) > 0 ? Number(p.Area_Requerida) : calcAreaHelper(e.features[0]);
           const descData = mergePredialRow(p, findPredialRow(jsonDatosPredial, matricula, areaRequerida, p.Proyecto));
-          descData['Area_Requerida'] = areaRequerida > 0 ? areaRequerida.toFixed(2) + ' m²' : 'N/A';
-          
-          let areaTotal = 0;
-          if (geoPrediosIntervenidos && geoPrediosIntervenidos.features) {
+          descData['Area_Requerida'] = areaRequerida > 0 ? fmtM2(areaRequerida) : 'N/A';
+
+          let areaTotal = Number(p.Area_Total) > 0 ? Number(p.Area_Total) : 0;
+          if (!areaTotal && geoPrediosIntervenidos && geoPrediosIntervenidos.features) {
             const matchingPredio = geoPrediosIntervenidos.features.find(f => {
               const m = f.properties.Matricula || f.properties.matricula || '';
               return m && String(m).trim() === String(matricula).trim();
@@ -1431,17 +1433,17 @@ export function useMapLayers(getMap, { onOptionsLoaded, onStatsLoaded } = {}, { 
               areaTotal = calcAreaHelper(matchingPredio);
             }
           }
-          
+
           if (areaTotal > 0) {
-            descData['Area_Total'] = areaTotal.toFixed(2) + ' m²';
-            const areaSobrante = areaTotal - areaRequerida;
-            descData['Area_Sobrante'] = areaSobrante.toFixed(2) + ' m²';
+            descData['Area_Total'] = fmtM2(areaTotal);
+            const areaSobrante = Number(p.Area_Sobrante) > 0 ? Number(p.Area_Sobrante) : areaTotal - areaRequerida;
+            descData['Area_Sobrante'] = fmtM2(areaSobrante);
           } else {
-             // Sin polígono del predio: se usa el área total del reporte predial si existe
+             // Sin área del predio: se usa el área total del reporte predial si existe
              descData['Area_Total'] = descData['Area_Total'] || 'N/A';
              descData['Area_Sobrante'] = 'N/A';
           }
-          
+
           selectedVia.value = {
             name: 'Área Intervenida',
             description: descData

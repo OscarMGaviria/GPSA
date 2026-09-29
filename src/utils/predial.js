@@ -2,6 +2,8 @@
 // con las capas de predios y áreas intervenidas.
 
 const normMatricula = m => String(m ?? '').replace(/\s+/g, '').toUpperCase()
+// "018-32 ( 018-73794)" → ['018-32', '018-73794']
+const matriculasDe = m => String(m ?? '').match(/\d{3}-[\dA-Z]+/gi)?.map(normMatricula) ?? []
 const normProyecto = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^p\.?a\.?p\.?\s+/, '').trim()
 
 /** Convierte un área del reporte a número solo si el formato no es ambiguo ("188.05", "3509.55 M2"). */
@@ -18,7 +20,7 @@ export function parseArea(v) {
 export function findPredialRow(rows, matricula, areaM2 = 0, proyecto = '') {
   if (!Array.isArray(rows) || !matricula) return null
   const key = normMatricula(matricula)
-  let matches = rows.filter(r => r.Matricula && normMatricula(r.Matricula) === key)
+  let matches = rows.filter(r => r.Matricula && (normMatricula(r.Matricula) === key || matriculasDe(r.Matricula).includes(key)))
   const sameProject = matches.filter(r => proyecto && normProyecto(r.Proyecto) === normProyecto(proyecto))
   if (sameProject.length) matches = sameProject
   if (matches.length <= 1 || !(areaM2 > 0)) return matches[0] ?? null
